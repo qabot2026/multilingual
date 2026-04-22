@@ -123,6 +123,7 @@ window.addEventListener("DOMContentLoaded", () => {
         document.body.appendChild(df);
 
         ensureCircularBubbleIcon(df);
+        ensureCloseIconIsX(df);
         autoOpenChatWindow(df, bubble, CHAT_AUTO_OPEN_DELAY_MS);
         initializeMobileChatLayout(df);
         initializeChatStateSync(df);
@@ -189,6 +190,74 @@ function ensureCircularBubbleIcon(dfMessenger) {
         const timedOut = Date.now() - startTime > maxWaitMs;
 
         if (styled || timedOut) {
+            window.clearInterval(timer);
+        }
+    }, intervalMs);
+}
+
+function ensureCloseIconIsX(dfMessenger) {
+    const startTime = Date.now();
+    const maxWaitMs = 12000;
+    const intervalMs = 300;
+
+    const applyCloseIcon = () => {
+        const roots = collectSearchRoots(dfMessenger);
+        let changed = false;
+
+        for (const root of roots) {
+            if (!root || !root.querySelectorAll) {
+                continue;
+            }
+
+            const candidates = root.querySelectorAll(
+                "button[aria-label*='Close'], button[aria-label*='close'], button[data-testid*='close'], button[data-testid*='Close']"
+            );
+
+            for (const button of candidates) {
+                if (!button || button.id === "contact-form-close") {
+                    continue;
+                }
+
+                if (button.dataset && button.dataset.companyCloseIcon === "x") {
+                    continue;
+                }
+
+                const ariaLabel = (button.getAttribute("aria-label") || "").toLowerCase();
+                const dataTestId = (button.getAttribute("data-testid") || "").toLowerCase();
+                const looksLikeChatClose = /close|minimize|collapse/.test(ariaLabel) || /close|minimize|collapse/.test(dataTestId);
+                if (!looksLikeChatClose) {
+                    continue;
+                }
+
+                // Replace any SVG/icon with a plain X so it never becomes a back-arrow.
+                button.textContent = "✕";
+                button.style.setProperty("font-size", "18px", "important");
+                button.style.setProperty("line-height", "1", "important");
+                button.style.setProperty("font-weight", "700", "important");
+                button.style.setProperty("display", "grid", "important");
+                button.style.setProperty("place-items", "center", "important");
+                button.style.setProperty("font-family", "Manrope, Segoe UI, Arial, sans-serif", "important");
+
+                if (button.dataset) {
+                    button.dataset.companyCloseIcon = "x";
+                }
+
+                changed = true;
+            }
+        }
+
+        return changed;
+    };
+
+    if (applyCloseIcon()) {
+        return;
+    }
+
+    const timer = window.setInterval(() => {
+        const applied = applyCloseIcon();
+        const timedOut = Date.now() - startTime > maxWaitMs;
+
+        if (applied || timedOut) {
             window.clearInterval(timer);
         }
     }, intervalMs);
