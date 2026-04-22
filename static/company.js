@@ -258,10 +258,10 @@ function applyLauncherStripPosition(stripElement, stripConfig) {
         }
     };
 
-    applyPx("right", normalized.rightPx);
-    applyPx("bottom", normalized.bottomPx);
-    applyPx("left", normalized.leftPx);
-    applyPx("top", normalized.topPx);
+    applyPx("right", position.rightPx);
+    applyPx("bottom", position.bottomPx);
+    applyPx("left", position.leftPx);
+    applyPx("top", position.topPx);
 
     // If both left and right are set, center the text nicely.
     if (typeof position.leftPx === "number" && typeof position.rightPx === "number") {
@@ -1297,14 +1297,19 @@ function findChatFooterHost(dfMessenger) {
     const roots = collectSearchRoots(dfMessenger);
     const selectors = [
         "form",
+        "df-messenger-user-input",
+        "df-messenger-input",
         "[data-testid*='input']",
+        "[data-testid*='footer']",
+        "[data-testid*='composer']",
         "[class*='input']",
         "[part*='input']",
+        "[part*='footer']",
         "footer"
     ];
 
     for (const root of roots) {
-        if (!root || root === document || !root.querySelectorAll) {
+        if (!root || !root.querySelectorAll) {
             continue;
         }
 
