@@ -1,20 +1,17 @@
 /**
- * Company Chat UI configuration (single place to edit).
+ * Company Chat UI settings (edit only this file).
  *
- * HOW TO USE:
- * - Change values in this file only.
- * - Do NOT edit `company.js` for normal UI changes.
- * - After editing, commit + push to GitHub Pages.
+ * How to use:
+ * - Change values in this file.
+ * - After you change it: commit + push to GitHub Pages.
  *
- * This file is loaded BEFORE `company.js` and exposes:
- *   window.COMPANY_CHAT_UI_CONFIG
+ * This file loads before `company.js`.
  */
 
 window.COMPANY_CHAT_UI_CONFIG = {
   /**
-   * Dialogflow CX connection settings.
-   * - **projectId / location / agentId**: Your Dialogflow CX agent details.
-   * - **languageCode**: This is handled automatically by the language dropdown (below).
+   * Dialogflow CX details.
+   * Change these if you change your Dialogflow agent.
    */
   dialogflow: {
     projectId: "qabot01",
@@ -23,25 +20,24 @@ window.COMPANY_CHAT_UI_CONFIG = {
   },
 
   /**
-   * Chat header (inside Dialogflow Messenger).
+   * Chat header (top bar inside the chat).
    */
   header: {
     title: "Chat Support",
     subtitle: "🟢 We are online to assist you",
 
-    // If a client asks to change the image/logo, update these URLs.
+    // Change these URLs to change the chat images/logo.
     chatIconUrl: "https://storage.googleapis.com/companybucket/Images/cat.png",
     chatTitleIconUrl: "https://storage.googleapis.com/companybucket/Images/cat.png",
 
-    // Force titlebar close icon to "X"
+    // Keep the close icon as X (not a back arrow).
     forceCloseIconX: true
   },
 
   /**
-   * Languages shown in the dropdown.
-   * - To disable a language: remove it from this array.
-   * - To add a new language: add { code, label } and add translations in `company.js` (UI strings),
-   *   or rely on Google translate for general DOM text.
+   * Language dropdown.
+   * - To disable a language: remove it from `options`.
+   * - To change default: change `default`.
    */
   languages: {
     default: "en",
@@ -53,9 +49,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
   },
 
   /**
-   * Chat window sizing.
-   * - These values apply on desktop.
-   * - Mobile uses responsive sizing automatically.
+   * Chat window size (desktop only).
    */
   layout: {
     desktopChatWidthPx: 420,
@@ -63,31 +57,32 @@ window.COMPANY_CHAT_UI_CONFIG = {
   },
 
   /**
-   * Chat behavior settings.
-   * - If client asks "auto open should be OFF", set enabled: false
-   * - If client asks "open after 10 seconds", set delayMs: 10000
+   * Chat behavior.
    */
   behavior: {
     autoOpenChat: {
+      // Auto-open the chat after some time.
       enabled: true,
+
+      // Time in milliseconds. Example: 10000 = 10 seconds.
       delayMs: 5000
     },
 
     /**
-     * Bubble strip message (small horizontal strip near the launcher bubble).
-     * - If client asks "remove that Hey message", set enabled: false
-     * - To change the text, update `text`
+     * Small strip near the chat bubble (with a message).
      */
     launcherStrip: {
+      // Show / hide the strip.
       enabled: true,
+
+      // Strip text.
       text: "Hey, there 👋",
 
       /**
-       * Position control (easy move up/down/left/right).
-       * - Use ONLY the values you want. Leave others as null.
-       * - Common usage:
-       *   - Move up/down: change bottomPx
-       *   - Move left/right: change rightPx (or use leftPx)
+       * Strip position on desktop.
+       * - Move up/down: change `bottomPx` (or set `topPx`)
+       * - Move left/right: change `rightPx` (or set `leftPx`)
+       * - If you don't want a value, keep it as null.
        */
       position: {
         rightPx: 20,
@@ -96,7 +91,10 @@ window.COMPANY_CHAT_UI_CONFIG = {
         topPx: null
       },
 
-      // Optional: different position on mobile screens.
+      /**
+       * Strip position on mobile (optional).
+       * If you want full width on mobile, set both leftPx and rightPx.
+       */
       mobilePosition: {
         rightPx: 12,
         bottomPx: 86,
@@ -107,9 +105,8 @@ window.COMPANY_CHAT_UI_CONFIG = {
   },
 
   /**
-   * Theme colors.
-   * These map to CSS variables used in `static/company.css`.
-   * If client asks for "change all colors", do it here.
+   * Page colors (background, text, borders).
+   * If client asks "change website colors", do it here.
    */
   theme: {
     "--company-bg-1": "#e8f3f4",
@@ -125,9 +122,8 @@ window.COMPANY_CHAT_UI_CONFIG = {
   },
 
   /**
-   * Dialogflow Messenger CSS variables (advanced).
-   * - Use this section to change bot/user bubble colors, titlebar color, etc.
-   * - Keys must be valid df-messenger CSS variables.
+   * Chat colors (bot/user bubble colors, titlebar, etc).
+   * If client asks "change bot color" or "change user bubble color", do it here.
    */
   dfMessengerTheme: {
     "--df-messenger-primary-color": "#0f766e",
