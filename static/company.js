@@ -147,7 +147,7 @@ window.addEventListener("DOMContentLoaded", () => {
         }
 
         initializeLauncherStrip(df, bubble, COMPANY_UI_CONFIG);
-        initializeMobileChatLayout(df);
+        initializeMobileChatLayout(df, COMPANY_UI_CONFIG);
         initializeChatStateSync(df);
         attachPersonaHandlers(df);
         initializeChatLanguageDropdown(df);
@@ -543,33 +543,61 @@ function tryOpenChatByClick(dfMessenger) {
     return false;
 }
 
-function initializeMobileChatLayout(dfMessenger) {
+function initializeMobileChatLayout(dfMessenger, config) {
     if (!dfMessenger) {
         return;
     }
 
     const applyLayout = () => {
+        const layoutConfig = config && config.layout && typeof config.layout === "object" ? config.layout : {};
+        const mobileConfig = layoutConfig.mobile && typeof layoutConfig.mobile === "object" ? layoutConfig.mobile : {};
+        const bubblePosition = layoutConfig.bubblePosition && typeof layoutConfig.bubblePosition === "object"
+            ? layoutConfig.bubblePosition
+            : {};
+
         if (!isMobileViewport()) {
+            const desktopBubble = bubblePosition.desktop && typeof bubblePosition.desktop === "object"
+                ? bubblePosition.desktop
+                : { rightPx: 20, bottomPx: 20, leftPx: null };
+
+            dfMessenger.style.setProperty("right", typeof desktopBubble.rightPx === "number" ? `${desktopBubble.rightPx}px` : "20px");
+            dfMessenger.style.setProperty("bottom", typeof desktopBubble.bottomPx === "number" ? `${desktopBubble.bottomPx}px` : "20px");
+
+            if (typeof desktopBubble.leftPx === "number") {
+                dfMessenger.style.setProperty("left", `${desktopBubble.leftPx}px`);
+            } else {
+                dfMessenger.style.removeProperty("left");
+            }
+
+            // Desktop size comes from config via dfMessenger CSS variables.
             dfMessenger.style.removeProperty("--df-messenger-chat-window-width");
             dfMessenger.style.removeProperty("--df-messenger-chat-window-height");
-            dfMessenger.style.removeProperty("right");
-            dfMessenger.style.removeProperty("left");
-            dfMessenger.style.removeProperty("bottom");
+            return;
+        }
+
+        if (mobileConfig.enabled === false) {
             return;
         }
 
         const viewport = window.visualViewport;
         const viewportWidth = viewport ? viewport.width : window.innerWidth;
         const viewportHeight = viewport ? viewport.height : window.innerHeight;
-        const horizontalInset = 12;
-        const bottomInset = 10;
-        const topInset = 14;
-        const availableWidth = Math.max(280, Math.floor(viewportWidth - horizontalInset * 2));
-        const availableHeight = Math.max(340, Math.floor(viewportHeight - topInset - bottomInset));
+        const horizontalInset = typeof mobileConfig.horizontalInsetPx === "number" ? mobileConfig.horizontalInsetPx : 12;
+        const bottomInset = typeof mobileConfig.bottomInsetPx === "number" ? mobileConfig.bottomInsetPx : 10;
+        const topInset = typeof mobileConfig.topInsetPx === "number" ? mobileConfig.topInsetPx : 14;
+        const minWidth = typeof mobileConfig.minWidthPx === "number" ? mobileConfig.minWidthPx : 280;
+        const minHeight = typeof mobileConfig.minHeightPx === "number" ? mobileConfig.minHeightPx : 340;
+        const availableWidth = Math.max(minWidth, Math.floor(viewportWidth - horizontalInset * 2));
+        const availableHeight = Math.max(minHeight, Math.floor(viewportHeight - topInset - bottomInset));
 
-        dfMessenger.style.setProperty("right", `${horizontalInset}px`);
-        dfMessenger.style.setProperty("left", `${horizontalInset}px`);
-        dfMessenger.style.setProperty("bottom", `${bottomInset}px`);
+        const mobileBubble = bubblePosition.mobile && typeof bubblePosition.mobile === "object"
+            ? bubblePosition.mobile
+            : { rightPx: horizontalInset, leftPx: horizontalInset, bottomPx: bottomInset };
+
+        dfMessenger.style.setProperty("right", typeof mobileBubble.rightPx === "number" ? `${mobileBubble.rightPx}px` : `${horizontalInset}px`);
+        dfMessenger.style.setProperty("bottom", typeof mobileBubble.bottomPx === "number" ? `${mobileBubble.bottomPx}px` : `${bottomInset}px`);
+        dfMessenger.style.setProperty("left", typeof mobileBubble.leftPx === "number" ? `${mobileBubble.leftPx}px` : `${horizontalInset}px`);
+
         dfMessenger.style.setProperty("--df-messenger-chat-window-width", `${availableWidth}px`);
         dfMessenger.style.setProperty("--df-messenger-chat-window-height", `${availableHeight}px`);
     };

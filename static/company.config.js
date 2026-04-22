@@ -49,11 +49,39 @@ window.COMPANY_CHAT_UI_CONFIG = {
   },
 
   /**
-   * Chat window size (desktop only).
+   * Chat window size.
    */
   layout: {
     desktopChatWidthPx: 420,
-    desktopChatHeightPx: 620
+    desktopChatHeightPx: 620,
+
+    /**
+     * Mobile chat layout.
+     * Change these to control chat size/position on mobile.
+     */
+    mobile: {
+      // If true, we use these mobile settings when screen width is <= 768px.
+      enabled: true,
+
+      // Space from screen edges (in pixels).
+      horizontalInsetPx: 12,
+      topInsetPx: 14,
+      bottomInsetPx: 10,
+
+      // Minimum chat size (in pixels).
+      minWidthPx: 280,
+      minHeightPx: 340
+    },
+
+    /**
+     * Chat bubble position (launcher button).
+     * - Desktop: usually bottom-right.
+     * - Mobile: usually full width (left + right).
+     */
+    bubblePosition: {
+      desktop: { rightPx: 20, bottomPx: 20, leftPx: null },
+      mobile: { rightPx: 12, bottomPx: 10, leftPx: 12 }
+    }
   },
 
   /**
