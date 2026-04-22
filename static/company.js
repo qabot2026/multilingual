@@ -145,6 +145,8 @@ window.addEventListener("DOMContentLoaded", () => {
                 : 5000;
             autoOpenChatWindow(df, bubble, delayMs);
         }
+
+        initializeLauncherStrip(df, COMPANY_UI_CONFIG);
         initializeMobileChatLayout(df);
         initializeChatStateSync(df);
         attachPersonaHandlers(df);
@@ -152,6 +154,41 @@ window.addEventListener("DOMContentLoaded", () => {
         startPersonaDecorator(df);
     }, 1000);
 });
+
+function initializeLauncherStrip(dfMessenger, config) {
+    const stripConfig = config && config.behavior && config.behavior.launcherStrip
+        ? config.behavior.launcherStrip
+        : null;
+
+    if (!stripConfig || stripConfig.enabled === false) {
+        return;
+    }
+
+    const text = typeof stripConfig.text === "string" && stripConfig.text.trim()
+        ? stripConfig.text.trim()
+        : "Hey, there 👋";
+
+    const existing = document.getElementById("company-chat-launcher-strip");
+    if (existing) {
+        existing.textContent = text;
+        existing.style.display = isChatWindowOpen ? "none" : "block";
+        return;
+    }
+
+    const strip = document.createElement("div");
+    strip.id = "company-chat-launcher-strip";
+    strip.className = "company-chat-launcher-strip";
+    strip.textContent = text;
+    strip.setAttribute("aria-hidden", "true");
+    strip.style.display = isChatWindowOpen ? "none" : "block";
+    strip.style.pointerEvents = "none";
+    document.body.appendChild(strip);
+
+    window.addEventListener("df-chat-open-changed", (event) => {
+        const open = !!(event && event.detail && event.detail.isOpen);
+        strip.style.display = open ? "none" : "block";
+    });
+}
 
 function readCompanyUiConfig() {
     const config = window.COMPANY_CHAT_UI_CONFIG;

@@ -71,6 +71,16 @@ window.COMPANY_CHAT_UI_CONFIG = {
     autoOpenChat: {
       enabled: true,
       delayMs: 5000
+    },
+
+    /**
+     * Bubble strip message (small horizontal strip near the launcher bubble).
+     * - If client asks "remove that Hey message", set enabled: false
+     * - To change the text, update `text`
+     */
+    launcherStrip: {
+      enabled: true,
+      text: "Hey, there 👋"
     }
   },
 
