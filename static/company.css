@@ -75,8 +75,6 @@ df-messenger {
 
 .company-chat-launcher-strip {
   position: fixed;
-  right: 20px;
-  bottom: 96px;
   z-index: 1000;
   padding: 10px 14px;
   border-radius: 999px;
@@ -90,13 +88,12 @@ df-messenger {
   user-select: none;
 }
 
-@media (max-width: 768px) {
-  .company-chat-launcher-strip {
-    right: 12px;
-    left: 12px;
-    bottom: 86px;
-    text-align: center;
-  }
+.company-chat-launcher-strip:hover {
+  transform: translateY(-1px);
+}
+
+.company-chat-launcher-strip:active {
+  transform: translateY(0);
 }
 
 @keyframes company-fade-up {

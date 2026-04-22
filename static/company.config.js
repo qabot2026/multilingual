@@ -58,7 +58,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
    * - Mobile uses responsive sizing automatically.
    */
   layout: {
-    desktopChatWidthPx: 120,
+    desktopChatWidthPx: 420,
     desktopChatHeightPx: 620
   },
 
@@ -80,7 +80,29 @@ window.COMPANY_CHAT_UI_CONFIG = {
      */
     launcherStrip: {
       enabled: true,
-      text: "Hey, there 👋"
+      text: "Hey, there 👋",
+
+      /**
+       * Position control (easy move up/down/left/right).
+       * - Use ONLY the values you want. Leave others as null.
+       * - Common usage:
+       *   - Move up/down: change bottomPx
+       *   - Move left/right: change rightPx (or use leftPx)
+       */
+      position: {
+        rightPx: 20,
+        bottomPx: 96,
+        leftPx: null,
+        topPx: null
+      },
+
+      // Optional: different position on mobile screens.
+      mobilePosition: {
+        rightPx: 12,
+        bottomPx: 86,
+        leftPx: 12,
+        topPx: null
+      }
     }
   },
 

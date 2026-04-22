@@ -146,7 +146,7 @@ window.addEventListener("DOMContentLoaded", () => {
             autoOpenChatWindow(df, bubble, delayMs);
         }
 
-        initializeLauncherStrip(df, COMPANY_UI_CONFIG);
+        initializeLauncherStrip(df, bubble, COMPANY_UI_CONFIG);
         initializeMobileChatLayout(df);
         initializeChatStateSync(df);
         attachPersonaHandlers(df);
@@ -155,7 +155,7 @@ window.addEventListener("DOMContentLoaded", () => {
     }, 1000);
 });
 
-function initializeLauncherStrip(dfMessenger, config) {
+function initializeLauncherStrip(dfMessenger, bubbleNode, config) {
     const stripConfig = config && config.behavior && config.behavior.launcherStrip
         ? config.behavior.launcherStrip
         : null;
@@ -179,15 +179,68 @@ function initializeLauncherStrip(dfMessenger, config) {
     strip.id = "company-chat-launcher-strip";
     strip.className = "company-chat-launcher-strip";
     strip.textContent = text;
-    strip.setAttribute("aria-hidden", "true");
+    strip.setAttribute("role", "button");
+    strip.setAttribute("tabindex", "0");
+    strip.setAttribute("aria-label", text);
     strip.style.display = isChatWindowOpen ? "none" : "block";
-    strip.style.pointerEvents = "none";
+    strip.style.pointerEvents = "auto";
+    strip.style.cursor = "pointer";
+    applyLauncherStripPosition(strip, stripConfig);
     document.body.appendChild(strip);
+
+    const openChat = () => {
+        openChatWindow(dfMessenger, bubbleNode);
+    };
+
+    strip.addEventListener("click", openChat);
+    strip.addEventListener("keydown", (event) => {
+        if (!event) {
+            return;
+        }
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openChat();
+        }
+    });
 
     window.addEventListener("df-chat-open-changed", (event) => {
         const open = !!(event && event.detail && event.detail.isOpen);
         strip.style.display = open ? "none" : "block";
     });
+
+    window.addEventListener("resize", () => {
+        applyLauncherStripPosition(strip, stripConfig);
+    });
+}
+
+function applyLauncherStripPosition(stripElement, stripConfig) {
+    if (!stripElement || !stripConfig) {
+        return;
+    }
+
+    const isMobile = window.matchMedia && window.matchMedia("(max-width: 768px)").matches;
+    const position = isMobile && stripConfig.mobilePosition ? stripConfig.mobilePosition : stripConfig.position;
+    const normalized = position && typeof position === "object" ? position : {};
+
+    const applyPx = (cssProp, value) => {
+        if (typeof value === "number" && Number.isFinite(value)) {
+            stripElement.style[cssProp] = `${value}px`;
+        } else if (value === null || typeof value === "undefined") {
+            stripElement.style[cssProp] = "";
+        }
+    };
+
+    applyPx("right", normalized.rightPx);
+    applyPx("bottom", normalized.bottomPx);
+    applyPx("left", normalized.leftPx);
+    applyPx("top", normalized.topPx);
+
+    // If both left and right are set, center the text nicely.
+    if (typeof normalized.leftPx === "number" && typeof normalized.rightPx === "number") {
+        stripElement.style.textAlign = "center";
+    } else {
+        stripElement.style.textAlign = "";
+    }
 }
 
 function readCompanyUiConfig() {
