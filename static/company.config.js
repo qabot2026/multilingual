@@ -58,7 +58,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
    * - Mobile uses responsive sizing automatically.
    */
   layout: {
-    desktopChatWidthPx: 820,
+    desktopChatWidthPx: 120,
     desktopChatHeightPx: 620
   },
 
