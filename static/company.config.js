@@ -113,10 +113,10 @@ window.COMPANY_CHAT_UI_CONFIG = {
        * - If you don't want a value, keep it as null.
        */
       position: {
-        rightPx: 200,
+        rightPx: 30,
         bottomPx: 96,
         leftPx: null,
-        topPx: null
+        topPx: 20
       },
 
       /**
