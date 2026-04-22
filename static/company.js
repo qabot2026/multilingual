@@ -104,17 +104,17 @@ window.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => {
         const df = document.createElement("df-messenger");
         activeDfMessenger = df;
-        df.setAttribute("project-id", "project001-474715");
+        df.setAttribute("project-id", "qabot01");
         df.setAttribute("location", "us-central1");
-        df.setAttribute("agent-id", "57dcbcf5-05fd-4556-90d4-3438bc6c28d9");
+        df.setAttribute("agent-id", "05ce7add-9025-4534-990c-fd7a25dadde1");
         df.setAttribute("language-code", getChatLanguageCode(activeLanguage));
         df.setAttribute("max-query-length", "-1");
         df.setAttribute("url-allowlist", "*");
         df.setAttribute("storage-option", "none");
 
         const bubble = document.createElement("df-messenger-chat-bubble");
-        bubble.setAttribute("chat-icon", "https://www.gstatic.com/images/branding/product/1x/dialogflow_64dp.png");
-        bubble.setAttribute("chat-title-icon", "https://www.gstatic.com/images/branding/product/1x/dialogflow_64dp.png");
+        bubble.setAttribute("chat-icon", "https://storage.googleapis.com/companybucket/Images/cat.png");
+        bubble.setAttribute("chat-title-icon", "https://storage.googleapis.com/companybucket/Images/cat.png");
         bubble.setAttribute("chat-title", "Chat Support");
         bubble.setAttribute("chat-subtitle", "🟢 Online");
 
