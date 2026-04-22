@@ -114,9 +114,9 @@ window.COMPANY_CHAT_UI_CONFIG = {
        */
       position: {
         rightPx: 30,
-        bottomPx: 96,
+        bottomPx: 20,
         leftPx: null,
-        topPx: 20
+        topPx: null
       },
 
       /**
