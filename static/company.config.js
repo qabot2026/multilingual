@@ -27,7 +27,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
    */
   header: {
     title: "Chat Support",
-    subtitle: "🟢 Online",
+    subtitle: "🟢 We are online to assist you",
 
     // If a client asks to change the image/logo, update these URLs.
     chatIconUrl: "https://storage.googleapis.com/companybucket/Images/cat.png",
@@ -58,7 +58,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
    * - Mobile uses responsive sizing automatically.
    */
   layout: {
-    desktopChatWidthPx: 420,
+    desktopChatWidthPx: 820,
     desktopChatHeightPx: 620
   },
 
