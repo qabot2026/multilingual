@@ -63,6 +63,18 @@ window.COMPANY_CHAT_UI_CONFIG = {
   },
 
   /**
+   * Chat behavior settings.
+   * - If client asks "auto open should be OFF", set enabled: false
+   * - If client asks "open after 10 seconds", set delayMs: 10000
+   */
+  behavior: {
+    autoOpenChat: {
+      enabled: true,
+      delayMs: 5000
+    }
+  },
+
+  /**
    * Theme colors.
    * These map to CSS variables used in `static/company.css`.
    * If client asks for "change all colors", do it here.

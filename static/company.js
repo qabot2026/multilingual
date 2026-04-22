@@ -17,7 +17,6 @@ const PERSONA_SOFT_BLUR = "0.35px";
 const PERSONA_OPACITY = "0.84";
 const USER_PERSONA_TOKEN = encodeURIComponent("🙂User");
 const BOT_PERSONA_TOKEN = encodeURIComponent("Bot 🤖");
-const CHAT_AUTO_OPEN_DELAY_MS = 5000;
 const CHAT_CLIENT_CONTEXT_ENDPOINT = "/chat-client-context";
 const CHAT_CLIENT_CONTEXT_STORAGE_KEY = "company_chat_client_context";
 const CONTACT_FORM_OPEN_DELAY_MS = 3000;
@@ -28,13 +27,20 @@ const MOBILE_CHAT_BREAKPOINT_PX = 768;
 const AUTO_START_CHAT_EVENT_NAME = "WELCOME";
 const AUTO_START_CHAT_DELAY_MS = 600;
 const LANGUAGE_STORAGE_KEY = "company_ui_language";
-const DEFAULT_LANGUAGE = "en";
-const CHAT_LANGUAGE_OPTIONS = [
-    { code: "en", label: "English" },
-    { code: "hi", label: "Hindi" },
-    { code: "mr", label: "Marathi" }
-];
-const SUPPORTED_LANGUAGES = CHAT_LANGUAGE_OPTIONS.map((option) => option.code);
+const COMPANY_UI_CONFIG = readCompanyUiConfig();
+const DEFAULT_LANGUAGE = normalizeLanguageCode(COMPANY_UI_CONFIG.languages && COMPANY_UI_CONFIG.languages.default
+    ? COMPANY_UI_CONFIG.languages.default
+    : "en");
+const CHAT_LANGUAGE_OPTIONS = Array.isArray(COMPANY_UI_CONFIG.languages && COMPANY_UI_CONFIG.languages.options)
+    ? COMPANY_UI_CONFIG.languages.options
+    : [
+        { code: "en", label: "English" },
+        { code: "hi", label: "Hindi" },
+        { code: "mr", label: "Marathi" }
+    ];
+const SUPPORTED_LANGUAGES = CHAT_LANGUAGE_OPTIONS
+    .map((option) => normalizeLanguageCode(option && option.code ? option.code : ""))
+    .filter((value) => value);
 const CHAT_LANGUAGE_DROPDOWN_ID = "company-chat-language-dropdown";
 const GOOGLE_TRANSLATE_ENDPOINT = "https://translate.googleapis.com/translate_a/single";
 const DOM_TRANSLATION_DEBOUNCE_MS = 180;
@@ -97,6 +103,7 @@ const UI_TRANSLATIONS = {
 };
 
 window.addEventListener("DOMContentLoaded", () => {
+    applyThemeConfig(COMPANY_UI_CONFIG);
     applyLanguage(activeLanguage);
     initializeContactForm();
     initializeClientContextCapture();
@@ -104,27 +111,40 @@ window.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => {
         const df = document.createElement("df-messenger");
         activeDfMessenger = df;
-        df.setAttribute("project-id", "qabot01");
-        df.setAttribute("location", "us-central1");
-        df.setAttribute("agent-id", "05ce7add-9025-4534-990c-fd7a25dadde1");
+        const dialogflowConfig = COMPANY_UI_CONFIG.dialogflow || {};
+        df.setAttribute("project-id", dialogflowConfig.projectId || "qabot01");
+        df.setAttribute("location", dialogflowConfig.location || "us-central1");
+        df.setAttribute("agent-id", dialogflowConfig.agentId || "05ce7add-9025-4534-990c-fd7a25dadde1");
         df.setAttribute("language-code", getChatLanguageCode(activeLanguage));
         df.setAttribute("max-query-length", "-1");
         df.setAttribute("url-allowlist", "*");
         df.setAttribute("storage-option", "none");
 
         const bubble = document.createElement("df-messenger-chat-bubble");
-        bubble.setAttribute("chat-icon", "https://storage.googleapis.com/companybucket/Images/cat.png");
-        bubble.setAttribute("chat-title-icon", "https://storage.googleapis.com/companybucket/Images/cat.png");
-        bubble.setAttribute("chat-title", "Chat Support");
-        bubble.setAttribute("chat-subtitle", "🟢 Online");
+        const headerConfig = COMPANY_UI_CONFIG.header || {};
+        bubble.setAttribute("chat-icon", headerConfig.chatIconUrl || "https://storage.googleapis.com/companybucket/Images/cat.png");
+        bubble.setAttribute("chat-title-icon", headerConfig.chatTitleIconUrl || headerConfig.chatIconUrl || "https://storage.googleapis.com/companybucket/Images/cat.png");
+        bubble.setAttribute("chat-title", headerConfig.title || "Chat Support");
+        bubble.setAttribute("chat-subtitle", headerConfig.subtitle || "🟢 Online");
 
         initializeMessengerReadyState(df, bubble);
         df.appendChild(bubble);
         document.body.appendChild(df);
 
+        applyDfMessengerThemeConfig(df, COMPANY_UI_CONFIG);
         ensureCircularBubbleIcon(df);
-        ensureCloseIconIsX(df);
-        autoOpenChatWindow(df, bubble, CHAT_AUTO_OPEN_DELAY_MS);
+        if (!(COMPANY_UI_CONFIG.header && COMPANY_UI_CONFIG.header.forceCloseIconX === false)) {
+            ensureCloseIconIsX(df);
+        }
+        const autoOpenConfig = COMPANY_UI_CONFIG.behavior && COMPANY_UI_CONFIG.behavior.autoOpenChat
+            ? COMPANY_UI_CONFIG.behavior.autoOpenChat
+            : null;
+        if (!autoOpenConfig || autoOpenConfig.enabled !== false) {
+            const delayMs = autoOpenConfig && typeof autoOpenConfig.delayMs === "number" && Number.isFinite(autoOpenConfig.delayMs)
+                ? autoOpenConfig.delayMs
+                : 5000;
+            autoOpenChatWindow(df, bubble, delayMs);
+        }
         initializeMobileChatLayout(df);
         initializeChatStateSync(df);
         attachPersonaHandlers(df);
@@ -132,6 +152,60 @@ window.addEventListener("DOMContentLoaded", () => {
         startPersonaDecorator(df);
     }, 1000);
 });
+
+function readCompanyUiConfig() {
+    const config = window.COMPANY_CHAT_UI_CONFIG;
+    if (config && typeof config === "object") {
+        return config;
+    }
+    return {};
+}
+
+function normalizeLanguageCode(code) {
+    return typeof code === "string" ? code.trim().toLowerCase() : "";
+}
+
+function applyThemeConfig(config) {
+    if (!config || typeof config !== "object") {
+        return;
+    }
+
+    const theme = config.theme && typeof config.theme === "object" ? config.theme : null;
+    if (theme) {
+        for (const [key, value] of Object.entries(theme)) {
+            if (typeof key === "string" && key.startsWith("--") && typeof value === "string") {
+                document.documentElement.style.setProperty(key, value);
+            }
+        }
+    }
+
+    const layout = config.layout && typeof config.layout === "object" ? config.layout : null;
+    if (layout) {
+        if (typeof layout.desktopChatWidthPx === "number" && Number.isFinite(layout.desktopChatWidthPx)) {
+            document.documentElement.style.setProperty("--df-messenger-chat-window-width", `${layout.desktopChatWidthPx}px`);
+        }
+        if (typeof layout.desktopChatHeightPx === "number" && Number.isFinite(layout.desktopChatHeightPx)) {
+            document.documentElement.style.setProperty("--df-messenger-chat-window-height", `${layout.desktopChatHeightPx}px`);
+        }
+    }
+}
+
+function applyDfMessengerThemeConfig(dfMessenger, config) {
+    if (!dfMessenger || !config || typeof config !== "object") {
+        return;
+    }
+
+    const theme = config.dfMessengerTheme && typeof config.dfMessengerTheme === "object" ? config.dfMessengerTheme : null;
+    if (!theme) {
+        return;
+    }
+
+    for (const [key, value] of Object.entries(theme)) {
+        if (typeof key === "string" && key.startsWith("--") && typeof value === "string") {
+            dfMessenger.style.setProperty(key, value);
+        }
+    }
+}
 
 function ensureCircularBubbleIcon(dfMessenger) {
     const startTime = Date.now();
