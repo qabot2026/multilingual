@@ -195,6 +195,16 @@ function applyDfMessengerThemeConfig(dfMessenger, config) {
         return;
     }
 
+    const layout = config.layout && typeof config.layout === "object" ? config.layout : null;
+    if (layout) {
+        if (typeof layout.desktopChatWidthPx === "number" && Number.isFinite(layout.desktopChatWidthPx)) {
+            dfMessenger.style.setProperty("--df-messenger-chat-window-width", `${layout.desktopChatWidthPx}px`);
+        }
+        if (typeof layout.desktopChatHeightPx === "number" && Number.isFinite(layout.desktopChatHeightPx)) {
+            dfMessenger.style.setProperty("--df-messenger-chat-window-height", `${layout.desktopChatHeightPx}px`);
+        }
+    }
+
     const theme = config.dfMessengerTheme && typeof config.dfMessengerTheme === "object" ? config.dfMessengerTheme : null;
     if (!theme) {
         return;
