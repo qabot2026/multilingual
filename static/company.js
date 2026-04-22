@@ -28,11 +28,21 @@ const AUTO_START_CHAT_EVENT_NAME = "WELCOME";
 const AUTO_START_CHAT_DELAY_MS = 600;
 const LANGUAGE_STORAGE_KEY = "company_ui_language";
 const COMPANY_UI_CONFIG = readCompanyUiConfig();
-const DEFAULT_LANGUAGE = normalizeLanguageCode(COMPANY_UI_CONFIG.languages && COMPANY_UI_CONFIG.languages.default
-    ? COMPANY_UI_CONFIG.languages.default
+const COMMON_CONFIG = COMPANY_UI_CONFIG.common && typeof COMPANY_UI_CONFIG.common === "object"
+    ? COMPANY_UI_CONFIG.common
+    : {};
+const FEATURES_CONFIG = COMMON_CONFIG.features && typeof COMMON_CONFIG.features === "object"
+    ? COMMON_CONFIG.features
+    : {};
+const MULTI_LANGUAGE_CONFIG = FEATURES_CONFIG.multiLanguage && typeof FEATURES_CONFIG.multiLanguage === "object"
+    ? FEATURES_CONFIG.multiLanguage
+    : {};
+const IS_MULTI_LANGUAGE_ENABLED = MULTI_LANGUAGE_CONFIG.enabled !== false;
+const DEFAULT_LANGUAGE = normalizeLanguageCode(MULTI_LANGUAGE_CONFIG.defaultLanguage
+    ? MULTI_LANGUAGE_CONFIG.defaultLanguage
     : "en");
-const CHAT_LANGUAGE_OPTIONS = Array.isArray(COMPANY_UI_CONFIG.languages && COMPANY_UI_CONFIG.languages.options)
-    ? COMPANY_UI_CONFIG.languages.options
+const CHAT_LANGUAGE_OPTIONS = Array.isArray(MULTI_LANGUAGE_CONFIG.enabledLanguages)
+    ? MULTI_LANGUAGE_CONFIG.enabledLanguages
     : [
         { code: "en", label: "English" },
         { code: "hi", label: "Hindi" },
@@ -104,6 +114,9 @@ const UI_TRANSLATIONS = {
 
 window.addEventListener("DOMContentLoaded", () => {
     applyThemeConfig(COMPANY_UI_CONFIG);
+    if (!IS_MULTI_LANGUAGE_ENABLED) {
+        activeLanguage = DEFAULT_LANGUAGE;
+    }
     applyLanguage(activeLanguage);
     initializeContactForm();
     initializeClientContextCapture();
@@ -111,7 +124,7 @@ window.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => {
         const df = document.createElement("df-messenger");
         activeDfMessenger = df;
-        const dialogflowConfig = COMPANY_UI_CONFIG.dialogflow || {};
+        const dialogflowConfig = COMMON_CONFIG.dialogflow || {};
         df.setAttribute("project-id", dialogflowConfig.projectId || "qabot01");
         df.setAttribute("location", dialogflowConfig.location || "us-central1");
         df.setAttribute("agent-id", dialogflowConfig.agentId || "05ce7add-9025-4534-990c-fd7a25dadde1");
@@ -121,7 +134,7 @@ window.addEventListener("DOMContentLoaded", () => {
         df.setAttribute("storage-option", "none");
 
         const bubble = document.createElement("df-messenger-chat-bubble");
-        const headerConfig = COMPANY_UI_CONFIG.header || {};
+        const headerConfig = COMMON_CONFIG.header || {};
         bubble.setAttribute("chat-icon", headerConfig.chatIconUrl || "https://storage.googleapis.com/companybucket/Images/cat.png");
         bubble.setAttribute("chat-title-icon", headerConfig.chatTitleIconUrl || headerConfig.chatIconUrl || "https://storage.googleapis.com/companybucket/Images/cat.png");
         bubble.setAttribute("chat-title", headerConfig.title || "Chat Support");
@@ -133,12 +146,13 @@ window.addEventListener("DOMContentLoaded", () => {
 
         applyDfMessengerThemeConfig(df, COMPANY_UI_CONFIG);
         ensureCircularBubbleIcon(df);
-        if (!(COMPANY_UI_CONFIG.header && COMPANY_UI_CONFIG.header.forceCloseIconX === false)) {
+        if (!(headerConfig && headerConfig.forceCloseIconX === false)) {
             ensureCloseIconIsX(df);
         }
-        const autoOpenConfig = COMPANY_UI_CONFIG.behavior && COMPANY_UI_CONFIG.behavior.autoOpenChat
-            ? COMPANY_UI_CONFIG.behavior.autoOpenChat
-            : null;
+        const isMobile = isMobileViewport();
+        const autoOpenConfig = isMobile
+            ? (COMPANY_UI_CONFIG.mobile && COMPANY_UI_CONFIG.mobile.autoOpenChat ? COMPANY_UI_CONFIG.mobile.autoOpenChat : null)
+            : (COMPANY_UI_CONFIG.desktop && COMPANY_UI_CONFIG.desktop.autoOpenChat ? COMPANY_UI_CONFIG.desktop.autoOpenChat : null);
         if (!autoOpenConfig || autoOpenConfig.enabled !== false) {
             const delayMs = autoOpenConfig && typeof autoOpenConfig.delayMs === "number" && Number.isFinite(autoOpenConfig.delayMs)
                 ? autoOpenConfig.delayMs
@@ -150,15 +164,16 @@ window.addEventListener("DOMContentLoaded", () => {
         initializeMobileChatLayout(df, COMPANY_UI_CONFIG);
         initializeChatStateSync(df);
         attachPersonaHandlers(df);
-        initializeChatLanguageDropdown(df);
+        if (IS_MULTI_LANGUAGE_ENABLED) {
+            initializeChatLanguageDropdown(df);
+        }
+        initializeChatRestartButton(df, COMMON_CONFIG);
         startPersonaDecorator(df);
     }, 1000);
 });
 
 function initializeLauncherStrip(dfMessenger, bubbleNode, config) {
-    const stripConfig = config && config.behavior && config.behavior.launcherStrip
-        ? config.behavior.launcherStrip
-        : null;
+    const stripConfig = readLauncherStripConfig(config);
 
     if (!stripConfig || stripConfig.enabled === false) {
         return;
@@ -186,6 +201,7 @@ function initializeLauncherStrip(dfMessenger, bubbleNode, config) {
     strip.style.pointerEvents = "auto";
     strip.style.cursor = "pointer";
     applyLauncherStripPosition(strip, stripConfig);
+    applyLauncherStripStyle(strip, stripConfig);
     document.body.appendChild(strip);
 
     const openChat = () => {
@@ -210,7 +226,19 @@ function initializeLauncherStrip(dfMessenger, bubbleNode, config) {
 
     window.addEventListener("resize", () => {
         applyLauncherStripPosition(strip, stripConfig);
+        applyLauncherStripStyle(strip, stripConfig);
     });
+}
+
+function readLauncherStripConfig(config) {
+    const isMobile = isMobileViewport();
+    const section = isMobile ? (config && config.mobile) : (config && config.desktop);
+    if (!section || typeof section !== "object") {
+        return null;
+    }
+    return section.launcherStrip && typeof section.launcherStrip === "object"
+        ? section.launcherStrip
+        : null;
 }
 
 function applyLauncherStripPosition(stripElement, stripConfig) {
@@ -218,9 +246,9 @@ function applyLauncherStripPosition(stripElement, stripConfig) {
         return;
     }
 
-    const isMobile = window.matchMedia && window.matchMedia("(max-width: 768px)").matches;
-    const position = isMobile && stripConfig.mobilePosition ? stripConfig.mobilePosition : stripConfig.position;
-    const normalized = position && typeof position === "object" ? position : {};
+    const position = stripConfig.position && typeof stripConfig.position === "object"
+        ? stripConfig.position
+        : {};
 
     const applyPx = (cssProp, value) => {
         if (typeof value === "number" && Number.isFinite(value)) {
@@ -236,10 +264,50 @@ function applyLauncherStripPosition(stripElement, stripConfig) {
     applyPx("top", normalized.topPx);
 
     // If both left and right are set, center the text nicely.
-    if (typeof normalized.leftPx === "number" && typeof normalized.rightPx === "number") {
+    if (typeof position.leftPx === "number" && typeof position.rightPx === "number") {
         stripElement.style.textAlign = "center";
     } else {
         stripElement.style.textAlign = "";
+    }
+}
+
+function applyLauncherStripStyle(stripElement, stripConfig) {
+    if (!stripElement || !stripConfig) {
+        return;
+    }
+
+    const styleConfig = stripConfig.style && typeof stripConfig.style === "object"
+        ? stripConfig.style
+        : {};
+
+    if (typeof styleConfig.fontSizePx === "number" && Number.isFinite(styleConfig.fontSizePx)) {
+        stripElement.style.fontSize = `${styleConfig.fontSizePx}px`;
+    } else {
+        stripElement.style.fontSize = "";
+    }
+
+    const paddingY = typeof styleConfig.paddingYpx === "number" && Number.isFinite(styleConfig.paddingYpx)
+        ? styleConfig.paddingYpx
+        : null;
+    const paddingX = typeof styleConfig.paddingXpx === "number" && Number.isFinite(styleConfig.paddingXpx)
+        ? styleConfig.paddingXpx
+        : null;
+    if (paddingY !== null && paddingX !== null) {
+        stripElement.style.padding = `${paddingY}px ${paddingX}px`;
+    } else {
+        stripElement.style.padding = "";
+    }
+
+    if (typeof styleConfig.maxWidthPx === "number" && Number.isFinite(styleConfig.maxWidthPx)) {
+        stripElement.style.maxWidth = `${styleConfig.maxWidthPx}px`;
+        stripElement.style.overflow = "hidden";
+        stripElement.style.textOverflow = "ellipsis";
+        stripElement.style.whiteSpace = "nowrap";
+    } else {
+        stripElement.style.maxWidth = "";
+        stripElement.style.overflow = "";
+        stripElement.style.textOverflow = "";
+        stripElement.style.whiteSpace = "";
     }
 }
 
@@ -260,7 +328,8 @@ function applyThemeConfig(config) {
         return;
     }
 
-    const theme = config.theme && typeof config.theme === "object" ? config.theme : null;
+    const common = config.common && typeof config.common === "object" ? config.common : {};
+    const theme = common.theme && typeof common.theme === "object" ? common.theme : null;
     if (theme) {
         for (const [key, value] of Object.entries(theme)) {
             if (typeof key === "string" && key.startsWith("--") && typeof value === "string") {
@@ -269,15 +338,7 @@ function applyThemeConfig(config) {
         }
     }
 
-    const layout = config.layout && typeof config.layout === "object" ? config.layout : null;
-    if (layout) {
-        if (typeof layout.desktopChatWidthPx === "number" && Number.isFinite(layout.desktopChatWidthPx)) {
-            document.documentElement.style.setProperty("--df-messenger-chat-window-width", `${layout.desktopChatWidthPx}px`);
-        }
-        if (typeof layout.desktopChatHeightPx === "number" && Number.isFinite(layout.desktopChatHeightPx)) {
-            document.documentElement.style.setProperty("--df-messenger-chat-window-height", `${layout.desktopChatHeightPx}px`);
-        }
-    }
+    // Chat window sizes are applied on the df-messenger element at runtime.
 }
 
 function applyDfMessengerThemeConfig(dfMessenger, config) {
@@ -285,17 +346,17 @@ function applyDfMessengerThemeConfig(dfMessenger, config) {
         return;
     }
 
-    const layout = config.layout && typeof config.layout === "object" ? config.layout : null;
-    if (layout) {
-        if (typeof layout.desktopChatWidthPx === "number" && Number.isFinite(layout.desktopChatWidthPx)) {
-            dfMessenger.style.setProperty("--df-messenger-chat-window-width", `${layout.desktopChatWidthPx}px`);
-        }
-        if (typeof layout.desktopChatHeightPx === "number" && Number.isFinite(layout.desktopChatHeightPx)) {
-            dfMessenger.style.setProperty("--df-messenger-chat-window-height", `${layout.desktopChatHeightPx}px`);
-        }
+    const common = config.common && typeof config.common === "object" ? config.common : {};
+    const desktop = config.desktop && typeof config.desktop === "object" ? config.desktop : {};
+    const desktopWindow = desktop.chatWindow && typeof desktop.chatWindow === "object" ? desktop.chatWindow : {};
+    if (typeof desktopWindow.widthPx === "number" && Number.isFinite(desktopWindow.widthPx)) {
+        dfMessenger.style.setProperty("--df-messenger-chat-window-width", `${desktopWindow.widthPx}px`);
+    }
+    if (typeof desktopWindow.heightPx === "number" && Number.isFinite(desktopWindow.heightPx)) {
+        dfMessenger.style.setProperty("--df-messenger-chat-window-height", `${desktopWindow.heightPx}px`);
     }
 
-    const theme = config.dfMessengerTheme && typeof config.dfMessengerTheme === "object" ? config.dfMessengerTheme : null;
+    const theme = common.dfMessengerTheme && typeof common.dfMessengerTheme === "object" ? common.dfMessengerTheme : null;
     if (!theme) {
         return;
     }
@@ -549,16 +610,15 @@ function initializeMobileChatLayout(dfMessenger, config) {
     }
 
     const applyLayout = () => {
-        const layoutConfig = config && config.layout && typeof config.layout === "object" ? config.layout : {};
-        const mobileConfig = layoutConfig.mobile && typeof layoutConfig.mobile === "object" ? layoutConfig.mobile : {};
-        const bubblePosition = layoutConfig.bubblePosition && typeof layoutConfig.bubblePosition === "object"
-            ? layoutConfig.bubblePosition
-            : {};
+        const desktopConfig = config && config.desktop && typeof config.desktop === "object" ? config.desktop : {};
+        const desktopWindow = desktopConfig.chatWindow && typeof desktopConfig.chatWindow === "object" ? desktopConfig.chatWindow : {};
+        const mobileRoot = config && config.mobile && typeof config.mobile === "object" ? config.mobile : {};
+        const mobileConfig = mobileRoot.chatWindow && typeof mobileRoot.chatWindow === "object" ? mobileRoot.chatWindow : {};
 
         if (!isMobileViewport()) {
-            const desktopBubble = bubblePosition.desktop && typeof bubblePosition.desktop === "object"
-                ? bubblePosition.desktop
-                : { rightPx: 20, bottomPx: 20, leftPx: null };
+            const desktopBubble = desktopWindow.bubblePosition && typeof desktopWindow.bubblePosition === "object"
+                ? desktopWindow.bubblePosition
+                : { rightPx: 20, bottomPx: 20, leftPx: null, topPx: null };
 
             dfMessenger.style.setProperty("right", typeof desktopBubble.rightPx === "number" ? `${desktopBubble.rightPx}px` : "20px");
             dfMessenger.style.setProperty("bottom", typeof desktopBubble.bottomPx === "number" ? `${desktopBubble.bottomPx}px` : "20px");
@@ -569,13 +629,19 @@ function initializeMobileChatLayout(dfMessenger, config) {
                 dfMessenger.style.removeProperty("left");
             }
 
+            if (typeof desktopBubble.topPx === "number") {
+                dfMessenger.style.setProperty("top", `${desktopBubble.topPx}px`);
+            } else {
+                dfMessenger.style.removeProperty("top");
+            }
+
             // Desktop size comes from config via dfMessenger CSS variables.
             dfMessenger.style.removeProperty("--df-messenger-chat-window-width");
             dfMessenger.style.removeProperty("--df-messenger-chat-window-height");
             return;
         }
 
-        if (mobileConfig.enabled === false) {
+        if (mobileRoot.enabled === false) {
             return;
         }
 
@@ -590,13 +656,18 @@ function initializeMobileChatLayout(dfMessenger, config) {
         const availableWidth = Math.max(minWidth, Math.floor(viewportWidth - horizontalInset * 2));
         const availableHeight = Math.max(minHeight, Math.floor(viewportHeight - topInset - bottomInset));
 
-        const mobileBubble = bubblePosition.mobile && typeof bubblePosition.mobile === "object"
-            ? bubblePosition.mobile
-            : { rightPx: horizontalInset, leftPx: horizontalInset, bottomPx: bottomInset };
+        const mobileBubble = mobileConfig.bubblePosition && typeof mobileConfig.bubblePosition === "object"
+            ? mobileConfig.bubblePosition
+            : { rightPx: horizontalInset, leftPx: horizontalInset, bottomPx: bottomInset, topPx: null };
 
         dfMessenger.style.setProperty("right", typeof mobileBubble.rightPx === "number" ? `${mobileBubble.rightPx}px` : `${horizontalInset}px`);
         dfMessenger.style.setProperty("bottom", typeof mobileBubble.bottomPx === "number" ? `${mobileBubble.bottomPx}px` : `${bottomInset}px`);
         dfMessenger.style.setProperty("left", typeof mobileBubble.leftPx === "number" ? `${mobileBubble.leftPx}px` : `${horizontalInset}px`);
+        if (typeof mobileBubble.topPx === "number") {
+            dfMessenger.style.setProperty("top", `${mobileBubble.topPx}px`);
+        } else {
+            dfMessenger.style.removeProperty("top");
+        }
 
         dfMessenger.style.setProperty("--df-messenger-chat-window-width", `${availableWidth}px`);
         dfMessenger.style.setProperty("--df-messenger-chat-window-height", `${availableHeight}px`);
@@ -1142,6 +1213,86 @@ function mountChatLanguageDropdown(dfMessenger) {
     host.appendChild(wrapper);
 }
 
+function initializeChatRestartButton(dfMessenger, commonConfig) {
+    const features = commonConfig && commonConfig.features && typeof commonConfig.features === "object"
+        ? commonConfig.features
+        : {};
+    const restartConfig = features.restartChat && typeof features.restartChat === "object"
+        ? features.restartChat
+        : null;
+
+    if (!restartConfig || restartConfig.enabled === false) {
+        return;
+    }
+
+    const ensureMounted = () => {
+        mountRestartButton(dfMessenger, restartConfig);
+    };
+
+    ensureMounted();
+
+    window.addEventListener("df-chat-open-changed", () => {
+        window.setTimeout(ensureMounted, 120);
+    });
+
+    window.setInterval(ensureMounted, 1500);
+}
+
+function mountRestartButton(dfMessenger, restartConfig) {
+    if (!dfMessenger) {
+        return;
+    }
+
+    const host = findChatFooterHost(dfMessenger);
+    if (!host) {
+        return;
+    }
+
+    if (host.querySelector("[data-company-chat-restart='true']")) {
+        return;
+    }
+
+    const wrapper = document.createElement("div");
+    wrapper.setAttribute("data-company-chat-restart", "true");
+    wrapper.style.display = "flex";
+    wrapper.style.justifyContent = "flex-end";
+    wrapper.style.alignItems = "center";
+    wrapper.style.gap = "6px";
+    wrapper.style.marginTop = "6px";
+    wrapper.style.paddingTop = "4px";
+    wrapper.style.borderTop = "1px dashed rgba(15, 118, 110, 0.18)";
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = typeof restartConfig.label === "string" && restartConfig.label.trim()
+        ? restartConfig.label.trim()
+        : "Restart";
+    button.style.border = "1px solid #cfe0e8";
+    button.style.borderRadius = "10px";
+    button.style.background = "#ffffff";
+    button.style.color = "#0f172a";
+    button.style.font = "700 12px Manrope, Segoe UI, sans-serif";
+    button.style.padding = "6px 10px";
+    button.style.cursor = "pointer";
+
+    button.addEventListener("click", () => {
+        restartChatSession();
+    });
+
+    wrapper.appendChild(button);
+    host.appendChild(wrapper);
+}
+
+function restartChatSession() {
+    // Most reliable "restart": reload the page.
+    // This gives a fresh chat session because storage-option is "none".
+    try {
+        window.location.reload();
+    } catch {
+        // ignore
+    }
+}
+
 function findChatFooterHost(dfMessenger) {
     const roots = collectSearchRoots(dfMessenger);
     const selectors = [
@@ -1215,6 +1366,10 @@ function getTranslation(key) {
 }
 
 function scheduleDomTranslationRefresh() {
+    if (!IS_MULTI_LANGUAGE_ENABLED) {
+        return;
+    }
+
     if (translationRefreshTimer) {
         window.clearTimeout(translationRefreshTimer);
     }
@@ -1226,6 +1381,10 @@ function scheduleDomTranslationRefresh() {
 }
 
 async function applyDomTranslation(languageCode) {
+    if (!IS_MULTI_LANGUAGE_ENABLED) {
+        return;
+    }
+
     const normalizedLanguage = normalizeLanguage(languageCode);
     const runId = latestTranslationRunId + 1;
     latestTranslationRunId = runId;
@@ -1469,6 +1628,10 @@ function extractGoogleTranslatedText(payload) {
 }
 
 function getInitialLanguage() {
+    if (!IS_MULTI_LANGUAGE_ENABLED) {
+        return DEFAULT_LANGUAGE;
+    }
+
     try {
         const storedLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
         if (SUPPORTED_LANGUAGES.includes(storedLanguage)) {
