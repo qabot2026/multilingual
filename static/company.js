@@ -32,7 +32,7 @@ const DEFAULT_LANGUAGE = "en";
 const CHAT_LANGUAGE_OPTIONS = [
     { code: "en", label: "English" },
     { code: "hi", label: "Hindi" },
-    { code: "te", label: "Telugu" }
+    { code: "mr", label: "Marathi" }
 ];
 const SUPPORTED_LANGUAGES = CHAT_LANGUAGE_OPTIONS.map((option) => option.code);
 const CHAT_LANGUAGE_DROPDOWN_ID = "company-chat-language-dropdown";
@@ -78,21 +78,21 @@ const UI_TRANSLATIONS = {
         statusSubmissionFailed: "जमा नहीं हो सका। कृपया फिर से प्रयास करें।",
         contactResponseThanks: "जानकारी साझा करने के लिए धन्यवाद"
     },
-    te: {
-        contactFormTitle: "మమ్మల్ని సంప్రదించండి",
-        contactFormSubtitle: "మీ వివరాలను పంచుకోండి, మేము మిమ్మల్ని సంప్రదిస్తాము.",
-        closeContactFormAria: "సంప్రదింపు ఫారమ్‌ను మూసివేయండి",
-        namePlaceholder: "పేరు",
-        mobilePlaceholder: "మొబైల్ నంబర్",
-        emailPlaceholder: "ఈమెయిల్",
-        messagePlaceholder: "మేము మీకు ఎలా సహాయం చేయగలం?",
-        submitButton: "సమర్పించండి",
-        languageLabel: "భాష",
-        statusOpenViaFlask: "ఫారమ్ సమర్పించడానికి ఈ పేజీని Flask యాప్ URL ద్వారా తెరవండి.",
-        statusSubmitting: "సమర్పిస్తోంది...",
-        statusSubmitted: "విజయవంతంగా సమర్పించబడింది.",
-        statusSubmissionFailed: "సమర్పణ విఫలమైంది. దయచేసి మళ్లీ ప్రయత్నించండి.",
-        contactResponseThanks: "వివరాలు పంచుకున్నందుకు ధన్యవాదాలు"
+    mr: {
+        contactFormTitle: "आमच्याशी संपर्क करा",
+        contactFormSubtitle: "तुमची माहिती शेअर करा, आम्ही तुमच्याशी संपर्क करू.",
+        closeContactFormAria: "संपर्क फॉर्म बंद करा",
+        namePlaceholder: "नाव",
+        mobilePlaceholder: "मोबाईल नंबर",
+        emailPlaceholder: "ईमेल",
+        messagePlaceholder: "आम्ही तुम्हाला कशी मदत करू शकतो?",
+        submitButton: "सबमिट",
+        languageLabel: "भाषा",
+        statusOpenViaFlask: "फॉर्म सबमिट करण्यासाठी हा पेज Flask अ‍ॅप URL वरून उघडा.",
+        statusSubmitting: "सबमिट होत आहे...",
+        statusSubmitted: "यशस्वीरित्या सबमिट झाले.",
+        statusSubmissionFailed: "सबमिट झाले नाही. कृपया पुन्हा प्रयत्न करा.",
+        contactResponseThanks: "माहिती शेअर केल्याबद्दल धन्यवाद"
     }
 };
 
@@ -1281,8 +1281,8 @@ function getInitialLanguage() {
         return "hi";
     }
 
-    if (browserLanguage.startsWith("te")) {
-        return "te";
+    if (browserLanguage.startsWith("mr")) {
+        return "mr";
     }
 
     return DEFAULT_LANGUAGE;
@@ -1290,7 +1290,7 @@ function getInitialLanguage() {
 
 function getChatLanguageCode(languageCode) {
     const normalizedLanguage = normalizeLanguage(languageCode);
-    return normalizedLanguage === "hi" || normalizedLanguage === "te"
+    return normalizedLanguage === "hi" || normalizedLanguage === "mr"
         ? normalizedLanguage
         : "en";
 }
