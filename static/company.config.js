@@ -104,7 +104,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
       enabled: true,
 
       // Strip text.
-      text: "Hey, there 👋",
+      text: "Hey, there 👋 how are you?",
 
       /**
        * Strip position on desktop.
