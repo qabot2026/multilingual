@@ -1,16 +1,16 @@
 @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap");
 
 :root {
-  --artemis-bg-1: #e8f3f4;
-  --artemis-bg-2: #f7fbff;
-  --artemis-brand-900: #0f172a;
-  --artemis-brand-700: #0f766e;
-  --artemis-brand-500: #14b8a6;
-  --artemis-accent-200: #d7f2ef;
-  --artemis-surface: #ffffff;
-  --artemis-text: #0f172a;
-  --artemis-text-soft: #475569;
-  --artemis-border: #dbe5ec;
+  --company-bg-1: #e8f3f4;
+  --company-bg-2: #f7fbff;
+  --company-brand-900: #0f172a;
+  --company-brand-700: #0f766e;
+  --company-brand-500: #14b8a6;
+  --company-accent-200: #d7f2ef;
+  --company-surface: #ffffff;
+  --company-text: #0f172a;
+  --company-text-soft: #475569;
+  --company-border: #dbe5ec;
 }
 
 html,
@@ -21,8 +21,8 @@ body {
   background:
     radial-gradient(1200px circle at 12% 14%, rgba(20, 184, 166, 0.14), transparent 52%),
     radial-gradient(900px circle at 88% 84%, rgba(15, 118, 110, 0.13), transparent 48%),
-    linear-gradient(180deg, var(--artemis-bg-2), var(--artemis-bg-1));
-  color: var(--artemis-text);
+    linear-gradient(180deg, var(--company-bg-2), var(--company-bg-1));
+  color: var(--company-text);
 }
 
 df-messenger {
@@ -30,29 +30,29 @@ df-messenger {
   bottom: 20px;
   right: 20px;
   z-index: 999;
-  animation: artemis-fade-up 320ms ease-out;
+  animation: company-fade-up 320ms ease-out;
 
   --df-messenger-font-family: "Manrope", "Segoe UI", sans-serif;
-  --df-messenger-font-color: var(--artemis-text);
-  --df-messenger-primary-color: var(--artemis-brand-700);
+  --df-messenger-font-color: var(--company-text);
+  --df-messenger-primary-color: var(--company-brand-700);
   --df-messenger-chat-background: #f4f8fa;
 
-  --df-messenger-message-bot-background: var(--artemis-surface);
-  --df-messenger-message-bot-font-color: var(--artemis-text);
-  --df-messenger-message-user-background: var(--artemis-brand-700);
+  --df-messenger-message-bot-background: var(--company-surface);
+  --df-messenger-message-bot-font-color: var(--company-text);
+  --df-messenger-message-user-background: var(--company-brand-700);
   --df-messenger-message-user-font-color: #f8fffe;
 
   --df-messenger-message-stack-spacing: 6px;
   --df-messenger-message-spacing: 8px;
   --df-messenger-chat-padding: 12px;
 
-  --df-messenger-input-background: var(--artemis-surface);
-  --df-messenger-input-box-background: var(--artemis-surface);
-  --df-messenger-input-font-color: var(--artemis-text);
-  --df-messenger-input-border-top: 1px solid var(--artemis-border);
+  --df-messenger-input-background: var(--company-surface);
+  --df-messenger-input-box-background: var(--company-surface);
+  --df-messenger-input-font-color: var(--company-text);
+  --df-messenger-input-border-top: 1px solid var(--company-border);
 
-  --df-messenger-chips-background: var(--artemis-accent-200);
-  --df-messenger-chips-font-color: var(--artemis-brand-900);
+  --df-messenger-chips-background: var(--company-accent-200);
+  --df-messenger-chips-font-color: var(--company-brand-900);
   --df-messenger-chips-border-radius: 999px;
   --df-messenger-button-border: 1px solid #bfe3dd;
 
@@ -74,7 +74,7 @@ df-messenger {
   --df-messenger-chat-icon-radius: 50%;
 }
 
-@keyframes artemis-fade-up {
+@keyframes company-fade-up {
   from {
     opacity: 0;
     transform: translateY(12px);
@@ -108,12 +108,12 @@ df-messenger {
 
 .contact-form.is-open {
   display: block;
-  animation: artemis-fade-up 220ms ease-out;
+  animation: company-fade-up 220ms ease-out;
 }
 
 .contact-form__card {
   background: rgba(255, 255, 255, 0.98);
-  border: 1px solid var(--artemis-border);
+  border: 1px solid var(--company-border);
   border-radius: 18px;
   box-shadow: 0 18px 52px rgba(15, 23, 42, 0.18);
   padding: 16px;
@@ -137,7 +137,7 @@ df-messenger {
 .contact-form__subtitle {
   margin: 4px 0 0;
   font-size: 0.88rem;
-  color: var(--artemis-text-soft);
+  color: var(--company-text-soft);
 }
 
 .contact-form__icon-button {
@@ -146,7 +146,7 @@ df-messenger {
   width: 30px;
   height: 30px;
   background: #eef6f7;
-  color: var(--artemis-brand-900);
+  color: var(--company-brand-900);
   cursor: pointer;
   font: inherit;
   font-size: 1rem;
@@ -161,12 +161,12 @@ df-messenger {
 .contact-form__fields textarea {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid var(--artemis-border);
+  border: 1px solid var(--company-border);
   border-radius: 12px;
   padding: 10px 12px;
   background: #fbfdff;
   font: inherit;
-  color: var(--artemis-text);
+  color: var(--company-text);
 }
 
 .contact-form__fields textarea {
@@ -177,14 +177,14 @@ df-messenger {
 .contact-form__fields input:focus,
 .contact-form__fields textarea:focus {
   outline: 2px solid rgba(20, 184, 166, 0.18);
-  border-color: var(--artemis-brand-500);
+  border-color: var(--company-brand-500);
 }
 
 .contact-form__status {
   min-height: 1.2rem;
   margin: 0;
   font-size: 0.84rem;
-  color: var(--artemis-text-soft);
+  color: var(--company-text-soft);
 }
 
 .contact-form__status.is-success {

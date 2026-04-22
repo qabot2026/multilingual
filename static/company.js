@@ -19,15 +19,15 @@ const USER_PERSONA_TOKEN = encodeURIComponent("🙂User");
 const BOT_PERSONA_TOKEN = encodeURIComponent("Bot 🤖");
 const CHAT_AUTO_OPEN_DELAY_MS = 5000;
 const CHAT_CLIENT_CONTEXT_ENDPOINT = "/chat-client-context";
-const CHAT_CLIENT_CONTEXT_STORAGE_KEY = "artemis_chat_client_context";
+const CHAT_CLIENT_CONTEXT_STORAGE_KEY = "company_chat_client_context";
 const CONTACT_FORM_OPEN_DELAY_MS = 3000;
 const CONTACT_FORM_OPEN_ACTION = "open_form";
 const CONTACT_FORM_ENDPOINT = "/contact-form-submissions";
-const API_BASE_URL_META_NAME = "artemis-api-base-url";
+const API_BASE_URL_META_NAME = "company-api-base-url";
 const MOBILE_CHAT_BREAKPOINT_PX = 768;
 const AUTO_START_CHAT_EVENT_NAME = "WELCOME";
 const AUTO_START_CHAT_DELAY_MS = 600;
-const LANGUAGE_STORAGE_KEY = "artemis_ui_language";
+const LANGUAGE_STORAGE_KEY = "company_ui_language";
 const DEFAULT_LANGUAGE = "en";
 const CHAT_LANGUAGE_OPTIONS = [
     { code: "en", label: "English" },
@@ -35,7 +35,7 @@ const CHAT_LANGUAGE_OPTIONS = [
     { code: "te", label: "Telugu" }
 ];
 const SUPPORTED_LANGUAGES = CHAT_LANGUAGE_OPTIONS.map((option) => option.code);
-const CHAT_LANGUAGE_DROPDOWN_ID = "artemis-chat-language-dropdown";
+const CHAT_LANGUAGE_DROPDOWN_ID = "company-chat-language-dropdown";
 const GOOGLE_TRANSLATE_ENDPOINT = "https://translate.googleapis.com/translate_a/single";
 const DOM_TRANSLATION_DEBOUNCE_MS = 180;
 let activeLanguage = getInitialLanguage();
@@ -113,9 +113,9 @@ window.addEventListener("DOMContentLoaded", () => {
         df.setAttribute("storage-option", "none");
 
         const bubble = document.createElement("df-messenger-chat-bubble");
-        bubble.setAttribute("chat-icon", "https://mohanjichronicles.files.wordpress.com/2018/02/lord-hanuman-miracles.jpg");
-        bubble.setAttribute("chat-title-icon", "https://mohanjichronicles.files.wordpress.com/2018/02/lord-hanuman-miracles.jpg");
-        bubble.setAttribute("chat-title", "Artemis_Hospital");
+        bubble.setAttribute("chat-icon", "https://www.gstatic.com/images/branding/product/1x/dialogflow_64dp.png");
+        bubble.setAttribute("chat-title-icon", "https://www.gstatic.com/images/branding/product/1x/dialogflow_64dp.png");
+        bubble.setAttribute("chat-title", "Chat Support");
         bubble.setAttribute("chat-subtitle", "🟢 Online");
 
         initializeMessengerReadyState(df, bubble);
@@ -825,7 +825,7 @@ function mountChatLanguageDropdown(dfMessenger) {
     }
 
     const wrapper = document.createElement("div");
-    wrapper.setAttribute("data-artemis-chat-language", "true");
+    wrapper.setAttribute("data-company-chat-language", "true");
     wrapper.style.display = "flex";
     wrapper.style.justifyContent = "flex-end";
     wrapper.style.alignItems = "center";
@@ -1252,8 +1252,8 @@ function getApiEndpoint(pathname) {
 }
 
 function getConfiguredApiBaseUrl() {
-    const globalBaseUrl = typeof window.ARTEMIS_API_BASE_URL === "string"
-        ? window.ARTEMIS_API_BASE_URL.trim()
+    const globalBaseUrl = typeof window.COMPANY_API_BASE_URL === "string"
+        ? window.COMPANY_API_BASE_URL.trim()
         : "";
 
     if (globalBaseUrl) {
@@ -1546,7 +1546,7 @@ function decoratePersonaMessages(dfMessenger) {
                 continue;
             }
 
-            if (image.dataset.artemisPersonaStyled === personaType) {
+            if (image.dataset.companyPersonaStyled === personaType) {
                 continue;
             }
 
@@ -1607,7 +1607,7 @@ function stylePersonaContainer(container, imageNode, personaType) {
     let current = container;
     let depth = 0;
 
-    imageNode.dataset.artemisPersonaStyled = personaType;
+    imageNode.dataset.companyPersonaStyled = personaType;
     imageNode.style.display = "block";
     imageNode.style.maxWidth = "100%";
     imageNode.style.height = "28px";
@@ -1623,7 +1623,7 @@ function stylePersonaContainer(container, imageNode, personaType) {
     }
 
     while (current && current !== document.body && depth < 3) {
-        current.dataset.artemisPersonaStyled = personaType;
+        current.dataset.companyPersonaStyled = personaType;
         current.style.background = "transparent";
         current.style.backgroundColor = "transparent";
         current.style.boxShadow = "none";
