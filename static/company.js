@@ -1354,10 +1354,36 @@ function mountRestartButton(dfMessenger, restartConfig) {
 
 function resolveFooterMountHost(dfMessenger) {
     const detectedFooter = findChatFooterHost(dfMessenger);
-    if (detectedFooter) {
+    if (isUsableFooterHost(detectedFooter)) {
         return detectedFooter;
     }
     return ensureFallbackFooterHost(dfMessenger);
+}
+
+function isUsableFooterHost(host) {
+    if (!host || host.nodeType !== Node.ELEMENT_NODE || !host.isConnected) {
+        return false;
+    }
+
+    if (typeof host.getBoundingClientRect !== "function") {
+        return false;
+    }
+
+    const rect = host.getBoundingClientRect();
+    if (!rect || rect.width < 40 || rect.height < 20) {
+        return false;
+    }
+
+    const style = window.getComputedStyle(host);
+    if (!style) {
+        return false;
+    }
+
+    if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") {
+        return false;
+    }
+
+    return true;
 }
 
 function ensureFallbackFooterHost(dfMessenger) {
