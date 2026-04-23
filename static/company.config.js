@@ -83,7 +83,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
   // =========================
   desktop: {
     chatWindow: {
-      widthPx: 420,
+      widthPx: 620,
       heightPx: 620,
 
       // Bubble position (launcher button).
