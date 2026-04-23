@@ -1394,11 +1394,9 @@ function syncFallbackFooterHostPosition(fallbackHost, dfMessenger) {
         return;
     }
 
-    const chatIsOpen = isChatExpanded(dfMessenger) || isChatWindowOpen;
-    fallbackHost.style.display = chatIsOpen ? "flex" : "none";
-    if (!chatIsOpen) {
-        return;
-    }
+    // Keep fallback controls visible even when widget open-state events
+    // are not emitted reliably by the web component.
+    fallbackHost.style.display = "flex";
 
     const computed = window.getComputedStyle(dfMessenger);
     const rightPx = parseFloat(computed.right || "20") || 20;
