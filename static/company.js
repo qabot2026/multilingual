@@ -1355,50 +1355,34 @@ function restartChatSession() {
 
 function findChatFooterHost(dfMessenger) {
     const roots = collectSearchRoots(dfMessenger);
-    const selectors = [
-        "form",
-        "df-messenger-user-input",
-        "df-messenger-input",
-        "[data-testid*='input']",
-        "[data-testid*='footer']",
-        "[data-testid*='composer']",
-        "[class*='input']",
-        "[part*='input']",
-        "[part*='footer']",
-        "footer"
-    ];
-    let fallbackHost = null;
+    const inputSelector = "textarea, input[type='text'], [contenteditable='true']";
 
     for (const root of roots) {
         if (!root || !root.querySelectorAll) {
             continue;
         }
 
-        for (const selector of selectors) {
-            const candidates = root.querySelectorAll(selector);
+        const inputs = root.querySelectorAll(inputSelector);
+        for (const inputNode of inputs) {
+            if (!inputNode || typeof inputNode.closest !== "function") {
+                continue;
+            }
 
-            for (const candidate of candidates) {
-                if (!candidate || !candidate.querySelector) {
-                    continue;
-                }
+            const host = inputNode.closest(
+                "form, footer, [data-testid*='footer'], [data-testid*='composer'], [data-testid*='input'], [part*='footer'], [part*='input'], [class*='input'], [class*='composer']"
+            );
 
-                const hasMessageInput = candidate.querySelector("textarea, input[type='text'], [contenteditable='true']");
-                if (!hasMessageInput && !fallbackHost) {
-                    fallbackHost = candidate;
-                } else if (!hasMessageInput) {
-                    continue;
-                }
+            if (host) {
+                return host;
+            }
 
-                if (candidate.querySelector(`[id='${CHAT_LANGUAGE_DROPDOWN_ID}']`)) {
-                    return candidate;
-                }
-
-                return candidate;
+            if (inputNode.parentElement) {
+                return inputNode.parentElement;
             }
         }
     }
 
-    return fallbackHost;
+    return null;
 }
 
 function syncChatLanguageDropdownValue(languageCode) {
