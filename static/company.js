@@ -122,55 +122,59 @@ window.addEventListener("DOMContentLoaded", () => {
     initializeClientContextCapture();
 
     setTimeout(() => {
-        const df = document.createElement("df-messenger");
-        activeDfMessenger = df;
-        const dialogflowConfig = COMMON_CONFIG.dialogflow || {};
-        df.setAttribute("project-id", dialogflowConfig.projectId || "qabot01");
-        df.setAttribute("location", dialogflowConfig.location || "us-central1");
-        df.setAttribute("agent-id", dialogflowConfig.agentId || "05ce7add-9025-4534-990c-fd7a25dadde1");
-        df.setAttribute("language-code", getChatLanguageCode(activeLanguage));
-        df.setAttribute("max-query-length", "-1");
-        df.setAttribute("url-allowlist", "*");
-        df.setAttribute("storage-option", "none");
-
-        const bubble = document.createElement("df-messenger-chat-bubble");
-        const headerConfig = COMMON_CONFIG.header || {};
-        bubble.setAttribute("chat-icon", headerConfig.chatIconUrl || "https://storage.googleapis.com/companybucket/Images/cat.png");
-        bubble.setAttribute("chat-title-icon", headerConfig.chatTitleIconUrl || headerConfig.chatIconUrl || "https://storage.googleapis.com/companybucket/Images/cat.png");
-        bubble.setAttribute("chat-title", headerConfig.title || "Chat Support");
-        bubble.setAttribute("chat-subtitle", headerConfig.subtitle || "🟢 Online");
-
-        initializeMessengerReadyState(df, bubble);
-        df.appendChild(bubble);
-        document.body.appendChild(df);
-
-        applyDfMessengerThemeConfig(df, COMPANY_UI_CONFIG);
-        ensureCircularBubbleIcon(df);
-        if (!(headerConfig && headerConfig.forceCloseIconX === false)) {
-            ensureCloseIconIsX(df);
-        }
-        const isMobile = isMobileViewport();
-        const autoOpenConfig = isMobile
-            ? (COMPANY_UI_CONFIG.mobile && COMPANY_UI_CONFIG.mobile.autoOpenChat ? COMPANY_UI_CONFIG.mobile.autoOpenChat : null)
-            : (COMPANY_UI_CONFIG.desktop && COMPANY_UI_CONFIG.desktop.autoOpenChat ? COMPANY_UI_CONFIG.desktop.autoOpenChat : null);
-        if (!autoOpenConfig || isFeatureEnabledFromConfig(autoOpenConfig, true)) {
-            const delayMs = autoOpenConfig && typeof autoOpenConfig.delayMs === "number" && Number.isFinite(autoOpenConfig.delayMs)
-                ? autoOpenConfig.delayMs
-                : 5000;
-            autoOpenChatWindow(df, bubble, delayMs);
-        }
-
-        initializeLauncherStrip(df, bubble, COMPANY_UI_CONFIG);
-        initializeMobileChatLayout(df, COMPANY_UI_CONFIG);
-        initializeChatStateSync(df);
-        attachPersonaHandlers(df);
-        if (IS_MULTI_LANGUAGE_ENABLED) {
-            initializeChatLanguageDropdown(df);
-        }
-        initializeChatRestartButton(df, COMMON_CONFIG);
-        startPersonaDecorator(df);
+        createAndMountMessenger();
     }, 1000);
 });
+
+function createAndMountMessenger() {
+    const df = document.createElement("df-messenger");
+    activeDfMessenger = df;
+    const dialogflowConfig = COMMON_CONFIG.dialogflow || {};
+    df.setAttribute("project-id", dialogflowConfig.projectId || "qabot01");
+    df.setAttribute("location", dialogflowConfig.location || "us-central1");
+    df.setAttribute("agent-id", dialogflowConfig.agentId || "05ce7add-9025-4534-990c-fd7a25dadde1");
+    df.setAttribute("language-code", getChatLanguageCode(activeLanguage));
+    df.setAttribute("max-query-length", "-1");
+    df.setAttribute("url-allowlist", "*");
+    df.setAttribute("storage-option", "none");
+
+    const bubble = document.createElement("df-messenger-chat-bubble");
+    const headerConfig = COMMON_CONFIG.header || {};
+    bubble.setAttribute("chat-icon", headerConfig.chatIconUrl || "https://storage.googleapis.com/companybucket/Images/cat.png");
+    bubble.setAttribute("chat-title-icon", headerConfig.chatTitleIconUrl || headerConfig.chatIconUrl || "https://storage.googleapis.com/companybucket/Images/cat.png");
+    bubble.setAttribute("chat-title", headerConfig.title || "Chat Support");
+    bubble.setAttribute("chat-subtitle", headerConfig.subtitle || "🟢 Online");
+
+    initializeMessengerReadyState(df, bubble);
+    df.appendChild(bubble);
+    document.body.appendChild(df);
+
+    applyDfMessengerThemeConfig(df, COMPANY_UI_CONFIG);
+    ensureCircularBubbleIcon(df);
+    if (!(headerConfig && headerConfig.forceCloseIconX === false)) {
+        ensureCloseIconIsX(df);
+    }
+    const isMobile = isMobileViewport();
+    const autoOpenConfig = isMobile
+        ? (COMPANY_UI_CONFIG.mobile && COMPANY_UI_CONFIG.mobile.autoOpenChat ? COMPANY_UI_CONFIG.mobile.autoOpenChat : null)
+        : (COMPANY_UI_CONFIG.desktop && COMPANY_UI_CONFIG.desktop.autoOpenChat ? COMPANY_UI_CONFIG.desktop.autoOpenChat : null);
+    if (!autoOpenConfig || isFeatureEnabledFromConfig(autoOpenConfig, true)) {
+        const delayMs = autoOpenConfig && typeof autoOpenConfig.delayMs === "number" && Number.isFinite(autoOpenConfig.delayMs)
+            ? autoOpenConfig.delayMs
+            : 5000;
+        autoOpenChatWindow(df, bubble, delayMs);
+    }
+
+    initializeLauncherStrip(df, bubble, COMPANY_UI_CONFIG);
+    initializeMobileChatLayout(df, COMPANY_UI_CONFIG);
+    initializeChatStateSync(df);
+    attachPersonaHandlers(df);
+    if (IS_MULTI_LANGUAGE_ENABLED) {
+        initializeChatLanguageDropdown(df);
+    }
+    initializeChatRestartButton(df, COMMON_CONFIG);
+    startPersonaDecorator(df);
+}
 
 function initializeLauncherStrip(dfMessenger, bubbleNode, config) {
     const stripConfig = readLauncherStripConfig(config);
@@ -731,10 +735,6 @@ function initializeMobileChatLayout(dfMessenger, config) {
 
         dfMessenger.style.setProperty("--df-messenger-chat-window-width", `${availableWidth}px`);
         dfMessenger.style.setProperty("--df-messenger-chat-window-height", `${availableHeight}px`);
-        const fallbackHost = document.getElementById("company-chat-footer-fallback");
-        if (fallbackHost) {
-            syncFallbackFooterHostPosition(fallbackHost, dfMessenger);
-        }
     };
 
     applyLayout();
@@ -762,11 +762,6 @@ function initializeChatStateSync(dfMessenger) {
 
     window.addEventListener("df-chat-open-changed", (event) => {
         isChatWindowOpen = !!(event && event.detail && event.detail.isOpen);
-        const fallbackHost = document.getElementById("company-chat-footer-fallback");
-        if (fallbackHost) {
-            syncFallbackFooterHostPosition(fallbackHost, dfMessenger);
-        }
-
         if (isChatWindowOpen) {
             scheduleAutoStartConversation(dfMessenger);
             return;
@@ -1357,7 +1352,7 @@ function resolveFooterMountHost(dfMessenger) {
     if (isUsableFooterHost(detectedFooter)) {
         return detectedFooter;
     }
-    return ensureFallbackFooterHost(dfMessenger);
+    return null;
 }
 
 function isUsableFooterHost(host) {
@@ -1386,96 +1381,27 @@ function isUsableFooterHost(host) {
     return true;
 }
 
-function ensureFallbackFooterHost(dfMessenger) {
-    if (!dfMessenger || !document.body) {
-        return null;
-    }
-
-    let fallbackHost = document.getElementById("company-chat-footer-fallback");
-    if (!fallbackHost) {
-        fallbackHost = document.createElement("div");
-        fallbackHost.id = "company-chat-footer-fallback";
-        fallbackHost.style.position = "fixed";
-        fallbackHost.style.zIndex = "1100";
-        fallbackHost.style.display = "none";
-        fallbackHost.style.flexDirection = "column";
-        fallbackHost.style.gap = "6px";
-        fallbackHost.style.padding = "8px 10px";
-        fallbackHost.style.background = "rgba(255, 255, 255, 0.98)";
-        fallbackHost.style.borderTop = "1px solid rgba(15, 118, 110, 0.16)";
-        fallbackHost.style.borderLeft = "1px solid rgba(15, 118, 110, 0.08)";
-        fallbackHost.style.borderRight = "1px solid rgba(15, 118, 110, 0.08)";
-        fallbackHost.style.borderRadius = "0 0 14px 14px";
-        fallbackHost.style.boxSizing = "border-box";
-        fallbackHost.style.pointerEvents = "auto";
-        document.body.appendChild(fallbackHost);
-    }
-
-    syncFallbackFooterHostPosition(fallbackHost, dfMessenger);
-    return fallbackHost;
-}
-
-function syncFallbackFooterHostPosition(fallbackHost, dfMessenger) {
-    if (!fallbackHost || !dfMessenger) {
-        return;
-    }
-
-    // Keep fallback controls visible even when widget open-state events
-    // are not emitted reliably by the web component.
-    fallbackHost.style.display = "flex";
-
-    const computed = window.getComputedStyle(dfMessenger);
-    const rightPx = parseFloat(computed.right || "20") || 20;
-    const bottomPx = parseFloat(computed.bottom || "20") || 20;
-
-    const configuredWidth = parseFloat(
-        computed.getPropertyValue("--df-messenger-chat-window-width") || ""
-    );
-    const widthPx = Number.isFinite(configuredWidth) ? configuredWidth : (isMobileViewport() ? window.innerWidth - 24 : 420);
-    const horizontalInset = 12;
-
-    fallbackHost.style.right = `${Math.max(0, rightPx)}px`;
-    fallbackHost.style.bottom = `${Math.max(0, bottomPx)}px`;
-    fallbackHost.style.width = `${Math.max(220, widthPx)}px`;
-    fallbackHost.style.paddingLeft = `${horizontalInset}px`;
-    fallbackHost.style.paddingRight = `${horizontalInset}px`;
-}
-
 function restartChatSession() {
-    // Most reliable "restart": reload the page.
-    // This gives a fresh chat session because storage-option is "none".
-    try {
-        window.location.reload();
-    } catch {
-        // ignore
+    const previousMessenger = activeDfMessenger;
+    if (previousMessenger && previousMessenger.parentElement) {
+        previousMessenger.parentElement.removeChild(previousMessenger);
     }
+
+    hasAutoStartedConversation = false;
+    isMessengerLoaded = false;
+    shouldAutoOpenChat = false;
+    isChatWindowOpen = false;
+
+    createAndMountMessenger();
 }
 
 function findChatFooterHost(dfMessenger) {
     const roots = collectSearchRoots(dfMessenger);
-    const directFooterSelectors = [
-        "footer",
-        "[data-testid*='footer']",
-        "[data-testid*='composer']",
-        "[part*='footer']",
-        "[part*='composer']",
-        "[part*='input']",
-        "[class*='footer']",
-        "[class*='composer']",
-        "[class*='input']"
-    ];
     const inputSelector = "textarea, input[type='text'], [contenteditable='true']";
 
     for (const root of roots) {
         if (!root || !root.querySelectorAll) {
             continue;
-        }
-
-        for (const selector of directFooterSelectors) {
-            const directHost = root.querySelector(selector);
-            if (directHost) {
-                return directHost;
-            }
         }
 
         const inputs = root.querySelectorAll(inputSelector);
@@ -1494,6 +1420,24 @@ function findChatFooterHost(dfMessenger) {
 
             if (inputNode.parentElement) {
                 return inputNode.parentElement;
+            }
+        }
+
+        const directFooterSelectors = [
+            "footer",
+            "[data-testid*='footer']",
+            "[data-testid*='composer']",
+            "[part*='footer']",
+            "[part*='composer']",
+            "[part*='input']",
+            "[class*='footer']",
+            "[class*='composer']",
+            "[class*='input']"
+        ];
+        for (const selector of directFooterSelectors) {
+            const directHost = root.querySelector(selector);
+            if (directHost) {
+                return directHost;
             }
         }
     }
