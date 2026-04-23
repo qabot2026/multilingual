@@ -30,11 +30,13 @@ window.COMPANY_CHAT_UI_CONFIG = {
     },
 
     // Features ON / OFF.
+    // Use `enabled: true/false` (recommended key for all toggles).
     features: {
       // Multi-language dropdown.
       multiLanguage: {
         enabled: true,
         defaultLanguage: "en",
+        // Only these languages appear in dropdown.
         enabledLanguages: [
           { code: "en", label: "English" },
           { code: "hi", label: "Hindi" },
@@ -94,6 +96,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
     },
 
     launcherStrip: {
+      // Set enabled:false to hide desktop strip.
       enabled: true,
       text: "Hey, there 👋",
       position: { rightPx: 20, bottomPx: 96, leftPx: null, topPx: null },
@@ -124,6 +127,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
     },
 
     launcherStrip: {
+      // Set enabled:false to hide mobile strip.
       enabled: true,
       text: "Hey, there 👋",
       position: { rightPx: 12, bottomPx: 86, leftPx: 12, topPx: null },

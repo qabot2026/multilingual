@@ -37,7 +37,7 @@ const FEATURES_CONFIG = COMMON_CONFIG.features && typeof COMMON_CONFIG.features 
 const MULTI_LANGUAGE_CONFIG = FEATURES_CONFIG.multiLanguage && typeof FEATURES_CONFIG.multiLanguage === "object"
     ? FEATURES_CONFIG.multiLanguage
     : {};
-const IS_MULTI_LANGUAGE_ENABLED = MULTI_LANGUAGE_CONFIG.enabled !== false;
+const IS_MULTI_LANGUAGE_ENABLED = isFeatureEnabledFromConfig(MULTI_LANGUAGE_CONFIG, true);
 const DEFAULT_LANGUAGE = normalizeLanguageCode(MULTI_LANGUAGE_CONFIG.defaultLanguage
     ? MULTI_LANGUAGE_CONFIG.defaultLanguage
     : "en");
@@ -153,7 +153,7 @@ window.addEventListener("DOMContentLoaded", () => {
         const autoOpenConfig = isMobile
             ? (COMPANY_UI_CONFIG.mobile && COMPANY_UI_CONFIG.mobile.autoOpenChat ? COMPANY_UI_CONFIG.mobile.autoOpenChat : null)
             : (COMPANY_UI_CONFIG.desktop && COMPANY_UI_CONFIG.desktop.autoOpenChat ? COMPANY_UI_CONFIG.desktop.autoOpenChat : null);
-        if (!autoOpenConfig || autoOpenConfig.enabled !== false) {
+        if (!autoOpenConfig || isFeatureEnabledFromConfig(autoOpenConfig, true)) {
             const delayMs = autoOpenConfig && typeof autoOpenConfig.delayMs === "number" && Number.isFinite(autoOpenConfig.delayMs)
                 ? autoOpenConfig.delayMs
                 : 5000;
@@ -175,7 +175,7 @@ window.addEventListener("DOMContentLoaded", () => {
 function initializeLauncherStrip(dfMessenger, bubbleNode, config) {
     const stripConfig = readLauncherStripConfig(config);
 
-    if (!stripConfig || stripConfig.enabled === false) {
+    if (!stripConfig || !isFeatureEnabledFromConfig(stripConfig, true)) {
         return;
     }
 
@@ -317,6 +317,60 @@ function readCompanyUiConfig() {
         return config;
     }
     return {};
+}
+
+function isFeatureEnabled(value, defaultValue = true) {
+    if (typeof value === "boolean") {
+        return value;
+    }
+
+    if (typeof value === "number") {
+        if (!Number.isFinite(value)) {
+            return defaultValue;
+        }
+        return value !== 0;
+    }
+
+    if (typeof value === "string") {
+        const normalized = value.trim().toLowerCase();
+        if (!normalized) {
+            return defaultValue;
+        }
+
+        if (["false", "0", "no", "off", "disabled"].includes(normalized)) {
+            return false;
+        }
+
+        if (["true", "1", "yes", "on", "enabled"].includes(normalized)) {
+            return true;
+        }
+    }
+
+    return defaultValue;
+}
+
+function isFeatureEnabledFromConfig(config, defaultValue = true) {
+    if (!config || typeof config !== "object") {
+        return defaultValue;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(config, "enabled")) {
+        return isFeatureEnabled(config.enabled, defaultValue);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(config, "enable")) {
+        return isFeatureEnabled(config.enable, defaultValue);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(config, "disabled")) {
+        return !isFeatureEnabled(config.disabled, false);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(config, "disable")) {
+        return !isFeatureEnabled(config.disable, false);
+    }
+
+    return defaultValue;
 }
 
 function normalizeLanguageCode(code) {
@@ -641,7 +695,7 @@ function initializeMobileChatLayout(dfMessenger, config) {
             return;
         }
 
-        if (mobileRoot.enabled === false) {
+        if (!isFeatureEnabledFromConfig(mobileRoot, true)) {
             return;
         }
 
@@ -1221,7 +1275,7 @@ function initializeChatRestartButton(dfMessenger, commonConfig) {
         ? features.restartChat
         : null;
 
-    if (!restartConfig || restartConfig.enabled === false) {
+    if (!restartConfig || !isFeatureEnabledFromConfig(restartConfig, true)) {
         return;
     }
 
