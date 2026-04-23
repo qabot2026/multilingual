@@ -98,7 +98,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
     launcherStrip: {
       // Set enabled:false to hide desktop strip.
       enabled: true,
-      text: "Hey, there 👋",
+      text: "Hi, there 👋",
       position: { rightPx: 20, bottomPx: 96, leftPx: null, topPx: null },
       style: { fontSizePx: 13, paddingYpx: 10, paddingXpx: 14, maxWidthPx: 260 }
     }
@@ -129,7 +129,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
     launcherStrip: {
       // Set enabled:false to hide mobile strip.
       enabled: true,
-      text: "Hey, there 👋",
+      text: "Hi, there 👋",
       position: { rightPx: 12, bottomPx: 86, leftPx: 12, topPx: null },
       style: { fontSizePx: 13, paddingYpx: 10, paddingXpx: 14, maxWidthPx: null }
     }

@@ -1216,14 +1216,13 @@ function mountChatLanguageDropdown(dfMessenger) {
         return;
     }
 
-    const mountHost = document.body;
+    const mountHost = findChatFooterHost(dfMessenger);
+    if (!mountHost) {
+        return;
+    }
 
     if (mountHost.querySelector(`#${CHAT_LANGUAGE_DROPDOWN_ID}`)) {
         syncChatLanguageDropdownValue(activeLanguage);
-        const existingWrapper = mountHost.querySelector("[data-company-chat-language='true']");
-        if (existingWrapper) {
-            applyFloatingLanguageControlStyle(existingWrapper);
-        }
         return;
     }
 
@@ -1236,7 +1235,6 @@ function mountChatLanguageDropdown(dfMessenger) {
     wrapper.style.marginTop = "6px";
     wrapper.style.paddingTop = "4px";
     wrapper.style.borderTop = "1px solid rgba(15, 118, 110, 0.16)";
-    applyFloatingLanguageControlStyle(wrapper);
 
     const label = document.createElement("label");
     label.setAttribute("for", CHAT_LANGUAGE_DROPDOWN_ID);
@@ -1273,37 +1271,6 @@ function mountChatLanguageDropdown(dfMessenger) {
     wrapper.appendChild(label);
     wrapper.appendChild(select);
     mountHost.appendChild(wrapper);
-}
-
-function applyFloatingLanguageControlStyle(wrapper) {
-    if (!wrapper) {
-        return;
-    }
-
-    const isMobile = isMobileViewport();
-    const root = isMobile ? COMPANY_UI_CONFIG.mobile : COMPANY_UI_CONFIG.desktop;
-    const windowConfig = root && root.chatWindow && typeof root.chatWindow === "object" ? root.chatWindow : {};
-    const bubble = windowConfig.bubblePosition && typeof windowConfig.bubblePosition === "object"
-        ? windowConfig.bubblePosition
-        : (isMobile
-            ? { rightPx: 12, bottomPx: 10, leftPx: 12, topPx: null }
-            : { rightPx: 20, bottomPx: 20, leftPx: null, topPx: null });
-    const bottomBase = typeof bubble.bottomPx === "number" ? bubble.bottomPx : (isMobile ? 10 : 20);
-
-    wrapper.style.position = "fixed";
-    wrapper.style.bottom = `${bottomBase + 72}px`;
-    wrapper.style.right = typeof bubble.rightPx === "number" ? `${bubble.rightPx}px` : "";
-    wrapper.style.left = typeof bubble.leftPx === "number" && typeof bubble.rightPx !== "number" ? `${bubble.leftPx}px` : "";
-    wrapper.style.zIndex = "2147483647";
-    wrapper.style.marginTop = "0";
-    wrapper.style.paddingTop = "0";
-    wrapper.style.padding = "8px 10px";
-    wrapper.style.borderTop = "0";
-    wrapper.style.border = "1px solid rgba(15, 118, 110, 0.2)";
-    wrapper.style.borderRadius = "12px";
-    wrapper.style.background = "rgba(255, 255, 255, 0.98)";
-    wrapper.style.backdropFilter = "blur(2px)";
-    wrapper.style.boxShadow = "0 6px 18px rgba(15, 23, 42, 0.12)";
 }
 
 function initializeChatRestartButton(dfMessenger, commonConfig) {
@@ -1400,6 +1367,7 @@ function findChatFooterHost(dfMessenger) {
         "[part*='footer']",
         "footer"
     ];
+    let fallbackHost = null;
 
     for (const root of roots) {
         if (!root || !root.querySelectorAll) {
@@ -1415,7 +1383,9 @@ function findChatFooterHost(dfMessenger) {
                 }
 
                 const hasMessageInput = candidate.querySelector("textarea, input[type='text'], [contenteditable='true']");
-                if (!hasMessageInput) {
+                if (!hasMessageInput && !fallbackHost) {
+                    fallbackHost = candidate;
+                } else if (!hasMessageInput) {
                     continue;
                 }
 
@@ -1428,7 +1398,7 @@ function findChatFooterHost(dfMessenger) {
         }
     }
 
-    return null;
+    return fallbackHost;
 }
 
 function syncChatLanguageDropdownValue(languageCode) {
