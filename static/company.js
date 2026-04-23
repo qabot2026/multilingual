@@ -1216,17 +1216,13 @@ function mountChatLanguageDropdown(dfMessenger) {
         return;
     }
 
-    const host = findChatFooterHost(dfMessenger);
-    const useFloatingFallback = !host;
-    const mountHost = host || document.body;
+    const mountHost = document.body;
 
     if (mountHost.querySelector(`#${CHAT_LANGUAGE_DROPDOWN_ID}`)) {
         syncChatLanguageDropdownValue(activeLanguage);
-        if (useFloatingFallback) {
-            const existingWrapper = mountHost.querySelector("[data-company-chat-language='true']");
-            if (existingWrapper) {
-                applyFloatingLanguageControlStyle(existingWrapper);
-            }
+        const existingWrapper = mountHost.querySelector("[data-company-chat-language='true']");
+        if (existingWrapper) {
+            applyFloatingLanguageControlStyle(existingWrapper);
         }
         return;
     }
@@ -1240,9 +1236,7 @@ function mountChatLanguageDropdown(dfMessenger) {
     wrapper.style.marginTop = "6px";
     wrapper.style.paddingTop = "4px";
     wrapper.style.borderTop = "1px solid rgba(15, 118, 110, 0.16)";
-    if (useFloatingFallback) {
-        applyFloatingLanguageControlStyle(wrapper);
-    }
+    applyFloatingLanguageControlStyle(wrapper);
 
     const label = document.createElement("label");
     label.setAttribute("for", CHAT_LANGUAGE_DROPDOWN_ID);
