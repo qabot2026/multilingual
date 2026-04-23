@@ -1216,13 +1216,17 @@ function mountChatLanguageDropdown(dfMessenger) {
         return;
     }
 
-    const mountHost = findChatFooterHost(dfMessenger);
-    if (!mountHost) {
-        return;
-    }
+    const footerHost = findChatFooterHost(dfMessenger);
+    const mountHost = footerHost || dfMessenger;
+    const useMessengerFallback = !footerHost;
 
     if (mountHost.querySelector(`#${CHAT_LANGUAGE_DROPDOWN_ID}`)) {
         syncChatLanguageDropdownValue(activeLanguage);
+        const existingWrapper = mountHost.querySelector("[data-company-chat-language='true']");
+        if (existingWrapper && useMessengerFallback) {
+            applyMessengerAnchoredLanguageControlStyle(existingWrapper, dfMessenger);
+            syncLanguageControlVisibility(existingWrapper, dfMessenger);
+        }
         return;
     }
 
@@ -1235,6 +1239,9 @@ function mountChatLanguageDropdown(dfMessenger) {
     wrapper.style.marginTop = "6px";
     wrapper.style.paddingTop = "4px";
     wrapper.style.borderTop = "1px solid rgba(15, 118, 110, 0.16)";
+    if (useMessengerFallback) {
+        applyMessengerAnchoredLanguageControlStyle(wrapper, dfMessenger);
+    }
 
     const label = document.createElement("label");
     label.setAttribute("for", CHAT_LANGUAGE_DROPDOWN_ID);
@@ -1271,6 +1278,34 @@ function mountChatLanguageDropdown(dfMessenger) {
     wrapper.appendChild(label);
     wrapper.appendChild(select);
     mountHost.appendChild(wrapper);
+    syncLanguageControlVisibility(wrapper, dfMessenger);
+}
+
+function applyMessengerAnchoredLanguageControlStyle(wrapper, dfMessenger) {
+    if (!wrapper || !dfMessenger) {
+        return;
+    }
+
+    wrapper.style.position = "absolute";
+    wrapper.style.right = "12px";
+    wrapper.style.bottom = "12px";
+    wrapper.style.zIndex = "50";
+    wrapper.style.marginTop = "0";
+    wrapper.style.paddingTop = "0";
+    wrapper.style.padding = "6px 8px";
+    wrapper.style.borderTop = "0";
+    wrapper.style.border = "1px solid rgba(15, 118, 110, 0.2)";
+    wrapper.style.borderRadius = "10px";
+    wrapper.style.background = "rgba(255, 255, 255, 0.96)";
+    wrapper.style.boxShadow = "0 4px 12px rgba(15, 23, 42, 0.12)";
+}
+
+function syncLanguageControlVisibility(wrapper, dfMessenger) {
+    if (!wrapper || !dfMessenger) {
+        return;
+    }
+
+    wrapper.style.display = isChatExpanded(dfMessenger) ? "flex" : "none";
 }
 
 function initializeChatRestartButton(dfMessenger, commonConfig) {
