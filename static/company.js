@@ -1278,7 +1278,9 @@ function mountChatLanguageDropdown(dfMessenger) {
     wrapper.appendChild(label);
     wrapper.appendChild(select);
     mountHost.appendChild(wrapper);
-    syncLanguageControlVisibility(wrapper, dfMessenger);
+    if (useMessengerFallback) {
+        syncLanguageControlVisibility(wrapper, dfMessenger);
+    }
 }
 
 function applyMessengerAnchoredLanguageControlStyle(wrapper, dfMessenger) {
