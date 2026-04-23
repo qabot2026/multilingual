@@ -731,6 +731,10 @@ function initializeMobileChatLayout(dfMessenger, config) {
 
         dfMessenger.style.setProperty("--df-messenger-chat-window-width", `${availableWidth}px`);
         dfMessenger.style.setProperty("--df-messenger-chat-window-height", `${availableHeight}px`);
+        const fallbackHost = document.getElementById("company-chat-footer-fallback");
+        if (fallbackHost) {
+            syncFallbackFooterHostPosition(fallbackHost, dfMessenger);
+        }
     };
 
     applyLayout();
@@ -758,6 +762,10 @@ function initializeChatStateSync(dfMessenger) {
 
     window.addEventListener("df-chat-open-changed", (event) => {
         isChatWindowOpen = !!(event && event.detail && event.detail.isOpen);
+        const fallbackHost = document.getElementById("company-chat-footer-fallback");
+        if (fallbackHost) {
+            syncFallbackFooterHostPosition(fallbackHost, dfMessenger);
+        }
 
         if (isChatWindowOpen) {
             scheduleAutoStartConversation(dfMessenger);
@@ -1216,7 +1224,7 @@ function mountChatLanguageDropdown(dfMessenger) {
         return;
     }
 
-    const footerHost = findChatFooterHost(dfMessenger);
+    const footerHost = resolveFooterMountHost(dfMessenger);
     if (!footerHost) {
         return;
     }
@@ -1304,7 +1312,7 @@ function mountRestartButton(dfMessenger, restartConfig) {
         return;
     }
 
-    const host = findChatFooterHost(dfMessenger);
+    const host = resolveFooterMountHost(dfMessenger);
     if (!host) {
         return;
     }
@@ -1342,6 +1350,71 @@ function mountRestartButton(dfMessenger, restartConfig) {
 
     wrapper.appendChild(button);
     host.appendChild(wrapper);
+}
+
+function resolveFooterMountHost(dfMessenger) {
+    const detectedFooter = findChatFooterHost(dfMessenger);
+    if (detectedFooter) {
+        return detectedFooter;
+    }
+    return ensureFallbackFooterHost(dfMessenger);
+}
+
+function ensureFallbackFooterHost(dfMessenger) {
+    if (!dfMessenger || !document.body) {
+        return null;
+    }
+
+    let fallbackHost = document.getElementById("company-chat-footer-fallback");
+    if (!fallbackHost) {
+        fallbackHost = document.createElement("div");
+        fallbackHost.id = "company-chat-footer-fallback";
+        fallbackHost.style.position = "fixed";
+        fallbackHost.style.zIndex = "1100";
+        fallbackHost.style.display = "none";
+        fallbackHost.style.flexDirection = "column";
+        fallbackHost.style.gap = "6px";
+        fallbackHost.style.padding = "8px 10px";
+        fallbackHost.style.background = "rgba(255, 255, 255, 0.98)";
+        fallbackHost.style.borderTop = "1px solid rgba(15, 118, 110, 0.16)";
+        fallbackHost.style.borderLeft = "1px solid rgba(15, 118, 110, 0.08)";
+        fallbackHost.style.borderRight = "1px solid rgba(15, 118, 110, 0.08)";
+        fallbackHost.style.borderRadius = "0 0 14px 14px";
+        fallbackHost.style.boxSizing = "border-box";
+        fallbackHost.style.pointerEvents = "auto";
+        document.body.appendChild(fallbackHost);
+    }
+
+    syncFallbackFooterHostPosition(fallbackHost, dfMessenger);
+    return fallbackHost;
+}
+
+function syncFallbackFooterHostPosition(fallbackHost, dfMessenger) {
+    if (!fallbackHost || !dfMessenger) {
+        return;
+    }
+
+    const chatIsOpen = isChatExpanded(dfMessenger) || isChatWindowOpen;
+    fallbackHost.style.display = chatIsOpen ? "flex" : "none";
+    if (!chatIsOpen) {
+        return;
+    }
+
+    const computed = window.getComputedStyle(dfMessenger);
+    const rightPx = parseFloat(computed.right || "20") || 20;
+    const bottomPx = parseFloat(computed.bottom || "20") || 20;
+
+    const configuredWidth = parseFloat(
+        computed.getPropertyValue("--df-messenger-chat-window-width") || ""
+    );
+    const widthPx = Number.isFinite(configuredWidth) ? configuredWidth : (isMobileViewport() ? window.innerWidth - 24 : 420);
+    const horizontalInset = 12;
+
+    fallbackHost.style.right = `${Math.max(0, rightPx)}px`;
+    fallbackHost.style.bottom = `${Math.max(0, bottomPx)}px`;
+    fallbackHost.style.width = `${Math.max(220, widthPx)}px`;
+    fallbackHost.style.paddingLeft = `${horizontalInset}px`;
+    fallbackHost.style.paddingRight = `${horizontalInset}px`;
 }
 
 function restartChatSession() {
