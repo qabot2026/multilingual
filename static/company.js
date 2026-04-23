@@ -1217,14 +1217,14 @@ function mountChatLanguageDropdown(dfMessenger) {
     }
 
     const footerHost = findChatFooterHost(dfMessenger);
-    const mountHost = footerHost || dfMessenger;
-    const useMessengerFallback = !footerHost;
+    const useFloatingFallback = !footerHost;
+    const mountHost = footerHost || document.body;
 
     if (mountHost.querySelector(`#${CHAT_LANGUAGE_DROPDOWN_ID}`)) {
         syncChatLanguageDropdownValue(activeLanguage);
         const existingWrapper = mountHost.querySelector("[data-company-chat-language='true']");
-        if (existingWrapper && useMessengerFallback) {
-            applyMessengerAnchoredLanguageControlStyle(existingWrapper, dfMessenger);
+        if (existingWrapper && useFloatingFallback) {
+            applyFloatingLanguageControlStyle(existingWrapper, dfMessenger);
             syncLanguageControlVisibility(existingWrapper, dfMessenger);
         }
         return;
@@ -1239,8 +1239,8 @@ function mountChatLanguageDropdown(dfMessenger) {
     wrapper.style.marginTop = "6px";
     wrapper.style.paddingTop = "4px";
     wrapper.style.borderTop = "1px solid rgba(15, 118, 110, 0.16)";
-    if (useMessengerFallback) {
-        applyMessengerAnchoredLanguageControlStyle(wrapper, dfMessenger);
+    if (useFloatingFallback) {
+        applyFloatingLanguageControlStyle(wrapper, dfMessenger);
     }
 
     const label = document.createElement("label");
@@ -1278,20 +1278,24 @@ function mountChatLanguageDropdown(dfMessenger) {
     wrapper.appendChild(label);
     wrapper.appendChild(select);
     mountHost.appendChild(wrapper);
-    if (useMessengerFallback) {
+    if (useFloatingFallback) {
         syncLanguageControlVisibility(wrapper, dfMessenger);
     }
 }
 
-function applyMessengerAnchoredLanguageControlStyle(wrapper, dfMessenger) {
+function applyFloatingLanguageControlStyle(wrapper, dfMessenger) {
     if (!wrapper || !dfMessenger) {
         return;
     }
 
-    wrapper.style.position = "absolute";
-    wrapper.style.right = "12px";
-    wrapper.style.bottom = "12px";
-    wrapper.style.zIndex = "50";
+    const computedStyle = window.getComputedStyle(dfMessenger);
+    const rightPx = parseFloat(computedStyle.right || "20") || 20;
+    const bottomPx = parseFloat(computedStyle.bottom || "20") || 20;
+
+    wrapper.style.position = "fixed";
+    wrapper.style.right = `${Math.max(10, rightPx + 12)}px`;
+    wrapper.style.bottom = `${Math.max(10, bottomPx + 12)}px`;
+    wrapper.style.zIndex = "1100";
     wrapper.style.marginTop = "0";
     wrapper.style.paddingTop = "0";
     wrapper.style.padding = "6px 8px";
