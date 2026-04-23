@@ -1307,7 +1307,9 @@ function syncLanguageControlVisibility(wrapper, dfMessenger) {
         return;
     }
 
-    wrapper.style.display = isChatExpanded(dfMessenger) ? "flex" : "none";
+    // Fallback mount should stay visible even when df-messenger expand state
+    // is not reliably exposed by the web component internals.
+    wrapper.style.display = "flex";
 }
 
 function initializeChatRestartButton(dfMessenger, commonConfig) {
@@ -1392,11 +1394,29 @@ function restartChatSession() {
 
 function findChatFooterHost(dfMessenger) {
     const roots = collectSearchRoots(dfMessenger);
+    const directFooterSelectors = [
+        "footer",
+        "[data-testid*='footer']",
+        "[data-testid*='composer']",
+        "[part*='footer']",
+        "[part*='composer']",
+        "[part*='input']",
+        "[class*='footer']",
+        "[class*='composer']",
+        "[class*='input']"
+    ];
     const inputSelector = "textarea, input[type='text'], [contenteditable='true']";
 
     for (const root of roots) {
         if (!root || !root.querySelectorAll) {
             continue;
+        }
+
+        for (const selector of directFooterSelectors) {
+            const directHost = root.querySelector(selector);
+            if (directHost) {
+                return directHost;
+            }
         }
 
         const inputs = root.querySelectorAll(inputSelector);
