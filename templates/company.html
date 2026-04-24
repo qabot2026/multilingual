@@ -8,9 +8,21 @@
   <meta name="company-api-base-url" content="">
   <title>Company Chat</title>
   <link rel="stylesheet" href="https://www.gstatic.com/dialogflow-console/fast/df-messenger/prod/v1/themes/df-messenger-default.css">
-  <link rel="stylesheet" href="../static/company.css?v=20260423-footerfix1">
+  <link rel="stylesheet" href="../static/company.css?v=20260423-23">
 </head>
 <body>
+  <script>
+    (function () {
+      try {
+        var params = new URLSearchParams(window.location.search || "");
+        if (params.get("companyDebug") === "1") {
+          window.__companyDebug = true;
+          localStorage.setItem("company_debug_footer", "1");
+          localStorage.setItem("company_debug_freeze", "0");
+        }
+      } catch (e) {}
+    })();
+  </script>
   <section id="contact-form" class="contact-form" aria-hidden="true">
     <div class="contact-form__card">
       <div class="contact-form__header">
@@ -30,8 +42,19 @@
       </form>
     </div>
   </section>
+  <div id="company-hard-action-bar" aria-label="Chat footer actions" hidden>
+    <div id="company-hard-language-wrap">
+      <button id="company-hard-language-btn" type="button" aria-label="Language" title="Language">🌐</button>
+      <div id="company-hard-language-menu" role="menu" aria-label="Language options">
+        <button type="button" data-lang="en">English</button>
+        <button type="button" data-lang="hi">Hindi</button>
+        <button type="button" data-lang="mr">Marathi</button>
+      </div>
+    </div>
+    <button id="company-hard-restart-btn" type="button" aria-label="Restart" title="Restart">↻</button>
+  </div>
   <script src="https://www.gstatic.com/dialogflow-console/fast/df-messenger/prod/v1/df-messenger.js"></script>
-  <script src="../static/company.config.js?v=20260423-footerfix1"></script>
-  <script src="../static/company.js?v=20260423-footerfix1"></script>
+  <script src="../static/company.config.js?v=20260423-19"></script>
+  <script src="../static/company.js?v=20260423-23"></script>
 </body>
 </html>

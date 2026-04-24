@@ -29,18 +29,19 @@ df-messenger {
   position: fixed;
   bottom: 20px;
   right: 20px;
+  left: auto;
   z-index: 999;
+  overflow: visible;
   animation: company-fade-up 320ms ease-out;
 
   --df-messenger-font-family: "Manrope", "Segoe UI", sans-serif;
   --df-messenger-font-color: var(--company-text);
-  --df-messenger-primary-color: var(--company-brand-700);
-  --df-messenger-chat-background: #f4f8fa;
+  --df-messenger-primary-color: #0d9488;
 
-  --df-messenger-message-bot-background: var(--company-surface);
+  --df-messenger-message-bot-background: rgba(255, 255, 255, 0.98);
   --df-messenger-message-bot-font-color: var(--company-text);
-  --df-messenger-message-user-background: var(--company-brand-700);
-  --df-messenger-message-user-font-color: #f8fffe;
+  --df-messenger-message-user-background: linear-gradient(140deg, #0f766e, #14b8a6);
+  --df-messenger-message-user-font-color: #f0fdfa;
 
   --df-messenger-message-stack-spacing: 6px;
   --df-messenger-message-spacing: 8px;
@@ -49,28 +50,314 @@ df-messenger {
   --df-messenger-input-background: var(--company-surface);
   --df-messenger-input-box-background: var(--company-surface);
   --df-messenger-input-font-color: var(--company-text);
-  --df-messenger-input-border-top: 1px solid var(--company-border);
+  /* 29px top, 8px sides, 16px bottom */
+  --df-messenger-input-padding: 29px 8px 16px 8px;
 
-  --df-messenger-chips-background: var(--company-accent-200);
+  --df-messenger-chips-background: rgba(204, 251, 241, 0.88);
   --df-messenger-chips-font-color: var(--company-brand-900);
   --df-messenger-chips-border-radius: 999px;
-  --df-messenger-button-border: 1px solid #bfe3dd;
+  --df-messenger-button-border: 1px solid rgba(20, 184, 166, 0.4);
 
-  --df-messenger-chat-border: 1px solid #cfe0e8;
-  --df-messenger-chat-box-shadow: 0 18px 52px rgba(15, 23, 42, 0.16);
-  --df-messenger-chat-border-radius: 18px;
+  --df-messenger-chat-border: 1px solid rgba(20, 184, 166, 0.38);
+  /* Layered shadow: crisp edge, depth, soft teal outer glow (matches company.config.js dfMessengerTheme) */
+  --df-messenger-chat-box-shadow:
+    0 0 0 1px rgba(20, 184, 166, 0.1),
+    0 4px 6px -2px rgba(15, 23, 42, 0.05),
+    0 16px 32px -8px rgba(15, 23, 42, 0.1),
+    0 28px 64px -12px rgba(15, 23, 42, 0.16),
+    0 0 80px -16px rgba(20, 184, 166, 0.18);
+  --df-messenger-chat-border-radius: 20px;
   /* Chat window size is controlled from `static/company.config.js` */
 
-  --df-messenger-titlebar-background: linear-gradient(90deg, #0f766e, #0d9488);
+  --df-messenger-titlebar-background: linear-gradient(120deg, #0a5c56 0%, #0f766e 35%, #14b8a6 70%, #0d9488 100%);
   --df-messenger-titlebar-font-color: #f0fdfa;
-  --df-messenger-titlebar-subtitle-font-color: #ccfbf1;
+  --df-messenger-titlebar-subtitle-font-color: #a7f3d0;
   --df-messenger-titlebar-title-line-height: 36px;
   --df-messenger-titlebar-icon-height: 50px;
   --df-messenger-titlebar-icon-width: 50px;
 
   --df-messenger-chat-bubble-icon-size: 64px;
-  --df-messenger-chat-bubble-background: linear-gradient(145deg, #0f766e, #0d9488);
+  --df-messenger-chat-bubble-background: linear-gradient(150deg, #0a5c56 0%, #0f766e 45%, #14b8a6 100%);
   --df-messenger-chat-icon-radius: 50%;
+
+  /* Panel fill: subtle vertical wash (overridden by config when present) */
+  --df-messenger-chat-background: linear-gradient(180deg, #f6fdfc 0%, #eff7f4 50%, #e8f1ee 100%);
+  --df-messenger-input-border-top: 1px solid rgba(20, 184, 166, 0.28);
+}
+
+/* "Powered by …" strip (sits just above the composer; positioned by company.js) */
+#company-powered-by-strip {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 8px;
+  font-family: "Manrope", "Segoe UI", system-ui, sans-serif;
+  /* color, size, align: set from company.config.js (poweredBy) */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.01em;
+}
+/* Clicks only when `poweredBy.linkUrl` is set (rendered as <a href="...">). */
+#company-powered-by-strip[href] {
+  pointer-events: auto;
+  cursor: pointer;
+}
+#company-powered-by-strip:not([href]) {
+  pointer-events: none;
+}
+
+/* Footer controls (Language + Restart) anchored near Send */
+#company-chat-footer-overlay {
+  position: fixed !important;
+  z-index: 2147483646 !important;
+  display: none !important;
+  align-items: center !important;
+  gap: 8px !important;
+  left: 16px !important;
+  right: auto !important;
+  bottom: 110px !important;
+  pointer-events: auto !important;
+}
+
+#company-chat-footer-overlay button {
+  width: 34px !important;
+  height: 34px !important;
+  display: grid !important;
+  place-items: center !important;
+  border: 1px solid rgba(203, 213, 225, 0.9) !important;
+  border-radius: 10px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  color: #0f766e !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+}
+
+#company-chat-footer-overlay button:hover {
+  background: #ffffff !important;
+}
+
+/* Stable action bar near Send button */
+#company-chat-action-bar {
+  position: static;
+  z-index: 2147483647;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+  flex-direction: row !important;
+  justify-content: flex-start !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  flex: 0 0 auto !important;
+}
+
+#company-chat-action-bar-fixed {
+  display: none !important;
+}
+
+#company-chat-action-bar.company-chat-action-bar--inline {
+  position: static !important;
+  z-index: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  top: auto !important;
+  margin-left: 0 !important;
+  margin-right: 8px !important;
+  order: unset !important;
+  flex-direction: row !important;
+  justify-content: flex-start !important;
+  flex: 0 0 auto !important;
+}
+
+/* Bar stays in document body (not shadow DOM); JS sets inline position + display */
+#company-chat-action-bar.company-chat-action-bar--body-fixed {
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 8px !important;
+  box-sizing: border-box !important;
+}
+
+#company-chat-action-bar .company-chat-action-menu-wrapper,
+.company-chat-action-menu-wrapper {
+  position: relative;
+  top: 0;
+  order: 0 !important;
+  margin-right: 8px !important;
+  margin-left: 0 !important;
+  flex: 0 0 auto !important;
+  transform: none;
+}
+
+#company-chat-action-bar[data-company-anchor="send"] > .company-chat-action-icon {
+  transform: none !important;
+}
+
+[data-company-chat-language="true"] {
+  display: none !important;
+}
+
+[data-company-chat-restart="true"] {
+  display: none !important;
+}
+
+.company-chat-action-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #000000;
+  cursor: pointer;
+  padding: 0;
+}
+
+.company-chat-action-icon:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.company-chat-action-pill {
+  width: auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  padding: 0 12px !important;
+  border: none !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06) !important;
+  font: 600 12px "Manrope", "Segoe UI", sans-serif !important;
+  line-height: 1.2 !important;
+  cursor: pointer !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.company-chat-action-pill:hover {
+  background: #f8fafc !important;
+  border: none !important;
+}
+
+.company-chat-action-pill:active {
+  background: #f1f5f9 !important;
+}
+
+.company-chat-action-pill:focus-visible {
+  outline: 2px solid var(--company-brand-500, #14b8a6);
+  outline-offset: 2px;
+}
+
+.company-chat-action-pill__text {
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.company-chat-action-pill__icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: #0f766e;
+  pointer-events: none;
+}
+
+.company-restart-icon-glyph {
+  display: inline-block;
+  line-height: 1;
+  font-weight: 500;
+  color: currentColor;
+  font-family: "Segoe UI Symbol", "Segoe UI", "Apple Symbols", "Noto Sans Symbols 2", sans-serif;
+}
+
+.company-chat-action-menu {
+  position: absolute;
+  right: 0;
+  bottom: 42px;
+  min-width: 148px;
+  border: 1px solid rgba(203, 213, 225, 0.95);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+  padding: 6px;
+}
+
+.company-chat-action-menu-item {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: #0f172a;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font: 600 12px "Manrope", "Segoe UI", sans-serif;
+  cursor: pointer;
+}
+
+.company-chat-action-menu-item:hover {
+  background: rgba(15, 118, 110, 0.08);
+}
+
+.company-chat-action-menu-item[data-active="true"] {
+  color: #0f766e;
+}
+
+/* Reliable footer action bar (icon only) */
+#company-hard-language-wrap {
+  position: relative;
+}
+
+#company-hard-language-btn:hover,
+#company-hard-restart-btn:hover,
+#contact-form-close:hover {
+  background: rgba(20, 184, 166, 0.1) !important;
+}
+
+#contact-form-close {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 12px !important;
+  font-weight: 500 !important;
+  line-height: 1 !important;
+  font-size: 28px !important;
+}
+
+#company-hard-language-menu {
+  position: absolute;
+  right: 0;
+  bottom: 42px;
+  min-width: 148px;
+  border: 1px solid rgba(203, 213, 225, 0.95);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+  padding: 6px;
+  display: none;
+}
+
+#company-hard-language-menu button {
+  width: 100% !important;
+  height: auto !important;
+  text-align: left !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #0f172a !important;
+  border-radius: 10px !important;
+  padding: 8px 10px !important;
+  font: 600 12px "Manrope", "Segoe UI", sans-serif !important;
+  cursor: pointer !important;
+  transition: background 0.2s ease !important;
+}
+
+#company-hard-language-menu button:hover {
+  background: rgba(15, 118, 110, 0.08) !important;
+}
+
+#company-hard-language-menu button[data-active="true"] {
+  color: #0f766e !important;
+  font-weight: 700 !important;
 }
 
 .company-chat-launcher-strip {
@@ -110,12 +397,12 @@ df-messenger {
 
 @media (max-width: 768px) {
   df-messenger {
-    left: 12px;
-    right: 12px;
+    /* Left/right: `company.js` from common.chatLayout.side + bubblePosition (do not set both here). */
     bottom: 10px;
     --df-messenger-chat-window-width: calc(100vw - 24px);
     --df-messenger-chat-window-height: calc(100dvh - 24px);
-    --df-messenger-chat-border-radius: 16px;
+    --df-messenger-chat-border-radius: 20px;
+    --df-messenger-input-padding: 29px 8px 16px 8px;
   }
 }
 
