@@ -85,14 +85,16 @@ window.COMPANY_CHAT_UI_CONFIG = {
 
     // Language + Restart pill (next to Send). All values are pixels. Tune after you set `chatLayout.side`
     // (right-docked chat usually keeps Send on the right; nudges only move the pill, not the bubble).
+    // nudgeUpPx is subtracted from the computed `top` — LARGER values move the bar UP. Use a small value (0–20)
+    // to keep the pill on the real footer / composer row. nudgeDownPx ADDS; use it to nudge slightly downward.
     footerActionBar: {
-      nudgeRightPx: 150,
-      nudgeUpPx: -10,
-      nudgeDownPx: 2,
-      nudgeLeftPx: 150,
+      nudgeRightPx: -100,
+      nudgeUpPx: -50,
+      nudgeDownPx: 4,
+      nudgeLeftPx: 170,
       gapBeforeSendPx: 8,
-      // When the composer row is taller than this (multiline), keep Language/Restart at the same `top` as single-line.
-      lockVerticalWhenComposerRowTallerThanPx: 72
+      // 0 = off. Set e.g. 72 to “lock” Y when the typing area grows to multiline (can sometimes feel stuck).
+      lockVerticalWhenComposerRowTallerThanPx: 0
     },
 
     // -------------------------------------------------------------------------
@@ -103,7 +105,8 @@ window.COMPANY_CHAT_UI_CONFIG = {
     // -------------------------------------------------------------------------
     footerInputBox: {
       // Full `--df-messenger-input-padding` shorthand: top right bottom left (inset of composer vs chat card).
-      padding: "19px 0 50px 20px",
+      // 10px left/right: inner “side” margin for the message row; bottom kept for send/strip area.
+      padding: "19px 10px 50px 10px",
       // Or omit `padding` and set all four:
       // paddingTopPx: 19,
       // paddingRightPx: 0,
@@ -129,6 +132,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
     // - Look: color (CSS color), fontSizePx, textAlign, lineHeightPx
     // - widthOffsetPx: add/subtract from strip width. gap* keys tune spacing from composer/window.
     // - linkUrl: optional. If set (e.g. "https://www.google.com"), the strip is a link; click opens a new tab.
+    // - marginPx: optional uniform CSS margin (px) on the fixed strip; 0 = none.
     // -------------------------------------------------------------------------
     poweredBy: {
       enabled: true,
@@ -137,21 +141,22 @@ window.COMPANY_CHAT_UI_CONFIG = {
       linkUrl: "https://www.google.com",
 
       color: "#0f766e",
-      fontSizePx: 12,
+      fontSizePx: 11,
       textAlign: "center",
-      lineHeightPx: 18,
+      lineHeightPx: 16,
 
-      nudgeUpPx: 10,
-      nudgeDownPx: 15,
-      nudgeLeftPx: 0,
+      nudgeUpPx: 4,
+      nudgeDownPx: 4,
+      nudgeLeftPx: 170,
       nudgeRightPx: 110,
 
-      offsetTopPx: 0,
+      offsetTopPx: 80,
       offsetLeftPx: 0,
       widthOffsetPx: 0,
+      marginPx: 20,
 
-      gapAboveComposerPx: 2,
-      fallbackGapFromWindowBottomPx: 10
+      gapAboveComposerPx: 1,
+      fallbackGapFromWindowBottomPx: 6
     },
 
     // Page colors.
@@ -182,6 +187,177 @@ window.COMPANY_CHAT_UI_CONFIG = {
     //   (see Google’s CSS) and hides the track; wheel/touch scrolling still works.
     chatMessageList: {
       showScrollbar: false
+    },
+
+    // -------------------------------------------------------------------------
+    // Contact form (production: all form titles/placeholders live here when possible)
+    // -------------------------------------------------------------------------
+    // • `forms`: any number of keys. `defaultFormId`, Dialogflow `open_form` + `form_id`.
+    // • `titleByLanguage` / `subtitleByLanguage` / per-field `placeholderByLanguage` { en, hi, mr }.
+    // • Or `i18nPlaceholder` for shared strings (namePlaceholder, …) in company.js UI_TRANSLATIONS only.
+    // -------------------------------------------------------------------------
+    contactForm: {
+      dockToChatWindow: true,
+      dockAboveFooter: true,
+      gapAboveFooterPx: 8,
+      titleInsetPx: 48,
+      dockNudgeDownPx: 20,
+      sideInsetPx: 10,
+      maxCardHeightPx: 300,
+      showSubtitle: true,
+      // Form to use when Dialogflow sends only `{ "action": "open_form" }` (no `form_id`), and on first load.
+      defaultFormId: "contact",
+      // Shared defaults when a form does not set its own (this form uses per-form chatSummaryFieldNames)
+      chatSummaryFieldNames: ["name", "mobile", "email"],
+      forms: {
+        // Contact: name, mobile, email (no message field)
+        contact: {
+          titleByLanguage: {
+            en: "Contact us",
+            hi: "हमसे संपर्क करें",
+            mr: "आमच्याशी संपर्क करा"
+          },
+          subtitleByLanguage: {
+            en: "Share your contact details.",
+            hi: "अपनी जानकारी साझा करें, हम आपसे संपर्क करेंगे।",
+            mr: "तुमची माहिती शेअर करा, आम्ही तुमच्याशी संपर्क करू."
+          },
+          showSubtitle: true,
+          maxCardHeightPx: 300,
+          chatSummaryFieldNames: ["name", "mobile", "email"],
+          fields: [
+            { id: "c-name", name: "name", type: "text", required: true, icon: "user", i18nPlaceholder: "namePlaceholder", i18nSummaryLabel: "summaryNameLabel", autocomplete: "name" },
+            { id: "c-mobile", name: "mobile", type: "tel", required: true, icon: "phone", i18nPlaceholder: "mobilePlaceholder", i18nSummaryLabel: "summaryMobileLabel", autocomplete: "tel", inputMode: "tel" },
+            { id: "c-email", name: "email", type: "email", required: true, icon: "email", validateAs: "email", i18nPlaceholder: "emailPlaceholder", i18nSummaryLabel: "summaryEmailLabel", autocomplete: "email" }
+          ]
+        },
+        // Appointment: date and time (open from Dialogflow with `form_id`: `"appointment"`)
+        appointment: {
+          titleByLanguage: {
+            en: "Appointment",
+            hi: "अपॉइंटमेंट",
+            mr: "अपॉइंटमेंट"
+          },
+          subtitleByLanguage: {
+            en: "Choose a date and time.",
+            hi: "तारीख और समय चुनें।",
+            mr: "तारीख आणि वेळ निवडा."
+          },
+          showSubtitle: true,
+          maxCardHeightPx: 260,
+          chatSummaryFieldNames: ["appointmentdate", "appointmenttime"],
+          fields: [
+            {
+              id: "a-date",
+              name: "appointmentdate",
+              type: "date",
+              required: true,
+              icon: "calendar",
+              i18nSummaryLabel: "summaryDateLabel",
+              placeholderByLanguage: { en: "Date", hi: "तिथि", mr: "तारीख" }
+            },
+            {
+              id: "a-time",
+              name: "appointmenttime",
+              type: "time",
+              required: true,
+              icon: "clock",
+              i18nSummaryLabel: "summaryTimeLabel",
+              placeholderByLanguage: { en: "Time", hi: "समय", mr: "वेळ" }
+            }
+          ]
+        },
+        // OTP: first screen = OTP only + “change mobile”; second = mobile only + submit (`form_id`: `"otp"`).
+        otp: {
+          titleByLanguage: {
+            en: "Verify OTP",
+            hi: "OTP सत्यापित करें",
+            mr: "OTP सत्यापित करा"
+          },
+          subtitleByLanguage: {
+            en: "Enter the code we sent. Use the link below if you need a different number.",
+            hi: "भेजा गया कोड दर्ज करें। अलग नंबर के लिए नीचे दबाएं।",
+            mr: "पाठवलेला कोड टाका. दुसरा नंबर हवा असल्यास खाली दाबा."
+          },
+          // Shown on the “change mobile” step (optional i18n fallback in company.js).
+          subtitleMobileByLanguage: {
+            en: "Enter the correct mobile number and submit. We will send a new code.",
+            hi: "सही मोबाइल नंबर दर्ज करें और जमा करें।",
+            mr: "योग्य मोबाईल क्रमांक टाका आणि सबमिट करा. नवा कोड पाठवू."
+          },
+          showSubtitle: true,
+          maxCardHeightPx: 240,
+          chatSummaryFieldNames: ["mobile", "otp"],
+          // OTP field first, then mobile (UI groups into two steps in company.js).
+          fields: [
+            {
+              id: "o-otp",
+              name: "otp",
+              type: "text",
+              required: true,
+              icon: "key",
+              maxLength: 8,
+              minLength: 4,
+              inputMode: "numeric",
+              pattern: "^[0-9]{4,8}$",
+              i18nPlaceholder: "otpCodePlaceholder",
+              i18nSummaryLabel: "summaryOtpLabel",
+              i18nInvalidMessage: "invalidOtp",
+              autocomplete: "one-time-code"
+            },
+            {
+              id: "o-mobile",
+              name: "mobile",
+              type: "tel",
+              required: false,
+              icon: "phone",
+              validateAs: "phone",
+              i18nPlaceholder: "mobilePlaceholder",
+              i18nSummaryLabel: "summaryMobileLabel",
+              autocomplete: "tel",
+              inputMode: "tel",
+              placeholderByLanguage: {
+                en: "Mobile number",
+                hi: "मोबाइल नंबर",
+                mr: "मोबाईल नंबर"
+              }
+            }
+          ]
+        },
+        // Upload document — `form_id`: `"uploadDocument"`. `multiple: true` = several files; omit or `false` = one file.
+        uploadDocument: {
+          titleByLanguage: {
+            en: "Upload document",
+            hi: "दस्तावेज़ अपलोड करें",
+            mr: "दस्तऐवज अपलोड करा"
+          },
+          subtitleByLanguage: {
+            en: "You can select one or more files. Video is not allowed.",
+            hi: "एक या अधिक फ़ाइल चुन सकते हैं। वीडियो अनुमति नहीं।",
+            mr: "एक किंवा अनेक फाइल निवडा. व्हिडिओ नाही."
+          },
+          showSubtitle: true,
+          maxCardHeightPx: 280,
+          chatSummaryFieldNames: ["document"],
+          fields: [
+            {
+              id: "u-document",
+              name: "document",
+              type: "file",
+              required: true,
+              multiple: true,
+              icon: "file",
+              i18nSummaryLabel: "summaryDocumentLabel",
+              accept: "image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.rtf,.odt,.ods,.odp,.zip,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/plain,text/csv,application/zip,application/x-zip-compressed",
+              placeholderByLanguage: {
+                en: "Choose one or more files…",
+                hi: "एक या अधिक फ़ाइलें चुनें…",
+                mr: "एक किंवा अनेक फाइल निवडा…"
+              }
+            }
+          ]
+        }
+      }
     },
 
     // -------------------------------------------------------------------------
@@ -220,9 +396,11 @@ window.COMPANY_CHAT_UI_CONFIG = {
     // Chat colors + other widget styling (technical names — ask a developer if unsure).
     // Tip: the floating button’s roundness is controlled above in `chatBubbleLauncher` (easier for edits).
     dfMessengerTheme: {
-      "--df-messenger-input-inner-padding": "0 46px 0 12px",
-      "--df-messenger-input-box-padding": "17px 0 5px 18px",
-      "--df-messenger-input-box-focus-padding": "17px 0 5px 18px",
+      // Inner textarea: top, right, bottom, left — 10px bottom + left (room beside send on the right).
+      "--df-messenger-input-inner-padding": "0 46px 10px 10px",
+      // Input box: top / right / bottom / left; +5px top +5px bottom vs prior = +10px row height.
+      "--df-messenger-input-box-padding": "22px 10px 10px 10px",
+      "--df-messenger-input-box-focus-padding": "22px 10px 10px 10px",
       "--df-messenger-input-border-top": "1px solid rgba(20, 184, 166, 0.28)",
       "--df-messenger-input-font-size": "16px",
       "--df-messenger-input-font-weight": "600",

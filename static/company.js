@@ -4,6 +4,8 @@ let lastUserPersonaRenderAt = 0;
 let companyPersonaWindowListenersAttached = false;
 let contactFormOpenTimer = null;
 let contactFormOpenPending = false;
+/** @type {string | null} Which `common.contactForm.forms[…]` is active; `null` until first `readContactFormConfig()`. */
+let activeContactFormId = null;
 let activeDfMessenger = null;
 let activeBubbleNode = null;
 let hasAutoStartedConversation = false;
@@ -339,6 +341,8 @@ function scheduleSyncChatActionBarPosition() {
         scheduleChatActionBarRaf = window.requestAnimationFrame(() => {
             scheduleChatActionBarRaf = 0;
             syncChatActionBarPosition();
+            // Contact form can change internal measurements; run Powered by after it so the strip stays on the real footer.
+            syncContactFormPosition();
             syncPoweredByStripPosition();
         });
     }, 80);
@@ -502,13 +506,21 @@ function updateCompanyDebugBadge(lines) {
 
 const UI_TRANSLATIONS = {
     en: {
-        contactFormTitle: "Contact Us",
-        contactFormSubtitle: "Share your details and we will contact you.",
+        contactFormTitle: "Contact Form",
+        contactFormSubtitle: "Share your contact details.",
         closeContactFormAria: "Close contact form",
         namePlaceholder: "Name",
         mobilePlaceholder: "Mobile number",
         emailPlaceholder: "Email",
         messagePlaceholder: "How can we help?",
+        otpCodePlaceholder: "Enter OTP",
+        summaryNameLabel: "Name",
+        summaryMobileLabel: "Mobile",
+        summaryEmailLabel: "Email",
+        summaryDateLabel: "Date",
+        summaryTimeLabel: "Time",
+        summaryLocationLabel: "Location",
+        summaryOtpLabel: "OTP",
         submitButton: "Submit",
         languageLabel: "Language",
         restartButtonLabel: "Restart",
@@ -517,7 +529,22 @@ const UI_TRANSLATIONS = {
         statusSubmitting: "Submitting...",
         statusSubmitted: "Submitted successfully.",
         statusSubmissionFailed: "Submission failed. Please try again.",
-        contactResponseThanks: "Thank You for sharing the details"
+        contactResponseThanks: "Thank You for sharing the details",
+        fieldRequired: "Please fill in this field.",
+        invalidEmail: "Please enter a valid email address.",
+        invalidPhone: "Please enter a valid phone number.",
+        invalidPattern: "This value does not match the required format.",
+        invalidOtp: "Enter a valid OTP (4–8 digits).",
+        changeMobileButton: "Change mobile number",
+        backToOtpButton: "Back to OTP",
+        resendOtpButton: "Didn't receive? Send OTP again",
+        statusOtpResent: "A new code has been sent. Check your messages.",
+        statusMobileNumberSaved: "Number updated. Enter the new code below.",
+        otpFormSubtitleMobile: "Enter your mobile number and submit.",
+        documentUploadAria: "Choose a file to upload",
+        summaryDocumentLabel: "Document",
+        invalidVideoFile: "Video files are not allowed. Use images, PDF, Word, or other documents.",
+        clearFileSelectionButton: "Cancel selection"
     },
     hi: {
         contactFormTitle: "संपर्क करें",
@@ -527,6 +554,14 @@ const UI_TRANSLATIONS = {
         mobilePlaceholder: "मोबाइल नंबर",
         emailPlaceholder: "ईमेल",
         messagePlaceholder: "हम आपकी कैसे मदद कर सकते हैं?",
+        otpCodePlaceholder: "OTP दर्ज करें",
+        summaryNameLabel: "नाम",
+        summaryMobileLabel: "मोबाइल",
+        summaryEmailLabel: "ईमेल",
+        summaryDateLabel: "तिथि",
+        summaryTimeLabel: "समय",
+        summaryLocationLabel: "स्थान",
+        summaryOtpLabel: "OTP",
         submitButton: "जमा करें",
         languageLabel: "भाषा",
         restartButtonLabel: "रीस्टार्ट",
@@ -535,7 +570,22 @@ const UI_TRANSLATIONS = {
         statusSubmitting: "जमा किया जा रहा है...",
         statusSubmitted: "सफलतापूर्वक जमा किया गया।",
         statusSubmissionFailed: "जमा नहीं हो सका। कृपया फिर से प्रयास करें।",
-        contactResponseThanks: "जानकारी साझा करने के लिए धन्यवाद"
+        contactResponseThanks: "जानकारी साझा करने के लिए धन्यवाद",
+        fieldRequired: "कृपया यह भरें।",
+        invalidEmail: "कृपया मान्य ईमेल दर्ज करें।",
+        invalidPhone: "कृपया मान्य फोन नंबर दर्ज करें।",
+        invalidPattern: "यह मान आवश्यक प्रारूप से मेल नहीं खाता।",
+        invalidOtp: "मान्य OTP दर्ज करें (4–8 अंक)।",
+        changeMobileButton: "मोबाइल नंबर बदलें",
+        backToOtpButton: "OTP पर वापस",
+        resendOtpButton: "नहीं मिला? फिर से OTP भेजें",
+        statusOtpResent: "नया कोड भेज दिया गया। संदेश देखें।",
+        statusMobileNumberSaved: "नंबर अपडेट। नया कोड ऊपर दर्ज करें।",
+        otpFormSubtitleMobile: "मोबाइल नंबर दर्ज करें और जमा करें।",
+        documentUploadAria: "अपलोड के लिए फ़ाइल चुनें",
+        summaryDocumentLabel: "दस्तावेज़",
+        invalidVideoFile: "वीडियो फ़ाइलें मान्य नहीं। छवि, PDF या Word आदि भेजें।",
+        clearFileSelectionButton: "चयन रद्द करें"
     },
     mr: {
         contactFormTitle: "आमच्याशी संपर्क करा",
@@ -545,6 +595,14 @@ const UI_TRANSLATIONS = {
         mobilePlaceholder: "मोबाईल नंबर",
         emailPlaceholder: "ईमेल",
         messagePlaceholder: "आम्ही तुम्हाला कशी मदत करू शकतो?",
+        otpCodePlaceholder: "OTP टाका",
+        summaryNameLabel: "नाव",
+        summaryMobileLabel: "मोबाईल",
+        summaryEmailLabel: "ईमेल",
+        summaryDateLabel: "तारीख",
+        summaryTimeLabel: "वेळ",
+        summaryLocationLabel: "ठिकाण",
+        summaryOtpLabel: "OTP",
         submitButton: "सबमिट",
         languageLabel: "भाषा",
         restartButtonLabel: "रीस्टार्ट",
@@ -553,7 +611,22 @@ const UI_TRANSLATIONS = {
         statusSubmitting: "सबमिट होत आहे...",
         statusSubmitted: "यशस्वीरित्या सबमिट झाले.",
         statusSubmissionFailed: "सबमिट झाले नाही. कृपया पुन्हा प्रयत्न करा.",
-        contactResponseThanks: "माहिती शेअर केल्याबद्दल धन्यवाद"
+        contactResponseThanks: "माहिती शेअर केल्याबद्दल धन्यवाद",
+        fieldRequired: "कृपया हे क्षेत्र भरा.",
+        invalidEmail: "कृपया वैध ईमेल टाका.",
+        invalidPhone: "कृपया वैध फोन क्रमांक टाका.",
+        invalidPattern: "हे मूल्य आवश्यक स्वरूपाशी जुळत नाही.",
+        invalidOtp: "वैध OTP टाका (४–८ अंक).",
+        changeMobileButton: "मोबाईल क्रमांक बदला",
+        backToOtpButton: "OTPकडे परत",
+        resendOtpButton: "मिळाला नाही? पुन्हा OTP पाठवा",
+        statusOtpResent: "नवा कोड पाठवला. मेसेज पहा.",
+        statusMobileNumberSaved: "नंबर अपडेट. नवा कोड वर टाका.",
+        otpFormSubtitleMobile: "मोबाईल क्रमांक टाका आणि सबमिट करा.",
+        documentUploadAria: "अपलोडसाठी फाइल निवडा",
+        summaryDocumentLabel: "दस्तऐवज",
+        invalidVideoFile: "व्हिडिओ फाइल्सना परवानगी नाही. प्रतिमा, PDF किंवा Word वापरा.",
+        clearFileSelectionButton: "निवड रद्द करा"
     }
 };
 
@@ -562,6 +635,8 @@ window.addEventListener("DOMContentLoaded", () => {
     if (!IS_MULTI_LANGUAGE_ENABLED) {
         activeLanguage = DEFAULT_LANGUAGE;
     }
+    // Contact fields mount from config; applyLanguage must run after so placeholders/labels apply.
+    initializeContactForm();
     applyLanguage(activeLanguage);
     // Initialize hard bar after messenger mounts.
     // (removed status overlay)
@@ -572,7 +647,6 @@ window.addEventListener("DOMContentLoaded", () => {
         `activeLanguage: ${activeLanguage}`,
         `debug: add ?${COMPANY_DEBUG_QUERY_FLAG}=1`
     ]);
-    initializeContactForm();
     initializeClientContextCapture();
 
     createAndMountMessenger();
@@ -1343,7 +1417,15 @@ function syncChatActionBarPosition() {
             }
             const estBarW = chatActionBarSendWidthCache || 260;
             left = Math.max(4, Math.round(s.left - estBarW - gapBeforeSend));
-            top = Math.max(4, Math.round(s.top + (s.height - btnSize) / 2) + nudgeDownPx);
+            // Vertical: center on the full composer row when we have it (taller than Send), else center on Send.
+            let vCenterY = s.top + (s.height - btnSize) / 2;
+            if (targetRow && typeof targetRow.getBoundingClientRect === "function") {
+                const rowR = targetRow.getBoundingClientRect();
+                if (rowR && rowR.height > 0) {
+                    vCenterY = rowR.top + (rowR.height - btnSize) / 2;
+                }
+            }
+            top = Math.max(4, Math.round(vCenterY) + nudgeDownPx);
             anchoredToSend = true;
         }
     }
@@ -1500,6 +1582,83 @@ function applyPoweredByStripVisuals(el) {
     }
 }
 
+/**
+ * Nudge a fixed "Powered by" strip so it stays inside the horizontal viewport
+ * (after width: max-content and translateX centring).
+ * @param {HTMLElement} el
+ */
+function clampPoweredByStripInViewport(el) {
+    if (!el) {
+        return;
+    }
+    if (el.style.display === "none") {
+        return;
+    }
+    const br = el.getBoundingClientRect();
+    if (!br.width) {
+        return;
+    }
+    let dx = 0;
+    if (br.right > window.innerWidth - 4) {
+        dx = (window.innerWidth - 4) - br.right;
+    }
+    if (br.left + dx < 4) {
+        dx = 4 - br.left;
+    }
+    if (Math.abs(dx) < 0.25) {
+        return;
+    }
+    const cur = parseFloat(el.style.left) || 0;
+    if (!Number.isFinite(cur)) {
+        return;
+    }
+    el.style.left = `${cur + dx}px`;
+}
+
+/**
+ * @param {HTMLElement} el
+ * @param {ReturnType<typeof readPoweredByStyleConfig>} L
+ * @param {DOMRect} fr
+ * @param {number} topPx
+ */
+function setPoweredByStripGeometry(el, L, fr, topPx) {
+    const lineH = L.lineHeightPx;
+    const deltaLeft = L.offsetLeftPx + L.nudgeRightPx - L.nudgeLeftPx;
+    const textAlign = L.textAlign || "center";
+    const wMax = Math.max(120, window.innerWidth - 8);
+    el.style.position = "fixed";
+    el.style.zIndex = "2147483642";
+    el.style.top = `${topPx}px`;
+    el.style.bottom = "auto";
+    el.style.setProperty("width", "max-content", "important");
+    el.style.setProperty("max-width", `${wMax}px`, "important");
+    el.style.setProperty("min-width", "0", "important");
+    el.style.setProperty("box-sizing", "border-box", "important");
+    el.style.setProperty("white-space", "nowrap", "important");
+    el.style.setProperty("min-height", `${lineH}px`, "important");
+    el.style.removeProperty("height");
+    el.style.setProperty("display", "block", "important");
+    if (L.marginPx > 0) {
+        el.style.setProperty("margin", `${L.marginPx}px`, "important");
+    } else {
+        el.style.removeProperty("margin");
+    }
+    el.style.removeProperty("padding");
+    if (textAlign === "right") {
+        el.style.left = `${Math.round(fr.left + fr.width) + deltaLeft}px`;
+        el.style.setProperty("transform", "translateX(-100%)", "important");
+    } else if (textAlign === "left") {
+        el.style.left = `${Math.round(fr.left) + deltaLeft}px`;
+        el.style.removeProperty("transform");
+    } else {
+        el.style.left = `${Math.round(fr.left + fr.width / 2) + deltaLeft}px`;
+        el.style.setProperty("transform", "translateX(-50%)", "important");
+    }
+    window.requestAnimationFrame(() => {
+        clampPoweredByStripInViewport(el);
+    });
+}
+
 function syncPoweredByStripPosition() {
     if (!IS_POWERED_BY_ENABLED) {
         if (poweredByStripNode) {
@@ -1511,12 +1670,15 @@ function syncPoweredByStripPosition() {
     if (!el) {
         return;
     }
-    if (!isChatWindowOpen) {
+    const messenger = activeDfMessenger || document.querySelector("df-messenger");
+    if (!messenger) {
         el.style.display = "none";
         return;
     }
-    const messenger = activeDfMessenger || document.querySelector("df-messenger");
-    if (!messenger) {
+    // Rely on `df-messenger#expand` / `.expand` as well as the custom event — some runtimes
+    // omit or reshape `df-chat-open-changed`, which left `isChatWindowOpen` false and hid this strip.
+    const chatShellOpen = isChatWindowOpen || isChatExpanded(messenger);
+    if (!chatShellOpen) {
         el.style.display = "none";
         return;
     }
@@ -1525,38 +1687,39 @@ function syncPoweredByStripPosition() {
     const lineH = L.lineHeightPx;
     const deltaTop = L.offsetTopPx + L.nudgeDownPx - L.nudgeUpPx;
     const deltaLeft = L.offsetLeftPx + L.nudgeRightPx - L.nudgeLeftPx;
+    // Prefer the same composer row as Send (not the full footer host), so the strip doesn’t jump when
+    // the page contact form is open and the big footer box reflows.
+    const insertion = findFooterInlineInsertionPoint(messenger);
+    const targetRow = insertion && insertion.parent ? insertion.parent : null;
     const footerHost = resolveFooterMountHost(messenger) || findChatFooterHost(messenger);
-    if (footerHost && typeof footerHost.getBoundingClientRect === "function") {
-        const fr = footerHost.getBoundingClientRect();
-        if (fr && fr.width > 0 && fr.height > 0) {
-            const top = Math.round(fr.top - lineH - L.gapAboveComposerPx) + deltaTop;
-            const left = Math.round(fr.left) + deltaLeft;
-            const width = Math.max(40, Math.round(fr.width) + L.widthOffsetPx);
-            el.style.position = "fixed";
-            el.style.zIndex = "2147483640";
-            el.style.left = `${left}px`;
-            el.style.width = `${width}px`;
-            el.style.top = `${top}px`;
-            el.style.height = `${lineH}px`;
-            el.style.display = "block";
-            return;
+    let fr = null;
+    if (targetRow && typeof targetRow.getBoundingClientRect === "function") {
+        const rowR = targetRow.getBoundingClientRect();
+        if (rowR && rowR.width > 0 && rowR.height > 0) {
+            fr = rowR;
         }
+    }
+    if (!fr && footerHost && typeof footerHost.getBoundingClientRect === "function") {
+        const r2 = footerHost.getBoundingClientRect();
+        if (r2 && r2.width > 0 && r2.height > 0) {
+            fr = r2;
+        }
+    }
+    if (fr) {
+        const rawTop = Math.round(fr.top - lineH - L.gapAboveComposerPx) + deltaTop;
+        // Row − lineH can be negative; keep the strip in the viewport. Above contact form in stacking order.
+        const top = Math.max(4, Math.min(rawTop, window.innerHeight - lineH - 4));
+        setPoweredByStripGeometry(el, L, fr, top);
+        return;
     }
     const r = findChatWindowRect(messenger);
     if (!r || r.width < 80) {
         el.style.display = "none";
         return;
     }
-    const top = Math.round(r.bottom - lineH - L.fallbackGapFromWindowBottomPx) + deltaTop;
-    const left = Math.round(r.left) + deltaLeft;
-    const width = Math.max(40, Math.round(r.width) + L.widthOffsetPx);
-    el.style.position = "fixed";
-    el.style.zIndex = "2147483640";
-    el.style.left = `${left}px`;
-    el.style.width = `${width}px`;
-    el.style.top = `${top}px`;
-    el.style.height = `${lineH}px`;
-    el.style.display = "block";
+    const rawTopFb = Math.round(r.bottom - lineH - L.fallbackGapFromWindowBottomPx) + deltaTop;
+    const topClamped = Math.max(4, Math.min(rawTopFb, window.innerHeight - lineH - 4));
+    setPoweredByStripGeometry(el, L, r, topClamped);
 }
 
 function mountChatActionBarInline(messenger, bar) {
@@ -1851,14 +2014,973 @@ function readFooterActionBarLayoutConfig() {
         ? COMMON_CONFIG.footerActionBar
         : {};
     const n = (value, defaultValue) => (typeof value === "number" && Number.isFinite(value) ? value : defaultValue);
+    // `nudgeUpPx` is subtracted from the computed `top` — larger values move the bar UP on the screen.
+    // Use small nudge (e.g. 8–16) so the pill stays on the composer row next to Send.
     return {
         nudgeRightPx: n(c.nudgeRightPx, 150),
-        nudgeUpPx: n(c.nudgeUpPx, 73),
+        nudgeUpPx: n(c.nudgeUpPx, 12),
         nudgeDownPx: n(c.nudgeDownPx, 2),
         nudgeLeftPx: n(c.nudgeLeftPx, 120),
         gapBeforeSendPx: n(c.gapBeforeSendPx, 8),
-        lockVerticalWhenComposerRowTallerThanPx: n(c.lockVerticalWhenComposerRowTallerThanPx, 72)
+        // 0 = disable “stable top” when the textarea goes multiline (avoids a stuck, too-high Y).
+        lockVerticalWhenComposerRowTallerThanPx: n(c.lockVerticalWhenComposerRowTallerThanPx, 0)
     };
+}
+
+const CONTACT_FORM_SVG_ICONS = {
+    user: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+    phone: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+    email: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>',
+    message: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+    url: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>',
+    calendar: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+    clock: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>',
+    map: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+    location: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+    key: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.5 9.5"/><path d="m15.5 7.5 3 3L22 4l-3-3"/></svg>',
+    file: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>'
+};
+
+const CONTACT_FORM_INPUT_TYPES = new Set([
+    "text", "email", "tel", "date", "time", "datetime-local", "number", "url", "password", "search", "week", "month", "color"
+]);
+
+const EMAIL_VALIDATION_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_DEFAULT_PATTERN = "^[+]?[0-9\\s\\-]{7,20}$";
+
+/** @type {Set<string>} Lowercase extension without dot — blocks common video types (server should still verify). */
+const CONTACT_FORM_VIDEO_UPLOAD_EXTENSIONS = new Set([
+    "mp4", "m4v", "webm", "ogv", "mov", "avi", "mkv", "wmv", "flv", "3gp", "3g2", "ts", "mts", "m2ts", "vob", "asf", "f4v", "mpeg", "mpg", "divx", "xvid"
+]);
+
+/**
+ * @param {File} file
+ * @returns {boolean}
+ */
+function isContactFormVideoUploadFile(file) {
+    if (!file || typeof file !== "object") {
+        return false;
+    }
+    const mt = typeof file.type === "string" ? file.type.toLowerCase() : "";
+    if (mt.indexOf("video/") === 0) {
+        return true;
+    }
+    const nm = typeof file.name === "string" ? file.name : "";
+    const m = nm.toLowerCase().match(/\.([^.]+)$/);
+    return Boolean(m && CONTACT_FORM_VIDEO_UPLOAD_EXTENSIONS.has(m[1]));
+}
+
+/**
+ * @returns {boolean}
+ */
+function contactFormConfigHasFileField() {
+    const fields = readContactFormConfig().fields;
+    if (!Array.isArray(fields)) {
+        return false;
+    }
+    for (let i = 0; i < fields.length; i += 1) {
+        const d = fields[i];
+        if (d && String(d.type || "").toLowerCase() === "file") {
+            return true;
+        }
+    }
+    return false;
+}
+
+function getBuiltinDefaultContactFormFields() {
+    return [
+        { id: "contact-name", name: "name", type: "text", required: true, icon: "user", i18nPlaceholder: "namePlaceholder", i18nSummaryLabel: "summaryNameLabel", autocomplete: "name" },
+        { id: "contact-mobile", name: "mobile", type: "tel", required: true, icon: "phone", i18nPlaceholder: "mobilePlaceholder", i18nSummaryLabel: "summaryMobileLabel", autocomplete: "tel", inputMode: "tel" },
+        { id: "contact-email", name: "email", type: "email", required: true, icon: "email", i18nPlaceholder: "emailPlaceholder", i18nSummaryLabel: "summaryEmailLabel", autocomplete: "email" },
+        { id: "contact-message", name: "message", type: "textarea", required: true, icon: "message", i18nPlaceholder: "messagePlaceholder", rows: 2 }
+    ];
+}
+
+/**
+ * @returns {string} Key in `common.contactForm.forms` (or "default" for legacy `fields` only).
+ */
+function getDefaultContactFormId() {
+    const c = COMMON_CONFIG && typeof COMMON_CONFIG.contactForm === "object" ? COMMON_CONFIG.contactForm : {};
+    if (c.forms && typeof c.forms === "object") {
+        const keys = Object.keys(c.forms);
+        if (keys.length === 0) {
+            return "default";
+        }
+        const want = typeof c.defaultFormId === "string" ? c.defaultFormId.trim() : "";
+        if (want && c.forms[want]) {
+            return want;
+        }
+        return keys[0];
+    }
+    return "default";
+}
+
+/**
+ * @returns {{ formKey: string, block: Record<string, unknown> }}
+ */
+function getResolvedContactFormBlock() {
+    const c = COMMON_CONFIG && typeof COMMON_CONFIG.contactForm === "object" ? COMMON_CONFIG.contactForm : {};
+    if (activeContactFormId == null) {
+        activeContactFormId = getDefaultContactFormId();
+    }
+    if (c.forms && typeof c.forms === "object" && Object.keys(c.forms).length) {
+        let key = activeContactFormId;
+        if (!c.forms[key]) {
+            key = getDefaultContactFormId();
+            activeContactFormId = key;
+        }
+        const f = c.forms[key];
+        return { formKey: key, block: f && typeof f === "object" ? f : {} };
+    }
+    return {
+        formKey: "default",
+        block: {
+            titleI18nKey: "contactFormTitle",
+            subtitleI18nKey: "contactFormSubtitle",
+            fields: Array.isArray(c.fields) && c.fields.length > 0
+                ? c.fields
+                : getBuiltinDefaultContactFormFields()
+        }
+    };
+}
+
+function readContactFormConfig() {
+    const c = COMMON_CONFIG && typeof COMMON_CONFIG.contactForm === "object" ? COMMON_CONFIG.contactForm : {};
+    const n = (value, defaultValue) => (typeof value === "number" && Number.isFinite(value) ? value : defaultValue);
+    const resolved = getResolvedContactFormBlock();
+    const b = resolved.block;
+    const rawFields = Array.isArray(b.fields) ? b.fields : [];
+    const fields = rawFields.length > 0 ? rawFields : getBuiltinDefaultContactFormFields();
+    const titleI18nKey = typeof b.titleI18nKey === "string" && b.titleI18nKey.trim()
+        ? b.titleI18nKey.trim()
+        : "contactFormTitle";
+    const subtitleI18nKey = typeof b.subtitleI18nKey === "string" && b.subtitleI18nKey.trim()
+        ? b.subtitleI18nKey.trim()
+        : "contactFormSubtitle";
+    const showSubtitle = typeof b.showSubtitle === "boolean" ? b.showSubtitle : c.showSubtitle !== false;
+    const chatNames = Array.isArray(b.chatSummaryFieldNames) && b.chatSummaryFieldNames.length
+        ? b.chatSummaryFieldNames.slice()
+        : (Array.isArray(c.chatSummaryFieldNames) && c.chatSummaryFieldNames.length
+            ? c.chatSummaryFieldNames.slice()
+            : ["name", "mobile"]);
+    const maxFromBlock = typeof b.maxCardHeightPx === "number" && Number.isFinite(b.maxCardHeightPx) && b.maxCardHeightPx > 0
+        ? b.maxCardHeightPx
+        : null;
+    const titleByLanguage = b.titleByLanguage && typeof b.titleByLanguage === "object" ? b.titleByLanguage : null;
+    const subtitleByLanguage = b.subtitleByLanguage && typeof b.subtitleByLanguage === "object" ? b.subtitleByLanguage : null;
+    return {
+        formKey: resolved.formKey,
+        maxCardHeightPx: maxFromBlock != null ? maxFromBlock : n(c.maxCardHeightPx, 300),
+        showSubtitle,
+        dockToChatWindow: c.dockToChatWindow !== false,
+        dockAboveFooter: c.dockAboveFooter !== false,
+        titleInsetPx: n(c.titleInsetPx, 48),
+        dockNudgeDownPx: n(c.dockNudgeDownPx, 0),
+        gapAboveFooterPx: n(c.gapAboveFooterPx, 8),
+        sideInsetPx: n(c.sideInsetPx, 10),
+        chatSummaryFieldNames: chatNames,
+        fields,
+        titleI18nKey,
+        subtitleI18nKey,
+        titleByLanguage,
+        subtitleByLanguage
+    };
+}
+
+/**
+ * @param {Record<string, unknown> | null} map
+ * @param {string} lang
+ * @returns {string | null}
+ */
+function pickContactFormLocalizedLine(map, lang) {
+    if (!map || typeof map !== "object") {
+        return null;
+    }
+    const L = normalizeLanguage(lang);
+    const tryKeys = [L, lang, "en", DEFAULT_LANGUAGE];
+    for (let i = 0; i < tryKeys.length; i += 1) {
+        const k = tryKeys[i];
+        const v = map[k];
+        if (typeof v === "string" && v.trim()) {
+            return v;
+        }
+    }
+    return null;
+}
+
+/**
+ * @returns {"otp" | "mobile"}
+ */
+function getOtpFormStep() {
+    const root = document.querySelector("#contact-form-inputs .contact-form-otp-views");
+    if (!root) {
+        return "otp";
+    }
+    return root.getAttribute("data-otp-form-step") === "mobile" ? "mobile" : "otp";
+}
+
+/**
+ * @param {"otp" | "mobile"} step
+ */
+function applyOtpFormStepSubtitle(step) {
+    const s = document.querySelector("#contact-form .contact-form__subtitle");
+    if (!s) {
+        return;
+    }
+    const c = COMMON_CONFIG && COMMON_CONFIG.contactForm && typeof COMMON_CONFIG.contactForm.forms === "object"
+        ? COMMON_CONFIG.contactForm.forms.otp
+        : null;
+    const lang = activeLanguage;
+    const show = readContactFormConfig().showSubtitle;
+    if (step === "mobile") {
+        const inline = c && c.subtitleMobileByLanguage && typeof c.subtitleMobileByLanguage === "object"
+            ? pickContactFormLocalizedLine(c.subtitleMobileByLanguage, lang)
+            : null;
+        s.textContent = inline != null ? inline : getTranslation("otpFormSubtitleMobile");
+    } else {
+        const inline = c && c.subtitleByLanguage && typeof c.subtitleByLanguage === "object"
+            ? pickContactFormLocalizedLine(c.subtitleByLanguage, lang)
+            : null;
+        s.textContent = inline != null ? inline : getTranslation("contactFormSubtitle");
+    }
+    s.removeAttribute("data-i18n");
+    s.style.display = show ? "" : "none";
+}
+
+/**
+ * @param {"otp" | "mobile"} step
+ */
+function setOtpFormStep(step) {
+    const root = document.querySelector("#contact-form-inputs .contact-form-otp-views");
+    if (!root) {
+        return;
+    }
+    root.setAttribute("data-otp-form-step", step);
+    const otpPanel = root.querySelector('[data-otp-step="otp"]');
+    const mobilePanel = root.querySelector('[data-otp-step="mobile"]');
+    if (otpPanel) {
+        otpPanel.hidden = step !== "otp";
+    }
+    if (mobilePanel) {
+        mobilePanel.hidden = step !== "mobile";
+    }
+    applyOtpFormStepSubtitle(step);
+    const oOtp = document.getElementById("o-otp");
+    const oMobile = document.getElementById("o-mobile");
+    if (step === "otp" && oOtp && typeof oOtp.focus === "function") {
+        oOtp.focus();
+    } else if (step === "mobile" && oMobile && typeof oMobile.focus === "function") {
+        oMobile.focus();
+    }
+}
+
+function syncContactFormNoValidateForActiveForm() {
+    const form = document.getElementById("contact-form-fields");
+    if (!form) {
+        return;
+    }
+    if (readContactFormConfig().formKey === "otp" || contactFormConfigHasFileField()) {
+        form.setAttribute("novalidate", "novalidate");
+    } else {
+        form.removeAttribute("novalidate");
+    }
+}
+
+function submitOtpResendRequest(clickedButton) {
+    const endpoint = getApiEndpoint(CONTACT_FORM_ENDPOINT);
+    const status = document.getElementById("contact-form-status");
+    if (!endpoint) {
+        if (status) {
+            status.textContent = getTranslation("statusOpenViaFlask");
+            status.classList.add("is-error");
+            status.classList.remove("is-success");
+        }
+        return;
+    }
+    const mEl = document.getElementById("o-mobile");
+    const mRaw = mEl && "value" in mEl ? mEl.value : "";
+    const mobile = typeof mRaw === "string" ? mRaw.trim() : "";
+    const payload = {
+        client_context: getClientContext(),
+        _contactFormId: "otp",
+        _contactFormAction: "resend_otp"
+    };
+    if (mobile) {
+        payload.mobile = mobile;
+    }
+    if (status) {
+        status.textContent = getTranslation("statusSubmitting");
+        status.classList.remove("is-success", "is-error");
+    }
+    if (clickedButton && "disabled" in clickedButton) {
+        clickedButton.disabled = true;
+    }
+    fetch(endpoint, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+    })
+        .then(async (response) => {
+            const responseText = await response.text();
+            let responsePayload = {};
+            try {
+                responsePayload = responseText ? JSON.parse(responseText) : {};
+            } catch {
+                responsePayload = {};
+            }
+            if (!response.ok) {
+                const fallbackMessage = responseText
+                    ? `Unable to send. HTTP ${response.status}: ${responseText.slice(0, 160)}`
+                    : `Unable to send. HTTP ${response.status}`;
+                throw new Error(responsePayload.error || responsePayload.message || fallbackMessage);
+            }
+            if (status) {
+                status.textContent = responsePayload.message || getTranslation("statusOtpResent");
+                status.classList.add("is-success");
+                status.classList.remove("is-error");
+            }
+        })
+        .catch((error) => {
+            if (status) {
+                status.textContent = error.message || getTranslation("statusSubmissionFailed");
+                status.classList.add("is-error");
+                status.classList.remove("is-success");
+            }
+        })
+        .finally(() => {
+            if (clickedButton && "disabled" in clickedButton) {
+                clickedButton.disabled = false;
+            }
+        });
+}
+
+function setupOtpFormTwoStepIfNeeded() {
+    const cfg = readContactFormConfig();
+    if (cfg.formKey !== "otp") {
+        return;
+    }
+    const slot = document.getElementById("contact-form-inputs");
+    if (!slot) {
+        return;
+    }
+    const otpEl = document.getElementById("o-otp");
+    const mobileEl = document.getElementById("o-mobile");
+    const otpRow = otpEl && otpEl.closest && otpEl.closest(".contact-form__row");
+    const mobileRow = mobileEl && mobileEl.closest && mobileEl.closest(".contact-form__row");
+    if (!otpRow || !mobileRow) {
+        return;
+    }
+
+    const wrap = document.createElement("div");
+    wrap.className = "contact-form-otp-views";
+    wrap.setAttribute("data-otp-form-step", "otp");
+
+    const panelOtp = document.createElement("div");
+    panelOtp.className = "contact-form-otp-views__panel";
+    panelOtp.setAttribute("data-otp-step", "otp");
+
+    const panelMobile = document.createElement("div");
+    panelMobile.className = "contact-form-otp-views__panel";
+    panelMobile.setAttribute("data-otp-step", "mobile");
+    panelMobile.hidden = true;
+
+    const changeBtn = document.createElement("button");
+    changeBtn.type = "button";
+    changeBtn.className = "contact-form-otp-change-mobile";
+    changeBtn.setAttribute("data-i18n", "changeMobileButton");
+    changeBtn.textContent = getTranslation("changeMobileButton");
+
+    const resendBtn = document.createElement("button");
+    resendBtn.type = "button";
+    resendBtn.className = "contact-form-otp-resend";
+    resendBtn.setAttribute("data-i18n", "resendOtpButton");
+    resendBtn.textContent = getTranslation("resendOtpButton");
+    resendBtn.addEventListener("click", () => {
+        submitOtpResendRequest(resendBtn);
+    });
+
+    const backBtn = document.createElement("button");
+    backBtn.type = "button";
+    backBtn.className = "contact-form-otp-back";
+    backBtn.setAttribute("data-i18n", "backToOtpButton");
+    backBtn.textContent = getTranslation("backToOtpButton");
+
+    const linkRow = document.createElement("div");
+    linkRow.className = "contact-form-otp-views__links";
+    linkRow.appendChild(resendBtn);
+    linkRow.appendChild(changeBtn);
+
+    changeBtn.addEventListener("click", () => {
+        setOtpFormStep("mobile");
+    });
+    backBtn.addEventListener("click", () => {
+        setOtpFormStep("otp");
+    });
+
+    slot.insertBefore(wrap, otpRow);
+    panelOtp.appendChild(otpRow);
+    panelOtp.appendChild(linkRow);
+    panelMobile.appendChild(mobileRow);
+    panelMobile.appendChild(backBtn);
+    wrap.appendChild(panelOtp);
+    wrap.appendChild(panelMobile);
+
+    setOtpFormStep("otp");
+}
+
+/**
+ * When Dialogflow sends `{ "action": "open_form" }` without `form_id`, use `common.contactForm.defaultFormId`.
+ */
+function applyDefaultContactFormForBareOpenFormAction() {
+    const c = COMMON_CONFIG && typeof COMMON_CONFIG.contactForm === "object" ? COMMON_CONFIG.contactForm : {};
+    if (!c.forms || typeof c.forms !== "object" || !Object.keys(c.forms).length) {
+        return;
+    }
+    const defId = getDefaultContactFormId();
+    if (defId && c.forms[defId]) {
+        setActiveContactFormId(defId);
+    }
+}
+
+/**
+ * Switch which named form in `common.contactForm.forms` is shown. There is no fixed limit on how
+ * many forms you define — use any string key that exists on `forms` (e.g. `contact`, `appointment`, `otp`, `uploadDocument`, `newsletter`).
+ * No-op when only legacy top-level `contactForm.fields` is used (no `forms` object).
+ * @param {string} formId
+ */
+function setActiveContactFormId(formId) {
+    if (typeof formId !== "string" || !formId.trim()) {
+        return;
+    }
+    const id = formId.trim();
+    if (activeContactFormId === id) {
+        return;
+    }
+    const c = COMMON_CONFIG && typeof COMMON_CONFIG.contactForm === "object" ? COMMON_CONFIG.contactForm : {};
+    if (!c.forms || typeof c.forms !== "object" || !c.forms[id]) {
+        return;
+    }
+    activeContactFormId = id;
+    mountContactFormFieldsFromConfig();
+    applyContactFormLayoutFromConfig();
+    applyContactFormHeaderFromConfig();
+    applyLanguage(activeLanguage);
+}
+
+function applyContactFormHeaderFromConfig() {
+    const cfg = readContactFormConfig();
+    const lang = activeLanguage;
+    const titleInline = pickContactFormLocalizedLine(cfg.titleByLanguage, lang);
+    const subInline = pickContactFormLocalizedLine(cfg.subtitleByLanguage, lang);
+    const t = document.querySelector("#contact-form .contact-form__title");
+    const s = document.querySelector("#contact-form .contact-form__subtitle");
+    if (t) {
+        if (titleInline != null) {
+            t.removeAttribute("data-i18n");
+            t.textContent = titleInline;
+        } else {
+            t.setAttribute("data-i18n", cfg.titleI18nKey);
+            t.textContent = getTranslation(cfg.titleI18nKey);
+        }
+    }
+    if (s) {
+        if (subInline != null) {
+            s.removeAttribute("data-i18n");
+            s.textContent = subInline;
+        } else {
+            s.setAttribute("data-i18n", cfg.subtitleI18nKey);
+            s.textContent = getTranslation(cfg.subtitleI18nKey);
+        }
+        s.style.display = cfg.showSubtitle ? "" : "none";
+    }
+    const slot = document.getElementById("contact-form-inputs");
+    if (slot) {
+        if (titleInline != null) {
+            slot.removeAttribute("data-i18n-aria-label");
+            slot.setAttribute("aria-label", titleInline);
+        } else {
+            slot.setAttribute("data-i18n-aria-label", cfg.titleI18nKey);
+            slot.setAttribute("aria-label", getTranslation(cfg.titleI18nKey));
+        }
+    }
+    if (cfg.formKey === "otp") {
+        applyOtpFormStepSubtitle(getOtpFormStep());
+    }
+}
+
+/**
+ * @param {Record<string, unknown>} def
+ * @param {string} raw
+ * @returns {{ valid: boolean, messageKey?: string }}
+ */
+function validateContactFormField(def, raw) {
+    if (!def || typeof def !== "object") {
+        return { valid: true };
+    }
+    const v = typeof raw === "string" ? raw.trim() : "";
+    const required = def.required !== false;
+    if (required && v === "") {
+        return { valid: false, messageKey: typeof def.i18nRequiredMessage === "string" && def.i18nRequiredMessage.trim()
+            ? def.i18nRequiredMessage.trim()
+            : "fieldRequired" };
+    }
+    if (v === "") {
+        return { valid: true };
+    }
+    const t = (def.type || "text").toLowerCase();
+    const validateAs = (typeof def.validateAs === "string" && def.validateAs.trim()
+        ? def.validateAs
+        : (t === "email" ? "email" : t === "tel" ? "phone" : ""))
+        .toLowerCase();
+    if (def.pattern) {
+        try {
+            if (!new RegExp(def.pattern).test(v)) {
+                return { valid: false, messageKey: typeof def.i18nInvalidMessage === "string" && def.i18nInvalidMessage.trim()
+                    ? def.i18nInvalidMessage.trim()
+                    : "invalidPattern" };
+            }
+        } catch {
+            return { valid: false, messageKey: "invalidPattern" };
+        }
+    } else {
+        if (validateAs === "email" && !EMAIL_VALIDATION_RE.test(v)) {
+            return { valid: false, messageKey: typeof def.i18nInvalidMessage === "string" && def.i18nInvalidMessage.trim()
+                ? def.i18nInvalidMessage.trim()
+                : "invalidEmail" };
+        }
+        if (validateAs === "phone") {
+            const pat = typeof def.defaultPattern === "string" && def.defaultPattern.trim() ? def.defaultPattern.trim() : PHONE_DEFAULT_PATTERN;
+            if (!new RegExp(pat).test(v)) {
+                return { valid: false, messageKey: typeof def.i18nInvalidMessage === "string" && def.i18nInvalidMessage.trim()
+                    ? def.i18nInvalidMessage.trim()
+                    : "invalidPhone" };
+            }
+        }
+    }
+    return { valid: true };
+}
+
+function getContactFormFieldByPayloadName(name) {
+    if (typeof name !== "string" || !name) {
+        return null;
+    }
+    const defs = readContactFormConfig().fields;
+    for (const def of defs) {
+        if (def && def.name === name) {
+            return def;
+        }
+    }
+    return null;
+}
+
+function resolveContactFormFieldIconKey(field) {
+    if (field && typeof field.icon === "string" && field.icon && CONTACT_FORM_SVG_ICONS[field.icon]) {
+        return field.icon;
+    }
+    const t = (field && field.type || "text").toLowerCase();
+    if (t === "textarea") {
+        return "message";
+    }
+    if (t === "email") {
+        return "email";
+    }
+    if (t === "tel") {
+        return "phone";
+    }
+    if (t === "file") {
+        return "file";
+    }
+    const nm = field && typeof field.name === "string" ? field.name : "";
+    if (nm === "name") {
+        return "user";
+    }
+    if (nm === "email") {
+        return "email";
+    }
+    if (nm === "mobile" || nm === "phone") {
+        return "phone";
+    }
+    if (nm === "url" || nm === "website" || nm === "link") {
+        return "url";
+    }
+    if (t === "date" || t === "datetime-local" || t === "week" || t === "month") {
+        return "calendar";
+    }
+    if (t === "time") {
+        return "clock";
+    }
+    if (nm === "location" || nm === "address" || nm === "venue") {
+        return "location";
+    }
+    if (nm === "otp" || nm === "otpcode" || nm === "otp_code") {
+        return "key";
+    }
+    return "user";
+}
+
+function refreshContactFormPlaceholdersFromConfig() {
+    const cfg = readContactFormConfig();
+    if (!Array.isArray(cfg.fields)) {
+        return;
+    }
+    for (const field of cfg.fields) {
+        if (!field || !field.id || !field.placeholderByLanguage || typeof field.placeholderByLanguage !== "object") {
+            continue;
+        }
+        const el = document.getElementById(field.id);
+        if (!el || !("setAttribute" in el)) {
+            continue;
+        }
+        const t = pickContactFormLocalizedLine(field.placeholderByLanguage, activeLanguage);
+        if (t != null) {
+            if (el.type === "file") {
+                el.setAttribute("aria-label", t);
+            } else {
+                el.setAttribute("placeholder", t);
+            }
+        }
+    }
+}
+
+function buildContactFormFieldRow(field) {
+    if (!field || typeof field !== "object" || !field.id) {
+        return null;
+    }
+
+    const t = (field.type || "text").toLowerCase();
+    const phKey = field.i18nPlaceholder || "namePlaceholder";
+    const pl0 = field.placeholderByLanguage && typeof field.placeholderByLanguage === "object"
+        ? pickContactFormLocalizedLine(field.placeholderByLanguage, activeLanguage)
+        : null;
+    const required = field.required !== false;
+    const iconKey = resolveContactFormFieldIconKey(field);
+
+    const row = document.createElement("div");
+    row.className = "contact-form__row";
+    row.setAttribute("data-icon", iconKey);
+
+    const iconWrap = document.createElement("span");
+    iconWrap.className = "contact-form__row-icon";
+    if (field.iconHtml && typeof field.iconHtml === "string" && field.iconHtml.indexOf("<") !== -1) {
+        iconWrap.innerHTML = field.iconHtml;
+    } else {
+        const iconSvg = CONTACT_FORM_SVG_ICONS[iconKey] || CONTACT_FORM_SVG_ICONS.user;
+        iconWrap.innerHTML = iconSvg;
+    }
+
+    let control;
+    /** @type {HTMLDivElement | null} */
+    let fileWrap = null;
+    if (t === "textarea") {
+        control = document.createElement("textarea");
+        control.id = field.id;
+        control.className = "contact-form__control";
+        control.name = typeof field.name === "string" ? field.name : field.id;
+        const rows = typeof field.rows === "number" && field.rows > 0 ? field.rows : 2;
+        control.setAttribute("rows", String(Math.min(rows, 6)));
+        if (pl0 != null) {
+            control.setAttribute("placeholder", pl0);
+        } else {
+            control.setAttribute("data-i18n-placeholder", phKey);
+        }
+        if (typeof field.i18nTitleKey === "string" && field.i18nTitleKey.trim()) {
+            control.setAttribute("data-i18n-title", field.i18nTitleKey.trim());
+        }
+        if (typeof field.pattern === "string" && field.pattern.trim()) {
+            control.setAttribute("pattern", field.pattern.trim());
+        }
+        if (typeof field.maxLength === "number" && field.maxLength > 0) {
+            control.setAttribute("maxlength", String(field.maxLength));
+        }
+        if (typeof field.minLength === "number" && field.minLength > 0) {
+            control.setAttribute("minlength", String(field.minLength));
+        }
+        if (required) {
+            control.setAttribute("required", "");
+        }
+    } else if (t === "file") {
+        control = document.createElement("input");
+        control.type = "file";
+        control.id = field.id;
+        control.className = "contact-form__control contact-form__control--file contact-form__control--file-lg";
+        control.name = typeof field.name === "string" ? field.name : field.id;
+        if (field.multiple === true) {
+            control.setAttribute("multiple", "multiple");
+        }
+        if (typeof field.accept === "string" && field.accept.trim()) {
+            control.setAttribute("accept", field.accept.trim());
+        }
+        const ariaKey = typeof field.i18nAriaKey === "string" && field.i18nAriaKey.trim()
+            ? field.i18nAriaKey.trim()
+            : "documentUploadAria";
+        if (pl0 != null) {
+            control.setAttribute("aria-label", pl0);
+        } else {
+            control.setAttribute("data-i18n-aria-label", ariaKey);
+            control.setAttribute("aria-label", getTranslation(ariaKey));
+        }
+        if (required) {
+            control.setAttribute("required", "");
+        }
+        const clearBtn = document.createElement("button");
+        clearBtn.type = "button";
+        clearBtn.className = "contact-form__file-clear";
+        clearBtn.setAttribute("data-i18n", "clearFileSelectionButton");
+        clearBtn.textContent = getTranslation("clearFileSelectionButton");
+        clearBtn.hidden = true;
+        const syncFileClearVisible = () => {
+            clearBtn.hidden = !control.files || control.files.length === 0;
+        };
+        clearBtn.addEventListener("click", (ev) => {
+            ev.preventDefault();
+            control.value = "";
+            clearBtn.hidden = true;
+            const st = document.getElementById("contact-form-status");
+            if (st) {
+                st.textContent = "";
+                st.classList.remove("is-error", "is-success");
+            }
+        });
+        control.addEventListener("change", () => {
+            const st = document.getElementById("contact-form-status");
+            if (!control.files || !control.files.length) {
+                syncFileClearVisible();
+                return;
+            }
+            for (let fi = 0; fi < control.files.length; fi += 1) {
+                if (isContactFormVideoUploadFile(control.files[fi])) {
+                    if (st) {
+                        st.textContent = getTranslation("invalidVideoFile");
+                        st.classList.add("is-error");
+                        st.classList.remove("is-success");
+                    }
+                    control.value = "";
+                    syncFileClearVisible();
+                    return;
+                }
+            }
+            if (st) {
+                st.textContent = "";
+                st.classList.remove("is-error", "is-success");
+            }
+            syncFileClearVisible();
+        });
+        fileWrap = document.createElement("div");
+        fileWrap.className = "contact-form__file-wrap";
+        fileWrap.appendChild(control);
+        fileWrap.appendChild(clearBtn);
+    } else {
+        control = document.createElement("input");
+        control.id = field.id;
+        control.className = "contact-form__control";
+        control.name = typeof field.name === "string" ? field.name : field.id;
+        control.type = CONTACT_FORM_INPUT_TYPES.has(t) ? t : "text";
+        if (pl0 != null) {
+            control.setAttribute("placeholder", pl0);
+        } else {
+            control.setAttribute("data-i18n-placeholder", phKey);
+        }
+        if (typeof field.autocomplete === "string" && field.autocomplete) {
+            control.setAttribute("autocomplete", field.autocomplete);
+        }
+        if (typeof field.inputMode === "string" && field.inputMode) {
+            control.setAttribute("inputmode", field.inputMode);
+        }
+        if (typeof field.i18nTitleKey === "string" && field.i18nTitleKey.trim()) {
+            control.setAttribute("data-i18n-title", field.i18nTitleKey.trim());
+        }
+        if (typeof field.pattern === "string" && field.pattern.trim()) {
+            control.setAttribute("pattern", field.pattern.trim());
+        }
+        if (typeof field.maxLength === "number" && field.maxLength > 0) {
+            control.setAttribute("maxlength", String(field.maxLength));
+        }
+        if (typeof field.minLength === "number" && field.minLength > 0) {
+            control.setAttribute("minlength", String(field.minLength));
+        }
+        if (required) {
+            control.setAttribute("required", "");
+        }
+    }
+
+    row.appendChild(iconWrap);
+    row.appendChild(fileWrap != null ? fileWrap : control);
+    return row;
+}
+
+function mountContactFormFieldsFromConfig() {
+    const slot = document.getElementById("contact-form-inputs");
+    if (!slot) {
+        return;
+    }
+    while (slot.firstChild) {
+        slot.removeChild(slot.firstChild);
+    }
+
+    for (const field of readContactFormConfig().fields) {
+        const row = buildContactFormFieldRow(field);
+        if (row) {
+            slot.appendChild(row);
+        }
+    }
+    syncContactFormNoValidateForActiveForm();
+    setupOtpFormTwoStepIfNeeded();
+}
+
+function applyContactFormLayoutFromConfig() {
+    const cfg = readContactFormConfig();
+    const cf = document.getElementById("contact-form");
+    const card = document.querySelector("#contact-form .contact-form__card");
+    if (card && (!cf || !cf.classList.contains("contact-form--docked"))) {
+        card.style.maxHeight = `${cfg.maxCardHeightPx}px`;
+    }
+
+    const subtitle = document.querySelector("#contact-form .contact-form__subtitle");
+    if (subtitle) {
+        subtitle.style.display = cfg.showSubtitle ? "" : "none";
+    }
+}
+
+function stripContactFormDocking() {
+    const el = document.getElementById("contact-form");
+    if (!el) {
+        return;
+    }
+    el.classList.remove("contact-form--docked");
+    el.style.removeProperty("left");
+    el.style.removeProperty("right");
+    el.style.removeProperty("top");
+    el.style.removeProperty("bottom");
+    el.style.removeProperty("width");
+    el.style.removeProperty("max-height");
+    el.style.removeProperty("z-index");
+    const card = el.querySelector(".contact-form__card");
+    if (card) {
+        card.style.removeProperty("max-height");
+    }
+    const inputs = el.querySelector(".contact-form__inputs");
+    if (inputs) {
+        inputs.style.removeProperty("max-height");
+    }
+    applyContactFormLayoutFromConfig();
+}
+
+function syncContactFormPosition() {
+    const el = document.getElementById("contact-form");
+    if (!el || !el.classList.contains("is-open")) {
+        if (el && el.classList.contains("contact-form--docked")) {
+            stripContactFormDocking();
+        }
+        return;
+    }
+
+    const cfg = readContactFormConfig();
+    if (!cfg.dockToChatWindow) {
+        if (el.classList.contains("contact-form--docked")) {
+            stripContactFormDocking();
+        }
+        return;
+    }
+
+    if (!isChatWindowOpen) {
+        if (el.classList.contains("contact-form--docked")) {
+            stripContactFormDocking();
+        }
+        return;
+    }
+
+    const messenger = activeDfMessenger || document.querySelector("df-messenger");
+    if (!messenger) {
+        return;
+    }
+
+    const rect = findChatWindowRect(messenger);
+    if (!rect || rect.width < 80) {
+        return;
+    }
+
+    const side = resolveChatLayoutSide(readCompanyUiConfig());
+    const pad = cfg.sideInsetPx;
+    const formW = Math.min(340, Math.max(200, rect.width - pad * 2));
+    const card = el.querySelector(".contact-form__card");
+    const inputs = el.querySelector(".contact-form__inputs");
+
+    let fromTop;
+    let sectionMaxH;
+    let useBottom = false;
+    const gap = cfg.gapAboveFooterPx;
+
+    if (cfg.dockAboveFooter) {
+        const insertion = findFooterInlineInsertionPoint(messenger);
+        const targetRow = insertion && insertion.parent ? insertion.parent : null;
+        const footerHost0 = resolveFooterMountHost(messenger) || findChatFooterHost(messenger);
+        let anchorTopY = null;
+        if (targetRow && typeof targetRow.getBoundingClientRect === "function") {
+            const r0 = targetRow.getBoundingClientRect();
+            if (r0 && r0.width > 0 && r0.height > 0) {
+                anchorTopY = r0.top;
+            }
+        }
+        if (anchorTopY == null && footerHost0 && typeof footerHost0.getBoundingClientRect === "function") {
+            const r1 = footerHost0.getBoundingClientRect();
+            if (r1 && r1.height > 0) {
+                anchorTopY = r1.top;
+            }
+        }
+        if (anchorTopY == null) {
+            anchorTopY = Math.max(rect.top, rect.bottom - 100);
+        }
+
+        const formBottomY = anchorTopY - gap;
+        const roomAbove = formBottomY - rect.top;
+        if (formBottomY > rect.top + 10 && roomAbove > 0) {
+            useBottom = true;
+            fromTop = formBottomY;
+            sectionMaxH = Math.max(160, Math.min(cfg.maxCardHeightPx + 80, roomAbove - 2));
+        }
+    }
+
+    if (!useBottom) {
+        fromTop = rect.top + cfg.titleInsetPx + cfg.dockNudgeDownPx;
+        const availableBelowTop = Math.floor(rect.bottom - fromTop - pad);
+        const panelH = Math.max(220, Math.min(availableBelowTop, rect.height - cfg.titleInsetPx));
+        sectionMaxH = Math.max(180, Math.min(cfg.maxCardHeightPx + 80, panelH));
+    }
+
+    const cardMax = Math.max(150, Math.min(cfg.maxCardHeightPx, sectionMaxH - 6));
+    const inputsMax = Math.max(100, Math.min(240, cardMax - 160));
+
+    el.classList.add("contact-form--docked");
+    el.style.position = "fixed";
+    // Below Powered by (2147483642), above the page; language bar stays 2147483647.
+    el.style.zIndex = "2147483630";
+    el.style.width = `${formW}px`;
+    if (side === "right") {
+        el.style.left = "auto";
+        el.style.right = `${Math.max(0, window.innerWidth - rect.right + pad)}px`;
+    } else {
+        el.style.right = "auto";
+        el.style.left = `${Math.max(0, rect.left + pad)}px`;
+    }
+
+    if (useBottom) {
+        el.style.top = "auto";
+        el.style.bottom = `${window.innerHeight - fromTop}px`;
+        el.style.maxHeight = `${sectionMaxH}px`;
+    } else {
+        el.style.removeProperty("bottom");
+        el.style.removeProperty("max-height");
+        el.style.top = `${fromTop}px`;
+    }
+
+    if (card) {
+        card.style.maxHeight = `${cardMax}px`;
+    }
+    if (inputs) {
+        inputs.style.maxHeight = `${inputsMax}px`;
+    }
 }
 
 function readPoweredByStyleConfig() {
@@ -1876,6 +2998,7 @@ function readPoweredByStyleConfig() {
         nudgeRightPx: n(c && c.nudgeRightPx, 0),
         widthOffsetPx: n(c && c.widthOffsetPx, 0),
         lineHeightPx: Math.max(12, n(c && c.lineHeightPx, 18)),
+        marginPx: Math.max(0, n(c && c.marginPx, 0)),
         gapAboveComposerPx: n(c && c.gapAboveComposerPx, 2),
         fallbackGapFromWindowBottomPx: n(c && c.fallbackGapFromWindowBottomPx, 4),
         color: colorRaw || "#94a3b8",
@@ -3448,9 +4571,11 @@ function initializeChatStateSync(dfMessenger) {
     }, true);
 
     const observer = new MutationObserver(() => {
-        if (!isChatExpanded(dfMessenger)) {
+        isChatWindowOpen = isChatExpanded(dfMessenger);
+        if (!isChatWindowOpen) {
             closeContactForm();
         }
+        scheduleSyncChatActionBarPosition();
     });
 
     observer.observe(dfMessenger, {
@@ -3528,7 +4653,15 @@ function attachPersonaHandlers(dfMessenger) {
             applyLanguage(requestedLanguage);
         }
 
-        if (shouldOpenContactForm(event)) {
+        const willOpenForm = shouldOpenContactForm(event);
+        const openFormId = extractOpenFormIdFromEvent(event);
+        if (openFormId) {
+            setActiveContactFormId(openFormId);
+        } else if (willOpenForm) {
+            applyDefaultContactFormForBareOpenFormAction();
+        }
+
+        if (willOpenForm) {
             contactFormOpenPending = true;
         }
 
@@ -3548,6 +4681,10 @@ function attachPersonaHandlers(dfMessenger) {
 }
 
 function initializeContactForm() {
+    mountContactFormFieldsFromConfig();
+    applyContactFormLayoutFromConfig();
+    applyContactFormHeaderFromConfig();
+
     const form = document.getElementById("contact-form-fields");
     const closeButton = document.getElementById("contact-form-close");
 
@@ -3558,6 +4695,14 @@ function initializeContactForm() {
     if (closeButton) {
         closeButton.addEventListener("click", closeContactForm);
     }
+
+    window.addEventListener("company-open-contact-form", (e) => {
+        const d = (e && e.detail) || {};
+        if (d.formId) {
+            setActiveContactFormId(String(d.formId).trim());
+        }
+        openContactForm();
+    });
 }
 
 function initializeClientContextCapture() {
@@ -3630,6 +4775,35 @@ function messageContainsOpenFormAction(message) {
     return payload && payload.action === CONTACT_FORM_OPEN_ACTION;
 }
 
+/**
+ * @param {Event} event
+ * @returns {string} `form_id` from agent payload, or "".
+ */
+function extractOpenFormIdFromEvent(event) {
+    const responseMessages = event && event.detail && event.detail.raw && event.detail.raw.queryResult
+        && Array.isArray(event.detail.raw.queryResult.responseMessages)
+        ? event.detail.raw.queryResult.responseMessages
+        : [];
+
+    const messengerMessages = event && event.detail && event.detail.data && Array.isArray(event.detail.data.messages)
+        ? event.detail.data.messages
+        : [];
+
+    for (const message of [...responseMessages, ...messengerMessages]) {
+        const payload = extractPayload(message);
+        if (!payload || payload.action !== CONTACT_FORM_OPEN_ACTION) {
+            continue;
+        }
+        const id = (payload.form_id != null && String(payload.form_id).trim() ? String(payload.form_id).trim() : null)
+            || (payload.formId != null && String(payload.formId).trim() ? String(payload.formId).trim() : null);
+        if (id) {
+            return id;
+        }
+    }
+
+    return "";
+}
+
 function extractPayload(message) {
     if (!message || !message.payload) {
         return null;
@@ -3700,6 +4874,11 @@ function openContactForm() {
     form.classList.add("is-open");
     form.setAttribute("aria-hidden", "false");
     contactFormOpenPending = false;
+    resetChatActionBarPositionCaches();
+    window.setTimeout(() => {
+        syncContactFormPosition();
+    }, 0);
+    scheduleSyncChatActionBarPosition();
 }
 
 function closeContactForm() {
@@ -3716,8 +4895,11 @@ function closeContactForm() {
         return;
     }
 
+    stripContactFormDocking();
     form.classList.remove("is-open");
     form.setAttribute("aria-hidden", "true");
+    resetChatActionBarPositionCaches();
+    scheduleSyncChatActionBarPosition();
 }
 
 function scheduleContactFormOpen() {
@@ -3739,20 +4921,124 @@ function scheduleContactFormOpen() {
 function submitContactForm(event) {
     event.preventDefault();
 
-    const nameInput = document.getElementById("contact-name");
-    const mobileInput = document.getElementById("contact-mobile");
-    const emailInput = document.getElementById("contact-email");
-    const messageInput = document.getElementById("contact-message");
+    const cfg0 = readContactFormConfig();
+    const fieldDefs = cfg0.fields;
     const submitButton = document.getElementById("contact-form-submit");
     const status = document.getElementById("contact-form-status");
 
-    const payload = {
-        name: nameInput ? nameInput.value.trim() : "",
-        mobile: mobileInput ? mobileInput.value.trim() : "",
-        email: emailInput ? emailInput.value.trim() : "",
-        message: messageInput ? messageInput.value.trim() : "",
-        client_context: getClientContext()
-    };
+    const isOtpForm = cfg0.formKey === "otp";
+    const otpStep = isOtpForm ? getOtpFormStep() : "otp";
+    const isOtpUpdateMobile = isOtpForm && otpStep === "mobile";
+
+    const payload = { client_context: getClientContext(), _contactFormId: cfg0.formKey };
+    let chatSummaryPayload = /** @type {Record<string, string> | null} */ (null);
+    let useMultipart = false;
+    for (let fi = 0; fi < fieldDefs.length; fi += 1) {
+        const fd = fieldDefs[fi];
+        if (fd && String(fd.type || "").toLowerCase() === "file") {
+            useMultipart = true;
+            break;
+        }
+    }
+
+    if (isOtpUpdateMobile) {
+        const mobileDef = fieldDefs.find((d) => d && d.name === "mobile");
+        const el = document.getElementById("o-mobile");
+        const raw = el && "value" in el ? el.value : "";
+        const v = typeof raw === "string" ? raw.trim() : "";
+        const mobileField = mobileDef
+            ? Object.assign({}, mobileDef, { required: true })
+            : { required: true, name: "mobile", type: "tel", validateAs: "phone" };
+        const check = validateContactFormField(mobileField, v);
+        if (!check.valid) {
+            if (status) {
+                status.textContent = getTranslation(check.messageKey || "invalidPattern");
+                status.classList.add("is-error");
+                status.classList.remove("is-success");
+            }
+            if (el && typeof el.focus === "function") {
+                el.focus();
+            }
+            return;
+        }
+        payload._contactFormAction = "update_mobile";
+        payload.mobile = v;
+    } else {
+        chatSummaryPayload = {};
+        for (const def of fieldDefs) {
+            if (!def || !def.id || !def.name) {
+                continue;
+            }
+            if (isOtpForm && otpStep === "otp" && def.name === "mobile") {
+                continue;
+            }
+            const el = document.getElementById(def.id);
+            const fieldType = String(def.type || "text").toLowerCase();
+            if (fieldType === "file") {
+                const n = el && el.files ? el.files.length : 0;
+                if (def.required !== false && n === 0) {
+                    if (status) {
+                        status.textContent = getTranslation("fieldRequired");
+                        status.classList.add("is-error");
+                        status.classList.remove("is-success");
+                    }
+                    if (el && typeof el.focus === "function") {
+                        el.focus();
+                    }
+                    return;
+                }
+                for (let fi = 0; fi < n; fi += 1) {
+                    if (isContactFormVideoUploadFile(el.files[fi])) {
+                        if (status) {
+                            status.textContent = getTranslation("invalidVideoFile");
+                            status.classList.add("is-error");
+                            status.classList.remove("is-success");
+                        }
+                        if (el && typeof el.focus === "function") {
+                            el.focus();
+                        }
+                        return;
+                    }
+                }
+                if (n > 0) {
+                    const names = [];
+                    for (let fi = 0; fi < n; fi += 1) {
+                        names.push(el.files[fi].name);
+                    }
+                    chatSummaryPayload[def.name] = names.join(", ");
+                } else {
+                    chatSummaryPayload[def.name] = "";
+                }
+                continue;
+            }
+            const raw = el && "value" in el ? el.value : "";
+            const v = typeof raw === "string" ? raw.trim() : "";
+            const check = validateContactFormField(def, v);
+            if (!check.valid) {
+                if (status) {
+                    status.textContent = getTranslation(check.messageKey || "invalidPattern");
+                    status.classList.add("is-error");
+                    status.classList.remove("is-success");
+                }
+                if (el && typeof el.focus === "function") {
+                    el.focus();
+                }
+                return;
+            }
+            payload[def.name] = v;
+            chatSummaryPayload[def.name] = v;
+        }
+        if (isOtpForm && otpStep === "otp") {
+            const mEl = document.getElementById("o-mobile");
+            const mRaw = mEl && "value" in mEl ? mEl.value : "";
+            const m = typeof mRaw === "string" ? mRaw.trim() : "";
+            if (m) {
+                payload.mobile = m;
+                chatSummaryPayload.mobile = m;
+            }
+        }
+    }
+
     const endpoint = getApiEndpoint(CONTACT_FORM_ENDPOINT);
 
     if (!endpoint) {
@@ -3773,13 +5059,56 @@ function submitContactForm(event) {
         submitButton.disabled = true;
     }
 
-    fetch(endpoint, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
-    })
+    let fetchBody;
+    /** @type {Record<string, string> | undefined} */
+    let fetchHeaders;
+    if (!isOtpUpdateMobile && useMultipart) {
+        const fd = new FormData();
+        fd.append("client_context", JSON.stringify(getClientContext()));
+        fd.append("_contactFormId", cfg0.formKey);
+        for (const def of fieldDefs) {
+            if (!def || !def.id || !def.name) {
+                continue;
+            }
+            if (isOtpForm && otpStep === "otp" && def.name === "mobile") {
+                continue;
+            }
+            const el = document.getElementById(def.id);
+            const fieldType = String(def.type || "text").toLowerCase();
+            if (fieldType === "file") {
+                if (el && el.files && el.files.length) {
+                    for (let fi = 0; fi < el.files.length; fi += 1) {
+                        const f = el.files[fi];
+                        fd.append(def.name, f, f.name);
+                    }
+                }
+            } else {
+                const raw = el && "value" in el ? el.value : "";
+                const v = typeof raw === "string" ? raw.trim() : "";
+                fd.append(def.name, v);
+            }
+        }
+        if (isOtpForm && otpStep === "otp") {
+            const mEl = document.getElementById("o-mobile");
+            const mRaw = mEl && "value" in mEl ? mEl.value : "";
+            const m = typeof mRaw === "string" ? mRaw.trim() : "";
+            if (m) {
+                fd.append("mobile", m);
+            }
+        }
+        fetchBody = fd;
+        fetchHeaders = undefined;
+    } else {
+        fetchBody = JSON.stringify(payload);
+        fetchHeaders = { "Content-Type": "application/json" };
+    }
+
+    const fetchInit = { method: "POST", body: fetchBody };
+    if (fetchHeaders) {
+        fetchInit.headers = fetchHeaders;
+    }
+
+    fetch(endpoint, fetchInit)
         .then(async (response) => {
             const responseText = await response.text();
             let responsePayload = {};
@@ -3797,28 +5126,37 @@ function submitContactForm(event) {
                 throw new Error(responsePayload.error || responsePayload.message || fallbackMessage);
             }
 
+            if (isOtpUpdateMobile) {
+                if (status) {
+                    status.textContent = responsePayload.message || getTranslation("statusMobileNumberSaved");
+                    status.classList.add("is-success");
+                    status.classList.remove("is-error");
+                }
+                setOtpFormStep("otp");
+                const oOtpEl = document.getElementById("o-otp");
+                if (oOtpEl) {
+                    oOtpEl.value = "";
+                }
+                return;
+            }
+
             if (status) {
                 status.textContent = responsePayload.message || getTranslation("statusSubmitted");
                 status.classList.add("is-success");
                 status.classList.remove("is-error");
             }
 
-            renderContactFormSubmissionResponse(payload.name, payload.mobile);
+            const summaryForChat = chatSummaryPayload != null ? chatSummaryPayload : payload;
+            renderContactFormSubmissionResponse(summaryForChat);
 
-            if (nameInput) {
-                nameInput.value = "";
-            }
-
-            if (mobileInput) {
-                mobileInput.value = "";
-            }
-
-            if (emailInput) {
-                emailInput.value = "";
-            }
-
-            if (messageInput) {
-                messageInput.value = "";
+            for (const def of fieldDefs) {
+                if (!def || !def.id) {
+                    continue;
+                }
+                const el = document.getElementById(def.id);
+                if (el && "value" in el) {
+                    el.value = "";
+                }
             }
 
             closeContactForm();
@@ -3837,18 +5175,22 @@ function submitContactForm(event) {
         });
 }
 
-function renderContactFormSubmissionResponse(name, mobile) {
+function renderContactFormSubmissionResponse(payload) {
     if (!activeDfMessenger || typeof activeDfMessenger.renderCustomText !== "function") {
         return;
     }
 
-    const safeName = name || "-";
-    const safeMobile = mobile || "-";
-    const responseText = [
-        `Name - ${safeName}`,
-        `mobile - ${safeMobile}`,
-        getTranslation("contactResponseThanks")
-    ].join("  \n");
+    const cfg = readContactFormConfig();
+    const lines = [];
+    for (const key of cfg.chatSummaryFieldNames) {
+        const v = payload && key in payload ? String(payload[key] || "").trim() : "";
+        const field = getContactFormFieldByPayloadName(key);
+        const labelKey = field && field.i18nSummaryLabel;
+        const label = labelKey ? getTranslation(labelKey) : String(key);
+        lines.push(`${label} - ${v || "-"}`);
+    }
+    lines.push(getTranslation("contactResponseThanks"));
+    const responseText = lines.join("  \n");
 
     renderBotPersona(activeDfMessenger);
     activeDfMessenger.renderCustomText(responseText, true);
@@ -3869,6 +5211,13 @@ function applyLanguage(languageCode) {
     for (const node of placeholderNodes) {
         const key = node.getAttribute("data-i18n-placeholder") || "";
         node.setAttribute("placeholder", getTranslation(key));
+    }
+    refreshContactFormPlaceholdersFromConfig();
+
+    const titleHintNodes = document.querySelectorAll("[data-i18n-title]");
+    for (const node of titleHintNodes) {
+        const key = node.getAttribute("data-i18n-title") || "";
+        node.setAttribute("title", getTranslation(key));
     }
 
     const ariaNodes = document.querySelectorAll("[data-i18n-aria-label]");
@@ -3903,6 +5252,7 @@ function applyLanguage(languageCode) {
         scheduleChatInputPlaceholderRefresh(activeDfMessenger);
     }
 
+    applyContactFormHeaderFromConfig();
     scheduleDomTranslationRefresh();
 }
 
@@ -4166,12 +5516,17 @@ function resolveFooterInlineControlsHost(dfMessenger) {
     return null;
 }
 
+function isNodeInsidePageContactForm(node) {
+    return node && node.closest && node.closest("#contact-form");
+}
+
 function findSendButton(scope) {
     if (!scope || !scope.querySelectorAll) {
         return null;
     }
 
-    const candidates = Array.from(scope.querySelectorAll("button, [role='button'], df-icon-button"));
+    const raw = Array.from(scope.querySelectorAll("button, [role='button'], df-icon-button"));
+    const candidates = raw.filter((button) => !isNodeInsidePageContactForm(button));
 
     const labeledSend = candidates.find((button) => {
         const aria = (button.getAttribute && (button.getAttribute("aria-label") || "").toLowerCase()) || "";
@@ -4210,9 +5565,13 @@ function findFooterInlineInsertionPoint(dfMessenger) {
         }
 
         // First, try the nearest footer host in this root.
+        // `document` + `form` would otherwise match the page #contact-form-fields before the chat widget.
         const footerLike = root.querySelector(
-            "footer, form, [data-testid*='footer'], [data-testid*='composer'], [part*='footer'], [part*='composer'], [class*='composer'], [class*='footer']"
+            "footer, form:not(#contact-form-fields), [data-testid*='footer'], [data-testid*='composer'], [part*='footer'], [part*='composer'], [class*='composer'], [class*='footer']"
         );
+        if (footerLike && isNodeInsidePageContactForm(footerLike)) {
+            continue;
+        }
         const sendInFooter = footerLike ? findSendButton(footerLike) : null;
         if (sendInFooter && sendInFooter.parentElement) {
             return { parent: sendInFooter.parentElement, beforeNode: sendInFooter };
