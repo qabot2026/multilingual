@@ -5660,15 +5660,24 @@ function openContactForm() {
 function closeContactForm() {
     const form = document.getElementById("dfchat-contact-form");
 
-    contactFormOpenPending = false;
-
-    if (contactFormOpenTimer) {
-        window.clearTimeout(contactFormOpenTimer);
-        contactFormOpenTimer = null;
+    if (!form) {
+        contactFormOpenPending = false;
+        if (contactFormOpenTimer) {
+            window.clearTimeout(contactFormOpenTimer);
+            contactFormOpenTimer = null;
+        }
+        return;
     }
 
-    if (!form) {
-        return;
+    // Chat-minimize calls this while the open_form delay is still pending. Clearing the timer here
+    // used to cancel the appointment/contact overlay entirely on many live sites (chat often closed).
+    const formWasOpen = form.classList.contains("dfchat-is-open");
+    if (formWasOpen) {
+        contactFormOpenPending = false;
+        if (contactFormOpenTimer) {
+            window.clearTimeout(contactFormOpenTimer);
+            contactFormOpenTimer = null;
+        }
     }
 
     stripContactFormDocking();
