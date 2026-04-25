@@ -564,7 +564,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
       topInsetPx: 20,
       bottomInsetPx: 10,
       /* Shrinks the open panel height on mob so the titlebar stays in view (notches, browser chrome). */
-      safeAreaTopReservePx: 8,
+      safeAreaTopReservePx: 28,
       minWidthPx: 260,
       minHeightPx: 200,
 
