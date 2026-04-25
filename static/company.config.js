@@ -63,10 +63,12 @@ window.COMPANY_CHAT_UI_CONFIG = {
       // - ON  → user can switch language in the chat (picker / buttons next to Send).
       // - OFF → no picker; the agent uses `defaultLanguage` only.
       // - `code` = language code for Dialogflow (`language-code` on df-messenger); `label` = text in the menu.
-      // - Changing language = same conversation language + UI labels we translate (not a new “command”).
+      // - Changing language = same conversation language + chat UI (not the host page), unless
+      //   you set `autoTranslateHostPage: true` to also Google-translate the rest of the page.
       multiLanguage: {
         enabled: true,
-        defaultLanguage: "en"
+        defaultLanguage: "en",
+        autoTranslateHostPage: false
         // Composer hint (`placeholder-text`). Keys = same `code` values as below. Optional: add `inputPlaceholder` on each language row to override only that row.
         // inputPlaceholderByLanguage: {
         //   en: "Ask something in English…",
@@ -221,8 +223,13 @@ window.COMPANY_CHAT_UI_CONFIG = {
     // - `showScrollbar: true` (default) — Dialogflow’s default overflow is `hidden scroll` (y=scroll = always on).
     // - `showScrollbar: false` — company.js sets `--df-messenger-chat-overflow: hidden auto` on df-messenger + bubble
     //   (see Google’s CSS) and hides the track; wheel/touch scrolling still works.
+    // - `paneBorderRadius` (optional) — per-corner for the *middle* chat strip. Dialogflow applies
+    //   `border-radius: var(--df-messenger-chat-border-radius)` on `.message-list-wrapper` (the light/gradient
+    //   area), not only to `#message-list`; we inject into shadow to override, e.g. { bottomLeft: "6px" }.
+    //   Omitted keys default to "0" (sharp corners on that middle panel). Whole-card roundness: `dfMessengerTheme["--df-messenger-chat-border-radius"]`.
     chatMessageList: {
-      showScrollbar: false
+      showScrollbar: false,
+      // paneBorderRadius: { topLeft: "0", topRight: "0", bottomLeft: "0", bottomRight: "0" }
     },
 
     // -------------------------------------------------------------------------

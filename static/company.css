@@ -16,6 +16,11 @@
   --dfchat-border: #dbe5ec;
 }
 
+/* `company.config.js` → applyDfMessengerThemeConfig sets `common.dfMessengerTheme` vars on this node as
+   **inline** styles, so a rule in this file such as `df-messenger { --df-messenger-chat-border-radius: 8px; }`
+   usually loses. To reduce the whole chat card radius, either change the value in company.config.js
+   (dfMessengerTheme) or add `!important` here. For only the message list, use
+   `common.chatMessageList.paneBorderRadius` in company.config.js. */
 df-messenger {
   position: fixed;
   bottom: 20px;

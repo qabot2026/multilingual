@@ -54,6 +54,8 @@ const SHOW_MESSAGELIST_SCROLLBAR = typeof CHAT_MESSAGELIST_CONFIG.showScrollbar 
     ? CHAT_MESSAGELIST_CONFIG.showScrollbar
     : true;
 const MESSAGE_LIST_SCROLLBAR_STYLE_ID = "dfchat-messagelist-scrollbar-style";
+/** Message list pane corners (per-corner longhands; optional `common.chatMessageList.paneBorderRadius` in company.config.js) */
+const MESSAGE_LIST_SQUARE_PANE_STYLE_ID = "dfchat-messagelist-square-pane";
 const PERSONA_IMAGE_GUARD_STYLE_ID = "dfchat-persona-image-guard";
 /** Dialogflow “jump to bottom” / scroll-hint UI; mirrored onto `df-messenger-chat-bubble` :host. */
 const DF_MESSENGER_CHAT_SCROLL_JUMP_VAR_KEYS = [
@@ -78,6 +80,10 @@ const MULTI_LANGUAGE_CONFIG = FEATURES_CONFIG.multiLanguage && typeof FEATURES_C
     : {};
 /** When `multiLanguage` is missing, default is false (turn on with `enabled: true`). */
 const IS_MULTI_LANGUAGE_ENABLED = isFeatureEnabledFromConfig(MULTI_LANGUAGE_CONFIG, false);
+/** When true, auto-translation (Google) may walk `document.body`; default false = only chat widget shadow roots. */
+const AUTO_TRANSLATE_HOST_PAGE = typeof MULTI_LANGUAGE_CONFIG.autoTranslateHostPage === "boolean"
+    ? MULTI_LANGUAGE_CONFIG.autoTranslateHostPage
+    : false;
 const RESTART_CHAT_CONFIG = FEATURES_CONFIG.restartChat && typeof FEATURES_CONFIG.restartChat === "object"
     ? FEATURES_CONFIG.restartChat
     : {};
@@ -147,6 +153,40 @@ function sanitizeChatBubbleCornerRoundness(value) {
     }
     return s;
 }
+
+/** Safe length for one corner of the message list pane (see `readMessageListPaneBorderRadiusConfig`). */
+function sanitizeMessagePaneRadius(value, fallback) {
+    const fb = typeof fallback === "string" ? fallback : "0";
+    const s = typeof value === "string" ? value.trim() : "";
+    if (!s || s.length > 32) {
+        return fb;
+    }
+    if (/[^0-9.%a-zA-Z+\-()/\s,]/.test(s)) {
+        return fb;
+    }
+    return s;
+}
+
+/**
+ * Per-corner radii for `.message-list-wrapper`, `#message-list`, `df-messenger-message-list` (shadow). Longhands only
+ * (no `border-radius` shorthand) so one corner can be set without the shorthand resetting the others
+ * in the cascade, and you can “reduce” a corner from config without fighting `border-radius: 0 !important`.
+ * @see common.chatMessageList.paneBorderRadius in `static/company.config.js`
+ */
+function readMessageListPaneBorderRadiusConfig() {
+    const raw = CHAT_MESSAGELIST_CONFIG.paneBorderRadius && typeof CHAT_MESSAGELIST_CONFIG.paneBorderRadius === "object"
+        ? CHAT_MESSAGELIST_CONFIG.paneBorderRadius
+        : {};
+    const one = (key) => sanitizeMessagePaneRadius(typeof raw[key] === "string" ? raw[key] : "", "0");
+    return {
+        topLeft: one("topLeft"),
+        topRight: one("topRight"),
+        bottomLeft: one("bottomLeft"),
+        bottomRight: one("bottomRight")
+    };
+}
+
+const MESSAGE_LIST_PANE_BORDER_RADIUS = readMessageListPaneBorderRadiusConfig();
 
 /** Conic gradient similar to Instagram story rings (orange → pink → purple → blue). */
 const CHAT_BUBBLE_STORY_RING_GRADIENT = "conic-gradient(from 200deg at 50% 50%, #f09433 0%, #e6683c 14%, #dc2743 28%, #cc2366 42%, #bc1888 56%, #833ab4 70%, #515bd4 84%, #fcb045 100%)";
@@ -6078,6 +6118,21 @@ function renderContactFormSubmissionResponse(payload) {
     activeDfMessenger.renderCustomText(responseText, true);
 }
 
+/**
+ * `data-i18n` and similar apply only under chat/contact UI, not the host page, so the site language
+ * stays independent of the chatbot / Dialogflow `language-code`.
+ */
+function isNodeInsideChatLanguageUiScope(node) {
+    if (!node || !node.closest) {
+        return false;
+    }
+    return !!node.closest(
+        "df-messenger, df-messenger-chat-bubble, #dfchat-contact-form, #dfchat-chat-action-bar, "
+        + "#dfchat-chat-footer-overlay, #dfchat-powered-by-strip, #dfchat-chat-launcher-input-strip, "
+        + ".dfchat-chat-launcher-strip, .dfchat-contact-form, #dfchat-debug-badge, #dfchat-hard-language-wrap"
+    );
+}
+
 function applyLanguage(languageCode) {
     const nextLanguage = normalizeLanguage(languageCode);
     activeLanguage = nextLanguage;
@@ -6085,12 +6140,18 @@ function applyLanguage(languageCode) {
 
     const textNodes = document.querySelectorAll("[data-i18n]");
     for (const node of textNodes) {
+        if (!isNodeInsideChatLanguageUiScope(node)) {
+            continue;
+        }
         const key = node.getAttribute("data-i18n") || "";
         node.textContent = getTranslation(key);
     }
 
     const placeholderNodes = document.querySelectorAll("[data-i18n-placeholder]");
     for (const node of placeholderNodes) {
+        if (!isNodeInsideChatLanguageUiScope(node)) {
+            continue;
+        }
         const key = node.getAttribute("data-i18n-placeholder") || "";
         node.setAttribute("placeholder", getTranslation(key));
     }
@@ -6098,12 +6159,18 @@ function applyLanguage(languageCode) {
 
     const titleHintNodes = document.querySelectorAll("[data-i18n-title]");
     for (const node of titleHintNodes) {
+        if (!isNodeInsideChatLanguageUiScope(node)) {
+            continue;
+        }
         const key = node.getAttribute("data-i18n-title") || "";
         node.setAttribute("title", getTranslation(key));
     }
 
     const ariaNodes = document.querySelectorAll("[data-i18n-aria-label]");
     for (const node of ariaNodes) {
+        if (!isNodeInsideChatLanguageUiScope(node)) {
+            continue;
+        }
         const key = node.getAttribute("data-i18n-aria-label") || "";
         const t = getTranslation(key);
         node.setAttribute("aria-label", t);
@@ -6855,17 +6922,34 @@ function collectTranslationTargets() {
 }
 
 function getTranslationRoots() {
-    const roots = [document.body];
-
+    const roots = [];
+    if (AUTO_TRANSLATE_HOST_PAGE) {
+        roots.push(document.body);
+    }
     if (activeDfMessenger) {
-        const messengerRoots = collectSearchRoots(activeDfMessenger);
+        const messengerRoots = collectShadowRootsUnderHost(activeDfMessenger);
         for (const root of messengerRoots) {
             if (root && !roots.includes(root)) {
                 roots.push(root);
             }
         }
     }
-
+    if (!AUTO_TRANSLATE_HOST_PAGE) {
+        const lightDomChatRootIds = [
+            "dfchat-contact-form",
+            CHAT_ACTION_BAR_ID,
+            FOOTER_OVERLAY_ID,
+            POWERED_BY_STRIP_ID,
+            COMPANY_LAUNCHER_INPUT_STRIP_ID,
+            "dfchat-chat-launcher-strip"
+        ];
+        for (let i = 0; i < lightDomChatRootIds.length; i++) {
+            const el = document.getElementById(lightDomChatRootIds[i]);
+            if (el && !roots.includes(el)) {
+                roots.push(el);
+            }
+        }
+    }
     return roots;
 }
 
@@ -7562,8 +7646,65 @@ function collectSearchRoots(dfMessenger) {
     return roots;
 }
 
+/**
+ * Shadow roots under `host` only (BFS). Does **not** include `document`, so it is safe for chat-only
+ * translation. `collectSearchRoots` intentionally starts from `document` for scrollbar/persona tools;
+ * using that output in `getTranslationRoots` was still translating the whole website.
+ */
+function collectShadowRootsUnderHost(host) {
+    if (!host) {
+        return [];
+    }
+    const roots = [];
+    const queue = [host];
+    for (let index = 0; index < queue.length; index += 1) {
+        const current = queue[index];
+        if (!current) {
+            continue;
+        }
+        if (current.shadowRoot && !roots.includes(current.shadowRoot)) {
+            roots.push(current.shadowRoot);
+            queue.push(current.shadowRoot);
+        }
+        if (!current.querySelectorAll) {
+            continue;
+        }
+        for (const node of current.querySelectorAll("*")) {
+            if (node.shadowRoot && !roots.includes(node.shadowRoot)) {
+                roots.push(node.shadowRoot);
+                queue.push(node.shadowRoot);
+            }
+        }
+    }
+    return roots;
+}
+
 const MESSAGELIST_SCROLLBAR_CLASS = "dfchat-messagelist-hide-scrollbar";
 const MESSAGELIST_SCROLLBAR_SKIP = new Set(["TEXTAREA", "INPUT", "SELECT", "BUTTON"]);
+
+function getMessageListPaneSquareCornersCss() {
+    const r = MESSAGE_LIST_PANE_BORDER_RADIUS;
+    return `/* company.js: middle strip — Dialogflow sets .message-list-wrapper { border-radius: var(--df-messenger-chat-border-radius) }; override per corner below. */
+.message-list-wrapper {
+  border-top-left-radius: ${r.topLeft} !important;
+  border-top-right-radius: ${r.topRight} !important;
+  border-bottom-left-radius: ${r.bottomLeft} !important;
+  border-bottom-right-radius: ${r.bottomRight} !important;
+}
+df-messenger-message-list {
+  border-top-left-radius: ${r.topLeft} !important;
+  border-top-right-radius: ${r.topRight} !important;
+  border-bottom-left-radius: ${r.bottomLeft} !important;
+  border-bottom-right-radius: ${r.bottomRight} !important;
+}
+#message-list {
+  border-top-left-radius: ${r.topLeft} !important;
+  border-top-right-radius: ${r.topRight} !important;
+  border-bottom-left-radius: ${r.bottomLeft} !important;
+  border-bottom-right-radius: ${r.bottomRight} !important;
+}
+`;
+}
 
 /**
  * Injected into each shadow under `df-messenger` so the message list can hide its scrollbar (scroll still works).
@@ -7738,13 +7879,26 @@ function applyChatMessageListScrollbarToMessenger(dfMessenger) {
     const roots = collectSearchRoots(dfMessenger);
     for (const root of roots) {
         if (root && root instanceof ShadowRoot && typeof root.getElementById === "function") {
-            const old = root.getElementById(MESSAGE_LIST_SCROLLBAR_STYLE_ID);
-            if (old) {
-                old.remove();
-            }
+            const rem = (id) => {
+                const t = root.getElementById(id);
+                if (t) {
+                    t.remove();
+                }
+            };
+            rem(MESSAGE_LIST_SCROLLBAR_STYLE_ID);
+            rem(MESSAGE_LIST_SQUARE_PANE_STYLE_ID);
         }
     }
     clearMessageListScrollbarHiding(roots);
+    for (const root of roots) {
+        if (!root || !(root instanceof ShadowRoot) || typeof root.appendChild !== "function") {
+            continue;
+        }
+        const styleSq = document.createElement("style");
+        styleSq.id = MESSAGE_LIST_SQUARE_PANE_STYLE_ID;
+        styleSq.textContent = getMessageListPaneSquareCornersCss();
+        root.appendChild(styleSq);
+    }
     if (SHOW_MESSAGELIST_SCROLLBAR) {
         return;
     }
