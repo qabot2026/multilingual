@@ -609,7 +609,7 @@ const originalTextNodeContent = new Map();
 const originalElementAttributes = new Map();
 const googleTranslationCache = new Map();
 
-const COMPANY_JS_BUILD_TAG = "20260425-1";
+const COMPANY_JS_BUILD_TAG = "20260425-9";
 const COMPANY_DEBUG_QUERY_FLAG = "dfchatDebug";
 let debugMountAttemptSeq = 0;
 let debugBadgeLastRenderAt = 0;
@@ -651,16 +651,25 @@ let chatActionBarSyncTimer = null;
 /** @type {{ left: number, top: number } | null} */
 let chatActionBarFixedPos = null;
 let scheduleChatActionBarRaf = 0;
-/** Measured width for send-anchored layout; avoids left jumping when offsetWidth stabilizes */
+/** Measured width for send-anchored layout; monotonically max’d so `offsetWidth` 258↔260 does not wobble `left`. */
 let chatActionBarSendWidthCache = 0;
+/** Rounded `Send` `getBoundingClientRect().left`; ignores ±1–3px viewport noise so the bar stops sliding horizontally. */
+let chatActionBarSendLeftSnap = null;
+/** Last width used in horizontal clamp; ignores small `visualViewport.width` flicker. */
+let chatActionBarClampVwWCache = 0;
+/** Ignore subpixel drift vs current `style.left` before we apply jitter. */
+const ACTION_BAR_STYLE_H_DEADBAND_PX = 3;
 let chatActionBarSyncDebounceTimer = 0;
 /** Fixed `top` while composer row is single-line; reused when row grows (multiline). */
 let chatActionBarStableTopPx = null;
-/** Rsync footer chrome on mobile while chat is open (inner scrollers do not bubble to window). */
-let mobileFooterChromeRaf = 0;
-let mobileFooterChromeLastTs = 0;
-/** Lower rate avoids Language/Restart bar “blinking” from repeated layout sync (was 24ms). */
-const MOBILE_FOOTER_CHROME_RESYNC_MS = 100;
+/** Mobile: resync fixed footer controls on an interval (was rAF @ ~10Hz, which wobbled Language/Restart). */
+let mobileFooterChromeIntervalId = 0;
+/** Slower resync: subpixel / anchor math is stable; tight loops made the bar “crawl” continuously. */
+const MOBILE_FOOTER_CHROME_RESYNC_MS = 500;
+let actionBarScrollThrottleAt = 0;
+let actionBarScrollThrottleTimer = 0;
+/** Max rate for window/document / visualViewport scroll → action bar sync (reduces constant micro-drift on desktop + mobile). */
+const ACTION_BAR_SCROLL_TO_SYNC_THROTTLE_MS = 220;
 let safeAreaTopInsetCache = /** @type {{ px: number, at: number } | null} */ (null);
 /** @type {Array<{ el: EventTarget, fn: (e: Event) => void }>} */
 let footerScrollParentBindings = [];
@@ -703,6 +712,27 @@ if (typeof window !== "undefined") {
 }
 
 function onFooterHostScroll() {
+    throttledSyncChatActionBarFromUserScroll();
+}
+
+/**
+ * Throttle high-frequency `scroll` (page, nested, visualViewport) so fixed Language/Restart are not
+ * recomputed many times per second.
+ */
+function throttledSyncChatActionBarFromUserScroll() {
+    const t = Date.now();
+    if (t - actionBarScrollThrottleAt < ACTION_BAR_SCROLL_TO_SYNC_THROTTLE_MS) {
+        if (!actionBarScrollThrottleTimer) {
+            const delay = ACTION_BAR_SCROLL_TO_SYNC_THROTTLE_MS - (t - actionBarScrollThrottleAt);
+            actionBarScrollThrottleTimer = window.setTimeout(() => {
+                actionBarScrollThrottleTimer = 0;
+                actionBarScrollThrottleAt = Date.now();
+                scheduleSyncChatActionBarPosition();
+            }, Math.max(0, delay));
+        }
+        return;
+    }
+    actionBarScrollThrottleAt = t;
     scheduleSyncChatActionBarPosition();
 }
 
@@ -751,36 +781,35 @@ function bindFooterScrollParentsForChat(start) {
 }
 
 function stopMobileFooterChromeLayoutLoop() {
-    if (mobileFooterChromeRaf) {
-        cancelAnimationFrame(mobileFooterChromeRaf);
-        mobileFooterChromeRaf = 0;
+    if (mobileFooterChromeIntervalId) {
+        try {
+            window.clearInterval(mobileFooterChromeIntervalId);
+        } catch {
+            /* no-op */
+        }
+        mobileFooterChromeIntervalId = 0;
     }
-    mobileFooterChromeLastTs = 0;
 }
 
 /**
  * Re-run footer geometry while mobile chat is open. Inner page scrollers do not fire window scroll.
+ * Uses a slow interval (not rAF) so the Language/Restart row is not nudged every ~100ms.
  */
-function runMobileFooterChromeFrame(ts) {
-    if (!isChatWindowOpen || !isMobileViewport()) {
-        stopMobileFooterChromeLayoutLoop();
-        return;
-    }
-    if (ts - mobileFooterChromeLastTs >= MOBILE_FOOTER_CHROME_RESYNC_MS) {
-        mobileFooterChromeLastTs = ts;
-        syncChatActionBarPosition();
-        syncPoweredByStripPosition();
-    }
-    mobileFooterChromeRaf = requestAnimationFrame(runMobileFooterChromeFrame);
-}
-
 function startMobileFooterChromeLayoutLoop() {
     stopMobileFooterChromeLayoutLoop();
     if (!isMobileViewport() || !isChatWindowOpen) {
         return;
     }
-    mobileFooterChromeLastTs = 0;
-    mobileFooterChromeRaf = requestAnimationFrame(runMobileFooterChromeFrame);
+    const tick = () => {
+        if (!isChatWindowOpen || !isMobileViewport()) {
+            stopMobileFooterChromeLayoutLoop();
+            return;
+        }
+        syncChatActionBarPosition();
+        syncPoweredByStripPosition();
+    };
+    window.setTimeout(tick, 0);
+    mobileFooterChromeIntervalId = window.setInterval(tick, MOBILE_FOOTER_CHROME_RESYNC_MS);
 }
 
 /** @type {number} */
@@ -851,7 +880,9 @@ function releaseHostPageScrollLockForOpenChat() {
 function resetChatActionBarPositionCaches() {
     chatActionBarFixedPos = null;
     chatActionBarSendWidthCache = 0;
+    chatActionBarSendLeftSnap = null;
     chatActionBarStableTopPx = null;
+    chatActionBarClampVwWCache = 0;
 }
 
 function scheduleSyncChatActionBarPosition() {
@@ -868,13 +899,40 @@ function scheduleSyncChatActionBarPosition() {
             syncContactFormPosition();
             syncPoweredByStripPosition();
         });
-    }, 80);
+    }, 120);
 }
 
-/** Never rely on document.getElementById alone: the bar must not live in a shadow root or getElementById breaks. */
+/**
+ * Language/Restart live in `#dfchat-chat-action-bar`. Full `applyLayout` on `focusin` (see mobile chat setup)
+ * reflows the panel and was making these controls jump on every click.
+ * @param {EventTarget | null} node
+ * @returns {boolean}
+ */
+function isTargetInsideChatActionBar(node) {
+    return !!(node && typeof node.closest === "function" && node.closest("#" + CHAT_ACTION_BAR_ID));
+}
+
+/**
+ * @param {Element | null} el
+ * @returns {boolean}
+ */
+function isChatActionBarInlineElement(el) {
+    return !!(el && el.classList
+        && el.classList.contains("dfchat-chat-action-bar--inline")
+        && el.isConnected);
+}
+
+/**
+ * Never rely on `document.getElementById` alone: the bar may live in a shadow root.
+ * Do **not** yank a composer–inline bar back to `document.body` (that was undoing
+ * `mountChatActionBarInline` and re-enabling `position: fixed` jiggle on every sync).
+ */
 function getChatActionBar() {
     let el = document.getElementById(CHAT_ACTION_BAR_ID);
     if (el) {
+        if (isChatActionBarInlineElement(el)) {
+            return el;
+        }
         if (el.parentElement !== document.body) {
             try {
                 document.body.appendChild(el);
@@ -888,6 +946,9 @@ function getChatActionBar() {
     if (ms && ms.shadowRoot && typeof ms.shadowRoot.getElementById === "function") {
         el = ms.shadowRoot.getElementById(CHAT_ACTION_BAR_ID);
         if (el) {
+            if (isChatActionBarInlineElement(el)) {
+                return el;
+            }
             try {
                 document.body.appendChild(el);
             } catch {
@@ -2025,7 +2086,7 @@ function ensureChatActionBar() {
             scheduleSyncChatActionBarPosition();
         };
         const onActionBarLayoutScroll = () => {
-            scheduleSyncChatActionBarPosition();
+            throttledSyncChatActionBarFromUserScroll();
         };
         window.addEventListener("resize", onActionBarLayoutResize);
         if (window.visualViewport) {
@@ -2111,6 +2172,16 @@ function syncChatActionBarPosition() {
         return;
     }
 
+    // Prefer mounting *below* the type-your-message row (`.input-box-wrapper`); not beside Send (that sits inside the input strip).
+    if (mountChatActionBarInline(messenger, bar)) {
+        bar.classList.remove("dfchat-chat-action-bar--body-fixed");
+        bar.setAttribute("data-dfchat-anchor", "below-input");
+        bar.style.zIndex = "";
+        refreshChatActionBarLanguageState(bar);
+        bar.style.display = "inline-flex";
+        return;
+    }
+
     const insertionPoint = findFooterInlineInsertionPoint(messenger);
     const targetRow = insertionPoint && insertionPoint.parent ? insertionPoint.parent : null;
     const footerHost = resolveFooterMountHost(messenger) || findChatFooterHost(messenger);
@@ -2155,14 +2226,22 @@ function syncChatActionBarPosition() {
         if (s && s.width > 0 && s.height > 0) {
             const wMeas = bar.offsetWidth > 0 ? bar.offsetWidth : 0;
             if (wMeas > 0) {
-                const prev = chatActionBarSendWidthCache || 0;
-                if (!prev || Math.abs(wMeas - prev) > 1.5) {
+                const prevW = chatActionBarSendWidthCache || 0;
+                if (!prevW) {
+                    chatActionBarSendWidthCache = wMeas;
+                } else if (wMeas > prevW) {
+                    chatActionBarSendWidthCache = wMeas;
+                } else if (prevW - wMeas > 8) {
                     chatActionBarSendWidthCache = wMeas;
                 }
             }
-            const estBarW = wMeas > 0 ? wMeas : (chatActionBarSendWidthCache || 260);
-            // Round anchor math so subpixel `getBoundingClientRect` does not flip `left` by 1px every frame.
-            left = Math.max(4, Math.round(s.left) - Math.round(estBarW) - gapBeforeSend);
+            const estBarW = chatActionBarSendWidthCache > 0 ? chatActionBarSendWidthCache : 260;
+            const curSendLeft = Math.round(s.left);
+            if (chatActionBarSendLeftSnap == null || Math.abs(curSendLeft - chatActionBarSendLeftSnap) >= 4) {
+                chatActionBarSendLeftSnap = curSendLeft;
+            }
+            // Anchor from snapped Send X + max width so flex/label reflow cannot rock the bar left-right.
+            left = Math.max(4, chatActionBarSendLeftSnap - Math.round(estBarW) - gapBeforeSend);
             // Vertical: center on the full composer row when we have it (taller than Send), else center on Send.
             let vCenterY = s.top + (s.height - btnSize) / 2;
             if (targetRow && typeof targetRow.getBoundingClientRect === "function") {
@@ -2242,9 +2321,16 @@ function syncChatActionBarPosition() {
         document.body.appendChild(bar);
     }
 
+    const curStyleLeft = parseFloat(bar.style.left);
+    if (Number.isFinite(curStyleLeft) && bar.style.left && String(bar.style.left).length > 0) {
+        if (Math.abs(left - curStyleLeft) < ACTION_BAR_STYLE_H_DEADBAND_PX) {
+            left = Math.round(curStyleLeft);
+        }
+    }
+
     // Separate X/Y so horizontal micro-jitter (send anchor + clamp) does not retrigger position updates every frame.
-    const jitterEpsX = isMobileViewport() ? 20 : 16;
-    const jitterEpsY = isMobileViewport() ? 10 : 6;
+    const jitterEpsX = isMobileViewport() ? 64 : 56;
+    const jitterEpsY = isMobileViewport() ? 16 : 12;
     if (chatActionBarFixedPos) {
         const closeEnough =
             Math.abs(left - chatActionBarFixedPos.left) < jitterEpsX
@@ -2287,12 +2373,38 @@ function syncChatActionBarPosition() {
     bar.style.order = "";
     if (bar.offsetWidth > 0) {
         const w = bar.offsetWidth;
-        const prev = chatActionBarSendWidthCache || 0;
-        if (!prev || Math.abs(w - prev) > 1.5) {
+        const prevW = chatActionBarSendWidthCache || 0;
+        if (!prevW) {
+            chatActionBarSendWidthCache = w;
+        } else if (w > prevW) {
+            chatActionBarSendWidthCache = w;
+        } else if (prevW - w > 8) {
             chatActionBarSendWidthCache = w;
         }
     }
     clampChatActionBarInViewport(bar);
+    if (bar.style.display !== "none" && bar.classList.contains("dfchat-chat-action-bar--body-fixed")) {
+        const fl = Math.round(parseFloat(bar.style.left) || 0);
+        const ft = Math.round(parseFloat(bar.style.top) || 0);
+        if (Number.isFinite(fl) && Number.isFinite(ft)) {
+            chatActionBarFixedPos = { left: fl, top: ft };
+        }
+    }
+}
+
+/**
+ * Stable “viewport width” for horizontal clamp: `visualViewport.width` can tick ±1px and fight `getBoundingClientRect()`.
+ * @returns {number}
+ */
+function resolveClampViewportWidthForActionBar() {
+    const raw = window.visualViewport && Number.isFinite(window.visualViewport.width)
+        ? window.visualViewport.width
+        : window.innerWidth;
+    const r = Math.max(1, Math.round(raw));
+    if (!chatActionBarClampVwWCache || Math.abs(r - chatActionBarClampVwWCache) >= 4) {
+        chatActionBarClampVwWCache = r;
+    }
+    return chatActionBarClampVwWCache;
 }
 
 /**
@@ -2308,9 +2420,7 @@ function clampChatActionBarInViewport(bar) {
     if (!br.width) {
         return;
     }
-    const vwW = window.visualViewport && Number.isFinite(window.visualViewport.width)
-        ? window.visualViewport.width
-        : window.innerWidth;
+    const vwW = resolveClampViewportWidthForActionBar();
     const margin = 4;
     let curLeft = parseFloat(bar.style.left);
     if (!Number.isFinite(curLeft)) {
@@ -2323,7 +2433,7 @@ function clampChatActionBarInViewport(bar) {
     if (br.left + dx < margin) {
         dx = margin - br.left;
     }
-    if (Math.abs(dx) < 0.5) {
+    if (Math.abs(dx) < 2) {
         return;
     }
     const next = Math.round(curLeft + dx);
@@ -2529,63 +2639,64 @@ function syncPoweredByStripPosition() {
 }
 
 function mountChatActionBarInline(messenger, bar) {
-    const footerHost = resolveFooterMountHost(messenger) || findChatFooterHost(messenger);
-    const targetRow = resolveActionBarTargetRow(messenger, footerHost);
-
-    if (!targetRow || typeof targetRow.insertBefore !== "function") {
-        bar.classList.remove("dfchat-chat-action-bar--inline");
+    const mp = findFooterBelowInputMountPoint(messenger);
+    if (!mp || !mp.parent || !mp.afterEl) {
+        return false;
+    }
+    const { parent, afterEl } = mp;
+    if (typeof parent.insertBefore !== "function" || !parent.contains(afterEl)) {
         return false;
     }
 
+    const sameSlot = bar.classList.contains("dfchat-chat-action-bar--inline")
+        && bar.parentElement === parent
+        && bar.previousElementSibling === afterEl;
+    if (sameSlot) {
+        bar.classList.remove("dfchat-chat-action-bar--body-fixed");
+        bar.style.position = "static";
+        bar.style.left = "";
+        bar.style.right = "";
+        bar.style.bottom = "";
+        bar.style.top = "auto";
+        bar.style.zIndex = "";
+        return true;
+    }
+
+    const cs = window.getComputedStyle(parent);
+    if (cs.display === "flex" && (cs.flexDirection === "row" || cs.flexDirection === "row-reverse")) {
+        try {
+            parent.style.flexDirection = "column";
+            parent.style.alignItems = "stretch";
+        } catch {
+            /* no-op */
+        }
+    }
+
     bar.classList.add("dfchat-chat-action-bar--inline");
+    bar.classList.remove("dfchat-chat-action-bar--body-fixed");
     bar.style.position = "static";
     bar.style.left = "";
     bar.style.right = "";
     bar.style.bottom = "";
     bar.style.top = "auto";
+    bar.style.zIndex = "";
     bar.style.marginLeft = "0";
     bar.style.marginRight = "0";
     bar.style.display = "inline-flex";
 
-    // Keep footer row horizontally aligned and place controls before Send.
-    targetRow.style.display = "flex";
-    targetRow.style.alignItems = "center";
-    targetRow.style.gap = "8px";
-    targetRow.style.flexDirection = "row";
-    targetRow.style.position = "relative";
-
-    const insertionPoint = findFooterInlineInsertionPoint(messenger);
-    const beforeNode = insertionPoint && insertionPoint.parent === targetRow
-        ? insertionPoint.beforeNode
-        : targetRow.firstChild;
-    targetRow.insertBefore(bar, beforeNode);
-
+    try {
+        if (bar.parentNode === parent && bar.previousElementSibling === afterEl) {
+            return true;
+        }
+        if (afterEl.nextSibling) {
+            parent.insertBefore(bar, afterEl.nextSibling);
+        } else {
+            parent.appendChild(bar);
+        }
+    } catch {
+        return false;
+    }
     return true;
-}
-
-function resolveActionBarTargetRow(messenger, footerHost) {
-    const insertionPoint = findFooterInlineInsertionPoint(messenger);
-    if (insertionPoint && insertionPoint.parent) {
-        return insertionPoint.parent;
-    }
-
-    if (footerHost) {
-        const directSend = findSendButton(footerHost);
-        if (directSend && directSend.parentElement) {
-            return directSend.parentElement;
-        }
-        if (footerHost.querySelector) {
-            const rowLike = footerHost.querySelector(
-                "[data-testid*='composer'], [data-testid*='input'], [part*='composer'], [part*='input'], [class*='composer'], [class*='input']"
-            );
-            if (rowLike) {
-                return rowLike;
-            }
-        }
-        return footerHost;
-    }
-
-    return null;
 }
 
 /**
@@ -3449,7 +3560,7 @@ function readContactFormConfig() {
     const rawDockMaxW = o && typeof o.formDockMaxWidthPx === "number" && o.formDockMaxWidthPx > 0
         ? o.formDockMaxWidthPx
         : (typeof c.formDockMaxWidthPx === "number" && c.formDockMaxWidthPx > 0 ? c.formDockMaxWidthPx : undefined);
-    const formDockMaxWidthPx = n(rawDockMaxW, isMobileViewport() ? 340 : 360);
+    const formDockMaxWidthPx = n(rawDockMaxW, isMobileViewport() ? 340 : 420);
     return {
         formKey: resolved.formKey,
         maxCardHeightPx: maxFromBlock != null ? maxFromBlock : maxCardFallback,
@@ -4236,7 +4347,7 @@ function syncContactFormPosition() {
     const pad = (padL + padR) / 2;
     const formMaxOuter = typeof cfg.formDockMaxWidthPx === "number" && Number.isFinite(cfg.formDockMaxWidthPx) && cfg.formDockMaxWidthPx > 0
         ? cfg.formDockMaxWidthPx
-        : (isMobileViewport() ? 340 : 360);
+        : (isMobileViewport() ? 340 : 420);
     const formW = Math.min(formMaxOuter, Math.max(200, rect.width - padL - padR));
     const card = el.querySelector(".dfchat-contact-form__card");
     const inputs = el.querySelector(".dfchat-contact-form__inputs");
@@ -5993,12 +6104,22 @@ function initializeMobileChatLayout(dfMessenger, config) {
         window.visualViewport.addEventListener("resize", applyLayout);
         // Do not re-run full `applyLayout` on vV scroll — it can fight the runtime and jiggle the panel;
         // only re-anchor fixed footer chrome to the moving composer.
-        window.visualViewport.addEventListener("scroll", scheduleSyncChatActionBarPosition, { passive: true });
+        window.visualViewport.addEventListener("scroll", throttledSyncChatActionBarFromUserScroll, { passive: true });
     }
 
-    document.addEventListener("focusin", applyLayout);
+    document.addEventListener("focusin", (ev) => {
+        if (isTargetInsideChatActionBar(ev.target)) {
+            return;
+        }
+        applyLayout();
+    });
     document.addEventListener("focusout", () => {
-        window.setTimeout(applyLayout, 120);
+        window.setTimeout(() => {
+            if (isTargetInsideChatActionBar(document.activeElement)) {
+                return;
+            }
+            applyLayout();
+        }, 120);
     });
 }
 
@@ -7183,6 +7304,42 @@ function findFooterInlineInsertionPoint(dfMessenger) {
         }
     }
 
+    return null;
+}
+
+/**
+ * Place Language/Restart **under** the typing row, not in the same flex row as Send.
+ * Tries Dialogflow’s `.input-box-wrapper` first; else the full composer row (Send’s parent) after the row.
+ * @param {Element} dfMessenger
+ * @returns {{ parent: Element, afterEl: Element } | null}
+ */
+function findFooterBelowInputMountPoint(dfMessenger) {
+    const roots = collectSearchRoots(dfMessenger);
+    for (const root of roots) {
+        if (!root || !root.querySelector) {
+            continue;
+        }
+        const wrap = root.querySelector(".input-box-wrapper");
+        if (wrap && wrap.parentElement && !isNodeInsidePageContactForm(wrap)) {
+            if (typeof wrap.getBoundingClientRect === "function") {
+                const r = wrap.getBoundingClientRect();
+                if (r && r.width > 0) {
+                    return { parent: wrap.parentElement, afterEl: wrap };
+                }
+            }
+        }
+    }
+    const ip = findFooterInlineInsertionPoint(dfMessenger);
+    if (ip && ip.parent && ip.parent.parentElement && !isNodeInsidePageContactForm(ip.parent)) {
+        const row = ip.parent;
+        const p = row.parentElement;
+        if (p && typeof row.getBoundingClientRect === "function") {
+            const r = row.getBoundingClientRect();
+            if (r && r.width > 0) {
+                return { parent: p, afterEl: row };
+            }
+        }
+    }
     return null;
 }
 

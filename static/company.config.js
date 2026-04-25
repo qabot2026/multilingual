@@ -126,10 +126,10 @@ window.COMPANY_CHAT_UI_CONFIG = {
 
     footerActionBar: {
       // when type strip is disabled
-      nudgeRightPx: -190,
+      nudgeRightPx: -160,
       nudgeUpPx: -8,
-      nudgeDownPx: 40,
-      // nudgeLeftPx: 100,
+      nudgeDownPx: 70,
+      nudgeLeftPx: 100,
       gapBeforeSendPx: 8,
       lockVerticalWhenComposerRowTallerThanPx: 0
     },
@@ -143,7 +143,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
     // -------------------------------------------------------------------------
     footerInputBox: {
       // Composer inset vs chat card (top right bottom left). Omit `sendButtonWrapperPx` to use Dialogflow’s default Send.
-      padding: "8px 10px 36px 10px",
+      padding: "8px 10px 6px 10px",
       // Or omit `padding` and set all four:
       // paddingTopPx: 19,
       // paddingRightPx: 0,
@@ -547,7 +547,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
       maxCardHeightPx: 300,
       showSubtitle: true,
       /* Max width when the form is docked in the chat window (right-docked chat = grows to the left). */
-      formDockMaxWidthPx: 360
+      formDockMaxWidthPx: 420
     }
   },
 

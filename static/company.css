@@ -200,6 +200,7 @@ html.dfchat-host-scroll-locked body {
   display: none !important;
 }
 
+/* In-flow bar: mounted *below* `.input-box-wrapper` (see company.js `findFooterBelowInputMountPoint`). */
 #dfchat-chat-action-bar.dfchat-chat-action-bar--inline {
   position: static !important;
   z-index: auto !important;
@@ -207,11 +208,18 @@ html.dfchat-host-scroll-locked body {
   right: auto !important;
   bottom: auto !important;
   top: auto !important;
-  margin-left: 0 !important;
-  margin-right: 8px !important;
+  transform: translateY(-15px) !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 6px 10px 8px 10px !important;
   order: unset !important;
   flex-direction: row !important;
-  justify-content: flex-start !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
   flex: 0 0 auto !important;
 }
 
@@ -224,6 +232,13 @@ html.dfchat-host-scroll-locked body {
   /* Stabilize compositing: reduces perceived flicker when `left`/`top` are updated every frame. */
   backface-visibility: hidden;
   transform: translateZ(0);
+}
+
+#dfchat-chat-action-bar.dfchat-chat-action-bar--body-fixed button,
+#dfchat-chat-action-bar.dfchat-chat-action-bar--body-fixed .dfchat-chat-action-menu {
+  /* Avoid extra layout work / double-tap delay on mobile when tapping Language / Restart. */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 #dfchat-chat-action-bar .dfchat-chat-action-menu-wrapper,
@@ -550,10 +565,10 @@ html.dfchat-host-scroll-locked body {
   display: none;
 }
 
-/* Undocked: +20px width on large screens (matches docked `syncContactFormPosition` cap). */
+/* Undocked: wider panel on large screens (keep in sync with `desk.form.formDockMaxWidthPx`). */
 @media (min-width: 769px) {
   .dfchat-contact-form {
-    width: min(360px, calc(100vw - 42px));
+    width: min(420px, calc(100vw - 42px));
   }
 }
 
