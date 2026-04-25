@@ -626,7 +626,7 @@ const originalTextNodeContent = new Map();
 const originalElementAttributes = new Map();
 const googleTranslationCache = new Map();
 
-const COMPANY_JS_BUILD_TAG = "20260425-21";
+const COMPANY_JS_BUILD_TAG = "20260425-22";
 const COMPANY_DEBUG_QUERY_FLAG = "dfchatDebug";
 let debugMountAttemptSeq = 0;
 let debugBadgeLastRenderAt = 0;
@@ -2697,6 +2697,48 @@ function setPoweredByStripGeometry(el, L, fr, topPx) {
     });
 }
 
+/**
+ * Rect to anchor “Powered by” above the composer. Prefer `.input-box-wrapper` (stable while typing) over
+ * the send-button row parent, whose `getBoundingClientRect()` can jump toward y≈0 on mobile reflow / keyboard.
+ * @param {Element} dfMessenger
+ * @returns {DOMRect | null}
+ */
+function getPoweredByComposerAnchorRect(dfMessenger) {
+    if (!dfMessenger) {
+        return null;
+    }
+    const roots = collectSearchRoots(dfMessenger);
+    for (let i = 0; i < roots.length; i++) {
+        const root = roots[i];
+        if (!root || typeof root.querySelector !== "function") {
+            continue;
+        }
+        const wrap = root.querySelector(".input-box-wrapper");
+        if (wrap && !isNodeInsidePageContactForm(wrap) && typeof wrap.getBoundingClientRect === "function") {
+            const r = wrap.getBoundingClientRect();
+            if (r && r.width > 0 && r.height > 0) {
+                return r;
+            }
+        }
+    }
+    const insertion = findFooterInlineInsertionPoint(dfMessenger);
+    const targetRow = insertion && insertion.parent ? insertion.parent : null;
+    if (targetRow && typeof targetRow.getBoundingClientRect === "function") {
+        const rowR = targetRow.getBoundingClientRect();
+        if (rowR && rowR.width > 0 && rowR.height > 0) {
+            return rowR;
+        }
+    }
+    const footerHost = resolveFooterMountHost(dfMessenger) || findChatFooterHost(dfMessenger);
+    if (footerHost && typeof footerHost.getBoundingClientRect === "function") {
+        const r2 = footerHost.getBoundingClientRect();
+        if (r2 && r2.width > 0 && r2.height > 0) {
+            return r2;
+        }
+    }
+    return null;
+}
+
 function syncPoweredByStripPosition() {
     if (!IS_POWERED_BY_ENABLED) {
         if (poweredByStripNode) {
@@ -2724,31 +2766,25 @@ function syncPoweredByStripPosition() {
     const L = POWERED_BY_STYLE;
     const lineH = L.lineHeightPx;
     const deltaTop = L.offsetTopPx + L.nudgeDownPx - L.nudgeUpPx;
-    // Prefer the same composer row as Send (not the full footer host), so the strip doesn’t jump when
-    // the page contact form is open and the big footer box reflows.
-    const insertion = findFooterInlineInsertionPoint(messenger);
-    const targetRow = insertion && insertion.parent ? insertion.parent : null;
-    const footerHost = resolveFooterMountHost(messenger) || findChatFooterHost(messenger);
-    let fr = null;
-    if (targetRow && typeof targetRow.getBoundingClientRect === "function") {
-        const rowR = targetRow.getBoundingClientRect();
-        if (rowR && rowR.width > 0 && rowR.height > 0) {
-            fr = rowR;
-        }
-    }
-    if (!fr && footerHost && typeof footerHost.getBoundingClientRect === "function") {
-        const r2 = footerHost.getBoundingClientRect();
-        if (r2 && r2.width > 0 && r2.height > 0) {
-            fr = r2;
-        }
-    }
+    const fr = getPoweredByComposerAnchorRect(messenger);
     if (fr) {
         const rawTop = Math.round(fr.top - lineH - L.gapAboveComposerPx) + deltaTop;
         const vhP = window.visualViewport && Number.isFinite(window.visualViewport.height)
             ? window.visualViewport.height
             : window.innerHeight;
         // Row − lineH can be negative; keep the strip in the viewport. Above contact form in stacking order.
-        const top = Math.max(4, Math.min(rawTop, vhP - lineH - 4));
+        let top = Math.max(4, Math.min(rawTop, vhP - lineH - 4));
+        if (isMobileViewport()) {
+            const winR = findChatWindowRect(messenger);
+            if (winR && winR.height > 80) {
+                // Typing can skew the anchor so the label shoots to the top; keep it in the lower ~2/3 of the chat card.
+                const minTop = Math.round(winR.top + winR.height * 0.32);
+                const maxTop = Math.round(winR.bottom - lineH - 4);
+                if (minTop < maxTop) {
+                    top = Math.min(maxTop, Math.max(top, minTop));
+                }
+            }
+        }
         setPoweredByStripGeometry(el, L, fr, top);
         return;
     }
