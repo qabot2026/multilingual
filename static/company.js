@@ -654,6 +654,131 @@ let chatActionBarSendWidthCache = 0;
 let chatActionBarSyncDebounceTimer = 0;
 /** Fixed `top` while composer row is single-line; reused when row grows (multiline). */
 let chatActionBarStableTopPx = null;
+/** Rsync footer chrome on mobile while chat is open (inner scrollers do not bubble to window). */
+let mobileFooterChromeRaf = 0;
+let mobileFooterChromeLastTs = 0;
+const MOBILE_FOOTER_CHROME_RESYNC_MS = 24;
+let safeAreaTopInsetCache = /** @type {{ px: number, at: number } | null} */ (null);
+/** @type {Array<{ el: EventTarget, fn: (e: Event) => void }>} */
+let footerScrollParentBindings = [];
+
+/**
+ * iOS / notched devices: `env(safe-area-inset-top)` in px (0 when N/A), cached briefly.
+ * @returns {number}
+ */
+function getEnvSafeAreaInsetTopPx() {
+    const now = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+    if (safeAreaTopInsetCache && (now - safeAreaTopInsetCache.at) < 1500) {
+        return safeAreaTopInsetCache.px;
+    }
+    let px = 0;
+    try {
+        const p = document.createElement("div");
+        p.setAttribute("data-dfchat-safe-probe", "true");
+        p.style.cssText = "position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;pointer-events:none;visibility:hidden;z-index:-1;padding:0;border:0;margin:0;padding-top:env(safe-area-inset-top, 0px);";
+        document.body.appendChild(p);
+        const pt = getComputedStyle(p).paddingTop;
+        document.body.removeChild(p);
+        const n = parseFloat(pt);
+        if (Number.isFinite(n) && n >= 0) {
+            px = n;
+        }
+    } catch {
+        /* no-op */
+    }
+    safeAreaTopInsetCache = { px, at: now };
+    return px;
+}
+
+if (typeof window !== "undefined") {
+    window.addEventListener("resize", () => {
+        safeAreaTopInsetCache = null;
+    }, { passive: true });
+    window.addEventListener("orientationchange", () => {
+        safeAreaTopInsetCache = null;
+    }, { passive: true });
+}
+
+function onFooterHostScroll() {
+    scheduleSyncChatActionBarPosition();
+}
+
+function clearFooterScrollParentListeners() {
+    for (const b of footerScrollParentBindings) {
+        try {
+            b.el.removeEventListener("scroll", b.fn, { capture: true });
+        } catch {
+            /* no-op */
+        }
+    }
+    footerScrollParentBindings = [];
+}
+
+/**
+ * `scroll` does not bubble: nested `overflow:auto` main columns never reach `window`. Bind those ancestors.
+ * @param {Node | null | undefined} start
+ */
+function bindFooterScrollParentsForChat(start) {
+    clearFooterScrollParentListeners();
+    if (!start || typeof Node === "undefined" || !(start instanceof Node)) {
+        return;
+    }
+    let el = start.parentNode;
+    while (el && el !== document.body && el !== document.documentElement) {
+        if (el instanceof Element) {
+            try {
+                const cs = window.getComputedStyle(el);
+                const oy = cs.overflowY;
+                const ox = cs.overflowX;
+                const canY = (oy === "auto" || oy === "scroll" || oy === "overlay")
+                    && el.scrollHeight > el.clientHeight + 1;
+                const canX = (ox === "auto" || ox === "scroll" || ox === "overlay")
+                    && el.scrollWidth > el.clientWidth + 1;
+                if (canY || canX) {
+                    const fn = onFooterHostScroll;
+                    el.addEventListener("scroll", fn, { passive: true, capture: true });
+                    footerScrollParentBindings.push({ el, fn });
+                }
+            } catch {
+                /* no-op */
+            }
+        }
+        el = el.parentNode;
+    }
+}
+
+function stopMobileFooterChromeLayoutLoop() {
+    if (mobileFooterChromeRaf) {
+        cancelAnimationFrame(mobileFooterChromeRaf);
+        mobileFooterChromeRaf = 0;
+    }
+    mobileFooterChromeLastTs = 0;
+}
+
+/**
+ * Re-run footer geometry while mobile chat is open. Inner page scrollers do not fire window scroll.
+ */
+function runMobileFooterChromeFrame(ts) {
+    if (!isChatWindowOpen || !isMobileViewport()) {
+        stopMobileFooterChromeLayoutLoop();
+        return;
+    }
+    if (ts - mobileFooterChromeLastTs >= MOBILE_FOOTER_CHROME_RESYNC_MS) {
+        mobileFooterChromeLastTs = ts;
+        syncChatActionBarPosition();
+        syncPoweredByStripPosition();
+    }
+    mobileFooterChromeRaf = requestAnimationFrame(runMobileFooterChromeFrame);
+}
+
+function startMobileFooterChromeLayoutLoop() {
+    stopMobileFooterChromeLayoutLoop();
+    if (!isMobileViewport() || !isChatWindowOpen) {
+        return;
+    }
+    mobileFooterChromeLastTs = 0;
+    mobileFooterChromeRaf = requestAnimationFrame(runMobileFooterChromeFrame);
+}
 
 function resetChatActionBarPositionCaches() {
     chatActionBarFixedPos = null;
@@ -2162,8 +2287,11 @@ function syncPoweredByStripPosition() {
     }
     if (fr) {
         const rawTop = Math.round(fr.top - lineH - L.gapAboveComposerPx) + deltaTop;
+        const vhP = window.visualViewport && Number.isFinite(window.visualViewport.height)
+            ? window.visualViewport.height
+            : window.innerHeight;
         // Row − lineH can be negative; keep the strip in the viewport. Above contact form in stacking order.
-        const top = Math.max(4, Math.min(rawTop, window.innerHeight - lineH - 4));
+        const top = Math.max(4, Math.min(rawTop, vhP - lineH - 4));
         setPoweredByStripGeometry(el, L, fr, top);
         return;
     }
@@ -2173,7 +2301,10 @@ function syncPoweredByStripPosition() {
         return;
     }
     const rawTopFb = Math.round(r.bottom - lineH - L.fallbackGapFromWindowBottomPx) + deltaTop;
-    const topClamped = Math.max(4, Math.min(rawTopFb, window.innerHeight - lineH - 4));
+    const vh0 = window.visualViewport && Number.isFinite(window.visualViewport.height)
+        ? window.visualViewport.height
+        : window.innerHeight;
+    const topClamped = Math.max(4, Math.min(rawTopFb, vh0 - lineH - 4));
     setPoweredByStripGeometry(el, L, r, topClamped);
 }
 
@@ -5407,17 +5538,18 @@ function initializeMobileChatLayout(dfMessenger, config) {
         const bottomInset = typeof mobileConfig.bottomInsetPx === "number" ? mobileConfig.bottomInsetPx : 10;
         const topInset = typeof mobileConfig.topInsetPx === "number" ? mobileConfig.topInsetPx : 14;
         const minWidth = typeof mobileConfig.minWidthPx === "number" ? mobileConfig.minWidthPx : 280;
-        const minHeight = typeof mobileConfig.minHeightPx === "number" ? mobileConfig.minHeightPx : 340;
+        const minHeight = typeof mobileConfig.minHeightPx === "number" ? mobileConfig.minHeightPx : 200;
         const mobileExtraH = typeof mobileConfig.extraHeightTowardBubblePx === "number" && Number.isFinite(mobileConfig.extraHeightTowardBubblePx)
             ? mobileConfig.extraHeightTowardBubblePx
             : 0;
         const safeTopReserve = typeof mobileConfig.safeAreaTopReservePx === "number" && Number.isFinite(mobileConfig.safeAreaTopReservePx)
             ? mobileConfig.safeAreaTopReservePx
             : 28;
+        const safeInsetTop = getEnvSafeAreaInsetTopPx();
         const availableWidth = Math.max(minWidth, Math.floor(viewportWidth - horizontalInset * 2));
         const availableHeight = Math.max(
             minHeight,
-            Math.floor(viewportHeight - topInset - bottomInset - safeTopReserve + mobileExtraH)
+            Math.floor(viewportHeight - topInset - bottomInset - safeTopReserve - safeInsetTop + mobileExtraH)
         );
 
         const mobileDock = resolveChatLayoutSide(config);
@@ -5515,9 +5647,16 @@ function initializeChatStateSync(dfMessenger) {
             scheduleFooterInputBoxShadowOverrides(dfMessenger);
             scheduleAutoStartConversation(dfMessenger);
             window.setTimeout(scheduleSyncChatActionBarPosition, 120);
+            if (isMobileViewport()) {
+                safeAreaTopInsetCache = null;
+                bindFooterScrollParentsForChat(dfMessenger);
+                startMobileFooterChromeLayoutLoop();
+            }
             return;
         }
 
+        stopMobileFooterChromeLayoutLoop();
+        clearFooterScrollParentListeners();
         stopCloseXWhileChatOpenMonitor();
         // When the panel closes, dismiss any open (or scheduled) inline form (contact / appointment / upload) so it
         // does not float without the chat. Restart also clears the form (see restartChatSession).
@@ -5535,6 +5674,7 @@ function initializeChatStateSync(dfMessenger) {
     }, true);
 
     const observer = new MutationObserver(() => {
+        const wasOpen = isChatWindowOpen;
         isChatWindowOpen = isChatExpanded(dfMessenger);
         if (isChatWindowOpen) {
             resetBubbleUnreadBadge();
@@ -5543,6 +5683,16 @@ function initializeChatStateSync(dfMessenger) {
             window.setTimeout(() => {
                 closeForm();
             }, 0);
+        }
+        if (isChatWindowOpen && isMobileViewport()) {
+            if (!wasOpen) {
+                safeAreaTopInsetCache = null;
+            }
+            bindFooterScrollParentsForChat(dfMessenger);
+            startMobileFooterChromeLayoutLoop();
+        } else {
+            stopMobileFooterChromeLayoutLoop();
+            clearFooterScrollParentListeners();
         }
         scheduleSyncChatActionBarPosition();
     });

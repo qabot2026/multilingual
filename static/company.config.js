@@ -545,10 +545,10 @@ window.COMPANY_CHAT_UI_CONFIG = {
 
     chatWindow: {
       horizontalInsetPx: 12,
-      topInsetPx: 14,
+      topInsetPx: 18,
       bottomInsetPx: 10,
-      /* Shrinks the open panel height on mobile so the titlebar stays in view (notches, browser chrome). */
-      safeAreaTopReservePx: 28,
+      /* Extra vertical budget so the open panel titlebar stays below the notch / status area (in addition to env(safe-area-inset-top) in JS). */
+      safeAreaTopReservePx: 40,
       minWidthPx: 260,
       minHeightPx: 200,
 

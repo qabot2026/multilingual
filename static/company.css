@@ -28,6 +28,7 @@ df-messenger {
   left: auto;
   z-index: 999;
   overflow: visible;
+  box-sizing: border-box;
   animation: dfchat-fade-up 320ms ease-out;
 
   --df-messenger-font-family: "Manrope", "Segoe UI", sans-serif;
