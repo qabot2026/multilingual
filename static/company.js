@@ -4,7 +4,7 @@ let lastUserPersonaRenderAt = 0;
 let companyPersonaWindowListenersAttached = false;
 let contactFormOpenTimer = null;
 let contactFormOpenPending = false;
-/** @type {string | null} Which `common.contactForm.forms[…]` is active; `null` until first `readContactFormConfig()`. */
+/** @type {string | null} Which `common.form.forms[…]` is active; `null` until first `readContactFormConfig()`. */
 let activeContactFormId = null;
 let activeDfMessenger = null;
 let activeBubbleNode = null;
@@ -1502,9 +1502,8 @@ function createAndMountMessenger() {
     }
 
     const m0 = isMobileViewport();
-    const dWin0 = m0
-        ? (COMPANY_UI_CONFIG.mobile && COMPANY_UI_CONFIG.mobile.chatWindow) || {}
-        : (COMPANY_UI_CONFIG.desktop && COMPANY_UI_CONFIG.desktop.chatWindow) || {};
+    const devWin0 = getDeviceSection(COMPANY_UI_CONFIG, m0);
+    const dWin0 = devWin0.chatWindow && typeof devWin0.chatWindow === "object" ? devWin0.chatWindow : {};
     const raw0 = dWin0 && typeof dWin0.bubblePosition === "object" ? dWin0.bubblePosition : {};
     const side0 = resolveChatLayoutSide(COMPANY_UI_CONFIG);
     const bpos0 = coalesceBubblePositionForChatSide(
@@ -1541,10 +1540,10 @@ function createAndMountMessenger() {
         ensureCloseIconIsX(df);
     }
     const isMobile = isMobileViewport();
-    const autoOpenConfig = isMobile
-        ? (COMPANY_UI_CONFIG.mobile && COMPANY_UI_CONFIG.mobile.autoOpenChat ? COMPANY_UI_CONFIG.mobile.autoOpenChat : null)
-        : (COMPANY_UI_CONFIG.desktop && COMPANY_UI_CONFIG.desktop.autoOpenChat ? COMPANY_UI_CONFIG.desktop.autoOpenChat : null);
-    if (!autoOpenConfig || isFeatureEnabledFromConfig(autoOpenConfig, true)) {
+    const devAuto = getDeviceSection(COMPANY_UI_CONFIG, isMobile);
+    const autoOpenConfig = devAuto.autoOpenChat && typeof devAuto.autoOpenChat === "object" ? devAuto.autoOpenChat : null;
+    if (isDeviceShowChatbotEnabled(COMPANY_UI_CONFIG)
+        && (!autoOpenConfig || isFeatureEnabledFromConfig(autoOpenConfig, true))) {
         const delayMs = autoOpenConfig && typeof autoOpenConfig.delayMs === "number" && Number.isFinite(autoOpenConfig.delayMs)
             ? autoOpenConfig.delayMs
             : 5000;
@@ -1565,6 +1564,7 @@ function createAndMountMessenger() {
     scheduleChatMessageListScrollbarReapply(df);
     scheduleSyncChatActionBarPosition();
     window.setTimeout(scheduleSyncChatActionBarPosition, 120);
+    applyDeviceChatbotVisibility(COMPANY_UI_CONFIG, df);
     startPersonaDecorator(df);
 
     updateCompanyDebugBadge([
@@ -2117,10 +2117,8 @@ function syncChatActionBarPosition() {
         if (!isMobileViewport()) {
             return 0;
         }
-        const m = readCompanyUiConfig().mobile;
-        const fb = m && typeof m === "object" && m.footerActionBar && typeof m.footerActionBar === "object"
-            ? m.footerActionBar
-            : null;
+        const m = getDeviceSection(readCompanyUiConfig(), true);
+        const fb = m.footerActionBar && typeof m.footerActionBar === "object" ? m.footerActionBar : null;
         return fb && typeof fb.nudgeRightExtraPx === "number" && Number.isFinite(fb.nudgeRightExtraPx)
             ? fb.nudgeRightExtraPx
             : 0;
@@ -2716,7 +2714,7 @@ function initializeLauncherStrip(dfMessenger, bubbleNode, config) {
 
 function readLauncherStripConfig(config) {
     const isMobile = isMobileViewport();
-    const section = isMobile ? (config && config.mobile) : (config && config.desktop);
+    const section = getDeviceSection(config, isMobile);
     if (!section || typeof section !== "object") {
         return null;
     }
@@ -2805,7 +2803,7 @@ function applyLauncherStripStyle(stripElement, stripConfig) {
 
 function readLauncherInputStripConfig(config) {
     const isMobile = isMobileViewport();
-    const section = isMobile ? (config && config.mobile) : (config && config.desktop);
+    const section = getDeviceSection(config, isMobile);
     if (!section || typeof section !== "object") {
         return null;
     }
@@ -3133,6 +3131,114 @@ function readCompanyUiConfig() {
     return {};
 }
 
+/**
+ * Device UI block: `mob` (or legacy `mobile`) vs `desk` (or legacy `desktop`).
+ * @param {Record<string, unknown> | null | undefined} config
+ * @param {boolean} mobile
+ * @returns {Record<string, unknown>}
+ */
+function getDeviceSection(config, mobile) {
+    if (!config || typeof config !== "object") {
+        return {};
+    }
+    if (mobile) {
+        return (config.mob && typeof config.mob === "object" ? config.mob : null)
+            || (config.mobile && typeof config.mobile === "object" ? config.mobile : null)
+            || {};
+    }
+    return (config.desk && typeof config.desk === "object" ? config.desk : null)
+        || (config.desktop && typeof config.desktop === "object" ? config.desktop : null)
+        || {};
+}
+
+/**
+ * @param {Record<string, unknown> | null | undefined} config
+ * @returns {boolean}
+ */
+function isDeviceShowChatbotEnabled(config) {
+    const sec = getDeviceSection(config, isMobileViewport());
+    if (sec && typeof sec === "object" && typeof sec.showChatbot === "boolean") {
+        return sec.showChatbot;
+    }
+    return true;
+}
+
+/**
+ * Per-device form layout (dock/insets) for contact / appointment / upload / … — not field definitions.
+ * Legacy: `mobile.contactForm` insets; still supported.
+ * @param {Record<string, unknown> | null | undefined} ui
+ * @returns {Record<string, unknown> | null}
+ */
+function getDeviceFormOverlay(ui) {
+    const sec = getDeviceSection(ui, isMobileViewport());
+    if (!sec || typeof sec !== "object") {
+        return null;
+    }
+    if (sec.form && typeof sec.form === "object") {
+        return sec.form;
+    }
+    if (sec.contactForm && typeof sec.contactForm === "object") {
+        return sec.contactForm;
+    }
+    return null;
+}
+
+/**
+ * @returns {Record<string, unknown>}
+ */
+function readCommonFormConfigRoot() {
+    if (COMMON_CONFIG.form && typeof COMMON_CONFIG.form === "object") {
+        return COMMON_CONFIG.form;
+    }
+    if (COMMON_CONFIG.contactForm && typeof COMMON_CONFIG.contactForm === "object") {
+        return COMMON_CONFIG.contactForm;
+    }
+    return {};
+}
+
+/**
+ * @param {unknown} v
+ * @param {boolean} defaultBool
+ * @returns {boolean}
+ */
+function coalesceFormLayoutBool(v, defaultBool) {
+    return typeof v === "boolean" ? v : defaultBool;
+}
+
+/**
+ * Hides the whole chat widget (bubble + window + host strips) when `showChatbot: false` for this device.
+ * @param {Record<string, unknown> | null | undefined} config
+ * @param {Element | null} dfMessenger
+ */
+function applyDeviceChatbotVisibility(config, dfMessenger) {
+    const show = isDeviceShowChatbotEnabled(config);
+    const hide = !show;
+    if (dfMessenger) {
+        dfMessenger.style.display = hide ? "none" : "";
+        try {
+            dfMessenger.setAttribute("aria-hidden", hide ? "true" : "false");
+        } catch (e) {
+            /* no-op */
+        }
+    }
+    const strip = document.getElementById("dfchat-chat-launcher-strip");
+    if (strip) {
+        strip.style.display = hide ? "none" : "";
+    }
+    const inputStrip = document.getElementById(COMPANY_LAUNCHER_INPUT_STRIP_ID);
+    if (inputStrip) {
+        inputStrip.style.display = hide ? "none" : "";
+    }
+    const powered = document.getElementById("dfchat-powered-by-strip");
+    if (powered) {
+        powered.style.display = hide ? "none" : "";
+    }
+    const actionBar = document.getElementById("dfchat-chat-action-bar");
+    if (actionBar) {
+        actionBar.style.display = hide ? "none" : "";
+    }
+}
+
 function readFooterActionBarLayoutConfig() {
     const c = COMMON_CONFIG.footerActionBar && typeof COMMON_CONFIG.footerActionBar === "object"
         ? COMMON_CONFIG.footerActionBar
@@ -3221,10 +3327,10 @@ function getBuiltinDefaultContactFormFields() {
 }
 
 /**
- * @returns {string} Key in `common.contactForm.forms` (or "default" for legacy `fields` only).
+ * @returns {string} Key in `common.form.forms` (or "default" for legacy `fields` only).
  */
 function getDefaultContactFormId() {
-    const c = COMMON_CONFIG && typeof COMMON_CONFIG.contactForm === "object" ? COMMON_CONFIG.contactForm : {};
+    const c = readCommonFormConfigRoot();
     if (c.forms && typeof c.forms === "object") {
         const keys = Object.keys(c.forms);
         if (keys.length === 0) {
@@ -3243,7 +3349,7 @@ function getDefaultContactFormId() {
  * @returns {{ formKey: string, block: Record<string, unknown> }}
  */
 function getResolvedContactFormBlock() {
-    const c = COMMON_CONFIG && typeof COMMON_CONFIG.contactForm === "object" ? COMMON_CONFIG.contactForm : {};
+    const c = readCommonFormConfigRoot();
     if (activeContactFormId == null) {
         activeContactFormId = getDefaultContactFormId();
     }
@@ -3269,7 +3375,7 @@ function getResolvedContactFormBlock() {
 }
 
 function readContactFormConfig() {
-    const c = COMMON_CONFIG && typeof COMMON_CONFIG.contactForm === "object" ? COMMON_CONFIG.contactForm : {};
+    const c = readCommonFormConfigRoot();
     const n = (value, defaultValue) => (typeof value === "number" && Number.isFinite(value) ? value : defaultValue);
     const resolved = getResolvedContactFormBlock();
     const b = resolved.block;
@@ -3281,7 +3387,13 @@ function readContactFormConfig() {
     const subtitleI18nKey = typeof b.subtitleI18nKey === "string" && b.subtitleI18nKey.trim()
         ? b.subtitleI18nKey.trim()
         : "contactFormSubtitle";
-    const showSubtitle = typeof b.showSubtitle === "boolean" ? b.showSubtitle : c.showSubtitle !== false;
+    const uiForForm = readCompanyUiConfig();
+    const o = getDeviceFormOverlay(uiForForm);
+    const showSubtitle = typeof b.showSubtitle === "boolean"
+        ? b.showSubtitle
+        : (typeof (o && o.showSubtitle) === "boolean"
+            ? o.showSubtitle
+            : c.showSubtitle !== false);
     const chatNames = Array.isArray(b.chatSummaryFieldNames) && b.chatSummaryFieldNames.length
         ? b.chatSummaryFieldNames.slice()
         : (Array.isArray(c.chatSummaryFieldNames) && c.chatSummaryFieldNames.length
@@ -3292,18 +3404,16 @@ function readContactFormConfig() {
         : null;
     const titleByLanguage = b.titleByLanguage && typeof b.titleByLanguage === "object" ? b.titleByLanguage : null;
     const subtitleByLanguage = b.subtitleByLanguage && typeof b.subtitleByLanguage === "object" ? b.subtitleByLanguage : null;
-    const baseInset = n(c.sideInsetPx, 15);
-    let sideInsetLeftPx = baseInset;
-    let sideInsetRightPx = baseInset;
-    const uiForForm = readCompanyUiConfig();
-    const mForm = uiForForm.mobile && typeof uiForForm.mobile === "object" && uiForForm.mobile.contactForm
-        && typeof uiForForm.mobile.contactForm === "object"
-        ? uiForForm.mobile.contactForm
-        : null;
-    if (isMobileViewport() && mForm) {
-        const mL = mForm.insetLeftPx;
-        const mR = mForm.insetRightPx;
-        const mS = mForm.sideInsetPx;
+    const layoutSideDefault = n(
+        o && typeof o.sideInsetPx === "number" ? o.sideInsetPx : c.sideInsetPx,
+        15
+    );
+    let sideInsetLeftPx = layoutSideDefault;
+    let sideInsetRightPx = layoutSideDefault;
+    if (o && typeof o === "object") {
+        const mL = o.insetLeftPx;
+        const mR = o.insetRightPx;
+        const mS = o.sideInsetPx;
         if (typeof mL === "number" && Number.isFinite(mL)) {
             sideInsetLeftPx = mL;
         } else if (typeof mS === "number" && Number.isFinite(mS)) {
@@ -3316,15 +3426,36 @@ function readContactFormConfig() {
         }
     }
     const sideInsetPx = (sideInsetLeftPx + sideInsetRightPx) / 2;
+    const dockToChatWindow = coalesceFormLayoutBool(
+        o && Object.prototype.hasOwnProperty.call(o, "dockToChatWindow") ? o.dockToChatWindow : c.dockToChatWindow,
+        true
+    );
+    const dockAboveFooter = coalesceFormLayoutBool(
+        o && Object.prototype.hasOwnProperty.call(o, "dockAboveFooter") ? o.dockAboveFooter : c.dockAboveFooter,
+        true
+    );
+    const maxCardFallback = n(
+        o && typeof o.maxCardHeightPx === "number" ? o.maxCardHeightPx : c.maxCardHeightPx,
+        300
+    );
     return {
         formKey: resolved.formKey,
-        maxCardHeightPx: maxFromBlock != null ? maxFromBlock : n(c.maxCardHeightPx, 300),
+        maxCardHeightPx: maxFromBlock != null ? maxFromBlock : maxCardFallback,
         showSubtitle,
-        dockToChatWindow: c.dockToChatWindow !== false,
-        dockAboveFooter: c.dockAboveFooter !== false,
-        titleInsetPx: n(c.titleInsetPx, 48),
-        dockNudgeDownPx: n(c.dockNudgeDownPx, 0),
-        gapAboveFooterPx: n(c.gapAboveFooterPx, 8),
+        dockToChatWindow,
+        dockAboveFooter,
+        titleInsetPx: n(
+            o && typeof o.titleInsetPx === "number" ? o.titleInsetPx : c.titleInsetPx,
+            48
+        ),
+        dockNudgeDownPx: n(
+            o && typeof o.dockNudgeDownPx === "number" ? o.dockNudgeDownPx : c.dockNudgeDownPx,
+            0
+        ),
+        gapAboveFooterPx: n(
+            o && typeof o.gapAboveFooterPx === "number" ? o.gapAboveFooterPx : c.gapAboveFooterPx,
+            8
+        ),
         sideInsetPx,
         sideInsetLeftPx,
         sideInsetRightPx,
@@ -3377,9 +3508,8 @@ function applyOtpFormStepSubtitle(step) {
     if (!s) {
         return;
     }
-    const c = COMMON_CONFIG && COMMON_CONFIG.contactForm && typeof COMMON_CONFIG.contactForm.forms === "object"
-        ? COMMON_CONFIG.contactForm.forms.otp
-        : null;
+    const fr = readCommonFormConfigRoot();
+    const c = fr && typeof fr.forms === "object" ? fr.forms.otp : null;
     const lang = activeLanguage;
     const show = readContactFormConfig().showSubtitle;
     if (step === "mobile") {
@@ -3581,10 +3711,10 @@ function setupOtpFormTwoStepIfNeeded() {
 }
 
 /**
- * When Dialogflow sends `{ "action": "open_form" }` without `form_id`, use `common.contactForm.defaultFormId`.
+ * When Dialogflow sends `{ "action": "open_form" }` without `form_id`, use `common.form.defaultFormId`.
  */
 function applyDefaultContactFormForBareOpenFormAction() {
-    const c = COMMON_CONFIG && typeof COMMON_CONFIG.contactForm === "object" ? COMMON_CONFIG.contactForm : {};
+    const c = readCommonFormConfigRoot();
     if (!c.forms || typeof c.forms !== "object" || !Object.keys(c.forms).length) {
         return;
     }
@@ -3595,9 +3725,9 @@ function applyDefaultContactFormForBareOpenFormAction() {
 }
 
 /**
- * Switch which named form in `common.contactForm.forms` is shown. There is no fixed limit on how
+ * Switch which named form in `common.form.forms` is shown. There is no fixed limit on how
  * many forms you define — use any string key that exists on `forms` (e.g. `contact`, `appointment`, `otp`, `uploadDocument`, `newsletter`).
- * No-op when only legacy top-level `contactForm.fields` is used (no `forms` object).
+ * No-op when only legacy top-level `form.fields` / `contactForm.fields` is used (no `forms` object).
  * @param {string} formId
  */
 function setActiveContactFormId(formId) {
@@ -3608,7 +3738,7 @@ function setActiveContactFormId(formId) {
     if (activeContactFormId === id) {
         return;
     }
-    const c = COMMON_CONFIG && typeof COMMON_CONFIG.contactForm === "object" ? COMMON_CONFIG.contactForm : {};
+    const c = readCommonFormConfigRoot();
     if (!c.forms || typeof c.forms !== "object" || !c.forms[id]) {
         return;
     }
@@ -4311,9 +4441,8 @@ function reapplyChatWindowOffsetFromConfig(dfMessenger) {
     const root = typeof COMPANY_UI_CONFIG === "object" && COMPANY_UI_CONFIG != null
         ? COMPANY_UI_CONFIG
         : {};
-    const chatWindow = isMobileViewport()
-        ? (root.mobile && root.mobile.chatWindow) || {}
-        : (root.desktop && root.desktop.chatWindow) || {};
+    const dev = getDeviceSection(root, isMobileViewport());
+    const chatWindow = dev.chatWindow && typeof dev.chatWindow === "object" ? dev.chatWindow : {};
     setDfMessengerChatWindowOffsetPx(dfMessenger, chatWindow.chatWindowOffsetPx);
 }
 
@@ -4339,9 +4468,8 @@ function resolveChatLayoutSide(config) {
         return cl.side;
     }
     const isMobile = isMobileViewport();
-    const cwin = isMobile
-        ? (c && c.mobile && c.mobile.chatWindow) || null
-        : (c && c.desktop && c.desktop.chatWindow) || null;
+    const devBlock = getDeviceSection(c, isMobile);
+    const cwin = devBlock.chatWindow && typeof devBlock.chatWindow === "object" ? devBlock.chatWindow : null;
     if (cwin && (cwin.horizontalDock === "left" || cwin.horizontalDock === "right")) {
         return cwin.horizontalDock;
     }
@@ -4846,8 +4974,8 @@ function applyDfMessengerThemeConfig(dfMessenger, config) {
     }
 
     const common = config.common && typeof config.common === "object" ? config.common : {};
-    const desktop = config.desktop && typeof config.desktop === "object" ? config.desktop : {};
-    const desktopWindow = desktop.chatWindow && typeof desktop.chatWindow === "object" ? desktop.chatWindow : {};
+    const desk = getDeviceSection(config, false);
+    const desktopWindow = desk.chatWindow && typeof desk.chatWindow === "object" ? desk.chatWindow : {};
     if (typeof desktopWindow.widthPx === "number" && Number.isFinite(desktopWindow.widthPx)) {
         const w = capDialogflowChatWindowWidthPx(desktopWindow.widthPx);
         dfMessenger.style.setProperty("--df-messenger-chat-window-width", `${w}px`);
@@ -5734,9 +5862,9 @@ function initializeMobileChatLayout(dfMessenger, config) {
     }
 
     const applyLayout = () => {
-        const desktopConfig = config && config.desktop && typeof config.desktop === "object" ? config.desktop : {};
+        const desktopConfig = getDeviceSection(config, false);
         const desktopWindow = desktopConfig.chatWindow && typeof desktopConfig.chatWindow === "object" ? desktopConfig.chatWindow : {};
-        const mobileRoot = config && config.mobile && typeof config.mobile === "object" ? config.mobile : {};
+        const mobileRoot = getDeviceSection(config, true);
         const mobileConfig = mobileRoot.chatWindow && typeof mobileRoot.chatWindow === "object" ? mobileRoot.chatWindow : {};
 
         if (!isMobileViewport()) {
@@ -5769,11 +5897,13 @@ function initializeMobileChatLayout(dfMessenger, config) {
             dfMessenger.style.setProperty("--df-messenger-chat-window-height", `${desktopHeight}px`);
             setDfMessengerChatWindowOffsetPx(dfMessenger, desktopWindow.chatWindowOffsetPx);
             scheduleSyncChatActionBarPosition();
+            applyDeviceChatbotVisibility(config, dfMessenger);
             return;
         }
 
         if (!isFeatureEnabledFromConfig(mobileRoot, true)) {
             scheduleSyncChatActionBarPosition();
+            applyDeviceChatbotVisibility(config, dfMessenger);
             return;
         }
 
@@ -5831,6 +5961,7 @@ function initializeMobileChatLayout(dfMessenger, config) {
         dfMessenger.style.setProperty("--df-messenger-chat-window-height", `${availableHeight}px`);
         setDfMessengerChatWindowOffsetPx(dfMessenger, mobileConfig.chatWindowOffsetPx);
         scheduleSyncChatActionBarPosition();
+        applyDeviceChatbotVisibility(config, dfMessenger);
     };
 
     applyLayout();
@@ -5883,9 +6014,10 @@ function initializeChatStateSync(dfMessenger) {
             scheduleChatMessageListScrollbarReapply(dfMessenger);
             const ui0 = readCompanyUiConfig();
             if (resolveChatLayoutSide(ui0) === "left") {
-                const cwin0 = isMobileViewport()
-                    ? (ui0.mobile && ui0.mobile.chatWindow) || {}
-                    : (ui0.desktop && ui0.desktop.chatWindow) || {};
+                const cwin0 = (() => {
+                    const s = getDeviceSection(ui0, isMobileViewport());
+                    return s.chatWindow && typeof s.chatWindow === "object" ? s.chatWindow : {};
+                })();
                 const rawBp0 = cwin0 && typeof cwin0.bubblePosition === "object" ? cwin0.bubblePosition : {};
                 const mView0 = isMobileViewport();
                 const defaults0 = mView0

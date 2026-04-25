@@ -9,13 +9,16 @@
  * This file must load *before* `company.js` (see `myweb.html` script order).
  *
  * Load Dialogflow default CSS, then `company.css`, then this file, then `company.js`.
- * The contact form DOM is injected by `company.js`.
+ * The in-chat form DOM is injected by `company.js`.
  * If you host files under different names or folders, update every `<link>` / `<script src>` in your HTML to match.
+ *
+ * Layout: `common` = shared. `desk` = desktop (wide viewport). `mob` = mobile (≤768px).
+ * Legacy names `desktop` / `mobile` still work in company.js; prefer `desk` / `mob` for new files.
  */
 
 window.COMPANY_CHAT_UI_CONFIG = {
   // =========================
-  // COMMON (same for all)
+  // COMMON (shared: agent, form field defs, theme, …)
   // =========================
   common: {
     // Project + Agent settings (Dialogflow CX).
@@ -233,21 +236,10 @@ window.COMPANY_CHAT_UI_CONFIG = {
     },
 
     // -------------------------------------------------------------------------
-    // Contact form (production: all form titles/placeholders live here when possible)
+    // In-chat forms (contact, appointment, upload, otp, …) — field defs + i18n only.
+    // Docking / padding / insets: set per device under `desk.form` and `mob.form` (not here).
     // -------------------------------------------------------------------------
-    // • `forms`: any number of keys. `defaultFormId`, Dialogflow `open_form` + `form_id`.
-    // • `titleByLanguage` / `subtitleByLanguage` / per-field `placeholderByLanguage` { en, hi, mr }.
-    // • Or `i18nPlaceholder` for shared strings (namePlaceholder, …) in company.js UI_TRANSLATIONS only.
-    // -------------------------------------------------------------------------
-    contactForm: {
-      dockToChatWindow: true,
-      dockAboveFooter: true,
-      gapAboveFooterPx: 8,
-      titleInsetPx: 48,
-      dockNudgeDownPx: 20,
-      sideInsetPx: 15,
-      maxCardHeightPx: 300,
-      showSubtitle: true,
+    form: {
       // Form to use when Dialogflow sends only `{ "action": "open_form" }` (no `form_id`), and on first load.
       defaultFormId: "contact",
       // Shared defaults when a form does not set its own (this form uses per-form chatSummaryFieldNames)
@@ -489,9 +481,12 @@ window.COMPANY_CHAT_UI_CONFIG = {
   },
 
   // =========================
-  // DESKTOP
+  // DESK (wide viewport)
   // =========================
-  desktop: {
+  desk: {
+    // One switch: show floating bubble + chat window (false = hidden on desktop only).
+    showChatbot: true,
+
     chatWindow: {
       widthPx: 500,
       heightPx: 640,
@@ -534,13 +529,29 @@ window.COMPANY_CHAT_UI_CONFIG = {
       position: { rightPx: 10, leftPx: null, topPx: null },
       fallbackBottomPx: 54,
       style: { fontSizePx: 14, maxWidthPx: 300 }
+    },
+
+    // Form panel layout (all in-chat forms: contact, appointment, upload, …).
+    form: {
+      dockToChatWindow: true,
+      dockAboveFooter: true,
+      gapAboveFooterPx: 8,
+      titleInsetPx: 48,
+      dockNudgeDownPx: 20,
+      sideInsetPx: 15,
+      maxCardHeightPx: 300,
+      showSubtitle: true
     }
   },
 
   // =========================
-  // MOBILE
+  // MOB (≤768px)
   // =========================
-  mobile: {
+  mob: {
+    // One switch: show bubble + chat on small screens (e.g. false = desktop-only widget).
+    showChatbot: true,
+
+    // Legacy: mobile layout code treats `enabled: false` as “do not apply mob panel sizing” (kept for compatibility).
     enabled: true,
 
     chatWindow: {
@@ -556,7 +567,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
 
       bubblePosition: { rightPx: 12, bottomPx: 10, leftPx: null, topPx: null },
 
-      // Optional: set only the bubble–window gap: `chatWindowOffsetPx: 10` (see desktop).
+      // Optional: set only the bubble–window gap: `chatWindowOffsetPx: 10` (see desk).
 
       // Add to the panel height; optional, separate from `chatWindowOffsetPx`.
       extraHeightTowardBubblePx: 20
@@ -587,13 +598,21 @@ window.COMPANY_CHAT_UI_CONFIG = {
       style: { fontSizePx: 14, maxWidthPx: 300 }
     },
 
-    /* Extra horizontal nudge for Language/Restart (added in company.js; positive = toward the right). */
+    /* Extra horizontal nudge for Language/Restart (company.js; positive = toward the right). */
     footerActionBar: {
       nudgeRightExtraPx: 30
     },
 
-    /* Mobile-only: form horizontal insets (5px to the right vs symmetric 25/25: left+5, right-5). */
-    contactForm: {
+    // Form panel layout (all in-chat forms) + horizontal insets.
+    form: {
+      dockToChatWindow: true,
+      dockAboveFooter: true,
+      gapAboveFooterPx: 8,
+      titleInsetPx: 48,
+      dockNudgeDownPx: 20,
+      sideInsetPx: 15,
+      maxCardHeightPx: 300,
+      showSubtitle: true,
       insetLeftPx: 30,
       insetRightPx: 20
     }
