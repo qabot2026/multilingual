@@ -554,8 +554,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
       minWidthPx: 260,
       minHeightPx: 200,
 
-      /* +20 `rightPx` vs before: whole chat shifts 20px left (away from the right edge). */
-      bubblePosition: { rightPx: 22, bottomPx: 10, leftPx: null, topPx: null },
+      bubblePosition: { rightPx: 12, bottomPx: 10, leftPx: null, topPx: null },
 
       // Optional: set only the bubble–window gap: `chatWindowOffsetPx: 10` (see desktop).
 
@@ -573,7 +572,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
       enabled: true,
       text: "Hello, how are you?",
       typingDurationMs: 2000,
-      position: { rightPx: 22, bottomPx: 86, leftPx: null, topPx: null },
+      position: { rightPx: 12, bottomPx: 86, leftPx: null, topPx: null },
       style: { fontSizePx: 13, paddingYpx: 10, paddingXpx: 14, maxWidthPx: null }
     },
 
@@ -583,14 +582,15 @@ window.COMPANY_CHAT_UI_CONFIG = {
       sendLabel: "Send",
       gapAboveBubblePx: 5,
       gapBelowGreetingPx: 8,
-      position: { rightPx: 22, leftPx: null, topPx: null },
+      position: { rightPx: 12, leftPx: null, topPx: null },
       fallbackBottomPx: 48,
       style: { fontSizePx: 14, maxWidthPx: 300 }
     },
 
-    /* Mobile-only: narrower contact card (read in company.js `readContactFormConfig`). */
+    /* Mobile-only: form horizontal insets (5px to the right vs symmetric 25/25: left+5, right-5). */
     contactForm: {
-      sideInsetPx: 25
+      insetLeftPx: 30,
+      insetRightPx: 20
     }
   },
 

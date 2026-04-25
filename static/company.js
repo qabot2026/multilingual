@@ -3228,15 +3228,30 @@ function readContactFormConfig() {
         : null;
     const titleByLanguage = b.titleByLanguage && typeof b.titleByLanguage === "object" ? b.titleByLanguage : null;
     const subtitleByLanguage = b.subtitleByLanguage && typeof b.subtitleByLanguage === "object" ? b.subtitleByLanguage : null;
-    let sideInsetPx = n(c.sideInsetPx, 15);
+    const baseInset = n(c.sideInsetPx, 15);
+    let sideInsetLeftPx = baseInset;
+    let sideInsetRightPx = baseInset;
     const uiForForm = readCompanyUiConfig();
     const mForm = uiForForm.mobile && typeof uiForForm.mobile === "object" && uiForForm.mobile.contactForm
         && typeof uiForForm.mobile.contactForm === "object"
         ? uiForForm.mobile.contactForm
         : null;
-    if (isMobileViewport() && mForm && typeof mForm.sideInsetPx === "number" && Number.isFinite(mForm.sideInsetPx)) {
-        sideInsetPx = mForm.sideInsetPx;
+    if (isMobileViewport() && mForm) {
+        const mL = mForm.insetLeftPx;
+        const mR = mForm.insetRightPx;
+        const mS = mForm.sideInsetPx;
+        if (typeof mL === "number" && Number.isFinite(mL)) {
+            sideInsetLeftPx = mL;
+        } else if (typeof mS === "number" && Number.isFinite(mS)) {
+            sideInsetLeftPx = mS;
+        }
+        if (typeof mR === "number" && Number.isFinite(mR)) {
+            sideInsetRightPx = mR;
+        } else if (typeof mS === "number" && Number.isFinite(mS)) {
+            sideInsetRightPx = mS;
+        }
     }
+    const sideInsetPx = (sideInsetLeftPx + sideInsetRightPx) / 2;
     return {
         formKey: resolved.formKey,
         maxCardHeightPx: maxFromBlock != null ? maxFromBlock : n(c.maxCardHeightPx, 300),
@@ -3247,6 +3262,8 @@ function readContactFormConfig() {
         dockNudgeDownPx: n(c.dockNudgeDownPx, 0),
         gapAboveFooterPx: n(c.gapAboveFooterPx, 8),
         sideInsetPx,
+        sideInsetLeftPx,
+        sideInsetRightPx,
         chatSummaryFieldNames: chatNames,
         fields,
         titleI18nKey,
@@ -3944,16 +3961,15 @@ function applyContactFormFallbackFixedPosition(el) {
     }
     const mobile = typeof isMobileViewport === "function" && isMobileViewport();
     const side = resolveChatLayoutSide(readCompanyUiConfig());
-    const inPad = (() => {
-        const c0 = readContactFormConfig();
-        return typeof c0.sideInsetPx === "number" && Number.isFinite(c0.sideInsetPx) ? c0.sideInsetPx : 15;
-    })();
+    const c0 = readContactFormConfig();
     const deskPad = 33;
     el.style.position = "fixed";
     el.style.zIndex = "2147483630";
     if (mobile) {
-        el.style.left = `${inPad}px`;
-        el.style.right = `${inPad}px`;
+        const pl = typeof c0.sideInsetLeftPx === "number" && Number.isFinite(c0.sideInsetLeftPx) ? c0.sideInsetLeftPx : 15;
+        const pr = typeof c0.sideInsetRightPx === "number" && Number.isFinite(c0.sideInsetRightPx) ? c0.sideInsetRightPx : 15;
+        el.style.left = `${pl}px`;
+        el.style.right = `${pr}px`;
         el.style.width = "auto";
         /* Match company.css: 92px → 100px lower (toward bottom) */
         el.style.bottom = "8px";
@@ -4008,8 +4024,10 @@ function syncContactFormPosition() {
     }
 
     const side = resolveChatLayoutSide(readCompanyUiConfig());
-    const pad = cfg.sideInsetPx;
-    const formW = Math.min(340, Math.max(200, rect.width - pad * 2));
+    const padL = typeof cfg.sideInsetLeftPx === "number" && Number.isFinite(cfg.sideInsetLeftPx) ? cfg.sideInsetLeftPx : cfg.sideInsetPx;
+    const padR = typeof cfg.sideInsetRightPx === "number" && Number.isFinite(cfg.sideInsetRightPx) ? cfg.sideInsetRightPx : cfg.sideInsetPx;
+    const pad = (padL + padR) / 2;
+    const formW = Math.min(340, Math.max(200, rect.width - padL - padR));
     const card = el.querySelector(".dfchat-contact-form__card");
     const inputs = el.querySelector(".dfchat-contact-form__inputs");
 
@@ -4065,10 +4083,10 @@ function syncContactFormPosition() {
     el.style.width = `${formW}px`;
     if (side === "right") {
         el.style.left = "auto";
-        el.style.right = `${Math.max(0, window.innerWidth - rect.right + pad)}px`;
+        el.style.right = `${Math.max(0, window.innerWidth - rect.right + padR)}px`;
     } else {
         el.style.right = "auto";
-        el.style.left = `${Math.max(0, rect.left + pad)}px`;
+        el.style.left = `${Math.max(0, rect.left + padL)}px`;
     }
 
     if (useBottom) {
