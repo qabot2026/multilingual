@@ -30,6 +30,8 @@ const CONTACT_FORM_OPEN_ACTION = "open_form";
 const CONTACT_FORM_ENDPOINT = "/contact-form-submissions";
 const API_BASE_URL_META_NAME = "dfchat-api-base-url";
 const MOBILE_CHAT_BREAKPOINT_PX = 768;
+/** Extra `nudgeRight` for Language / Restart + Powered by on small viewports only (see company.config.js mobile layout). */
+const MOBILE_FOOTER_ICONS_NUDGE_RIGHT_EXTRA_PX = 20;
 const AUTO_START_CHAT_EVENT_NAME = "FRESH";
 const AUTO_START_CHAT_DELAY_MS = 600;
 const AUTO_START_SENDREQUEST_POLL_MS = 120;
@@ -2111,7 +2113,8 @@ function syncChatActionBarPosition() {
     const padX = 6;
     const nudgeDownPx = FOOTER_ACTION_BAR_LAYOUT.nudgeDownPx;
     const nudgeLeftPx = FOOTER_ACTION_BAR_LAYOUT.nudgeLeftPx;
-    const nudgeActionBarRightPx = FOOTER_ACTION_BAR_LAYOUT.nudgeRightPx;
+    const nudgeActionBarRightPx = FOOTER_ACTION_BAR_LAYOUT.nudgeRightPx
+        + (isMobileViewport() ? MOBILE_FOOTER_ICONS_NUDGE_RIGHT_EXTRA_PX : 0);
     const nudgeActionBarUpPx = FOOTER_ACTION_BAR_LAYOUT.nudgeUpPx;
     const gapBeforeSend = FOOTER_ACTION_BAR_LAYOUT.gapBeforeSendPx;
 
@@ -2347,7 +2350,8 @@ function clampPoweredByStripInViewport(el) {
  */
 function setPoweredByStripGeometry(el, L, fr, topPx) {
     const lineH = L.lineHeightPx;
-    const deltaLeft = L.offsetLeftPx + L.nudgeRightPx - L.nudgeLeftPx;
+    const nudgeRight = L.nudgeRightPx + (isMobileViewport() ? MOBILE_FOOTER_ICONS_NUDGE_RIGHT_EXTRA_PX : 0);
+    const deltaLeft = L.offsetLeftPx + nudgeRight - L.nudgeLeftPx;
     const textAlign = L.textAlign || "center";
     const vwW = window.visualViewport && Number.isFinite(window.visualViewport.width)
         ? window.visualViewport.width
@@ -2413,7 +2417,6 @@ function syncPoweredByStripPosition() {
     const L = POWERED_BY_STYLE;
     const lineH = L.lineHeightPx;
     const deltaTop = L.offsetTopPx + L.nudgeDownPx - L.nudgeUpPx;
-    const deltaLeft = L.offsetLeftPx + L.nudgeRightPx - L.nudgeLeftPx;
     // Prefer the same composer row as Send (not the full footer host), so the strip doesn’t jump when
     // the page contact form is open and the big footer box reflows.
     const insertion = findFooterInlineInsertionPoint(messenger);
@@ -3225,6 +3228,15 @@ function readContactFormConfig() {
         : null;
     const titleByLanguage = b.titleByLanguage && typeof b.titleByLanguage === "object" ? b.titleByLanguage : null;
     const subtitleByLanguage = b.subtitleByLanguage && typeof b.subtitleByLanguage === "object" ? b.subtitleByLanguage : null;
+    let sideInsetPx = n(c.sideInsetPx, 15);
+    const uiForForm = readCompanyUiConfig();
+    const mForm = uiForForm.mobile && typeof uiForForm.mobile === "object" && uiForForm.mobile.contactForm
+        && typeof uiForForm.mobile.contactForm === "object"
+        ? uiForForm.mobile.contactForm
+        : null;
+    if (isMobileViewport() && mForm && typeof mForm.sideInsetPx === "number" && Number.isFinite(mForm.sideInsetPx)) {
+        sideInsetPx = mForm.sideInsetPx;
+    }
     return {
         formKey: resolved.formKey,
         maxCardHeightPx: maxFromBlock != null ? maxFromBlock : n(c.maxCardHeightPx, 300),
@@ -3234,7 +3246,7 @@ function readContactFormConfig() {
         titleInsetPx: n(c.titleInsetPx, 48),
         dockNudgeDownPx: n(c.dockNudgeDownPx, 0),
         gapAboveFooterPx: n(c.gapAboveFooterPx, 8),
-        sideInsetPx: n(c.sideInsetPx, 15),
+        sideInsetPx,
         chatSummaryFieldNames: chatNames,
         fields,
         titleI18nKey,

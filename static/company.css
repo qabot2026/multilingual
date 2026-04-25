@@ -856,8 +856,8 @@ button.dfchat-contact-form-otp-back:hover {
 
 @media (max-width: 768px) {
   .dfchat-contact-form:not(.dfchat-contact-form--docked) {
-    right: 15px;
-    left: 15px;
+    right: 25px;
+    left: 25px;
     /* Was 92px; moved 100px lower → 8px inset (avoids negative offset) */
     bottom: 8px;
     width: auto;
