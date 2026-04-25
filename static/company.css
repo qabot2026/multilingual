@@ -350,6 +350,28 @@ html.dfchat-host-scroll-locked body {
   color: #0369a1;
 }
 
+/* Mobile: sit closer to the right; no white pill background (overrides inline padding from company.js) */
+@media (max-width: 768px) {
+  #dfchat-chat-action-bar.dfchat-chat-action-bar--body-fixed {
+    gap: 4px !important;
+  }
+
+  #dfchat-chat-action-bar.dfchat-chat-action-bar--body-fixed .dfchat-chat-action-menu-wrapper {
+    margin-right: 4px !important;
+  }
+
+  #dfchat-chat-action-bar.dfchat-chat-action-bar--body-fixed .dfchat-chat-action-pill {
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 2px !important;
+  }
+
+  #dfchat-chat-action-bar.dfchat-chat-action-bar--body-fixed .dfchat-chat-action-pill:hover,
+  #dfchat-chat-action-bar.dfchat-chat-action-bar--body-fixed .dfchat-chat-action-pill:active {
+    background: rgba(15, 23, 42, 0.06) !important;
+  }
+}
+
 /* Reliable footer action bar (icon only) */
 #dfchat-hard-language-wrap {
   position: relative;

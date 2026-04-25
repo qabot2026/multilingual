@@ -2113,8 +2113,21 @@ function syncChatActionBarPosition() {
     const padX = 6;
     const nudgeDownPx = FOOTER_ACTION_BAR_LAYOUT.nudgeDownPx;
     const nudgeLeftPx = FOOTER_ACTION_BAR_LAYOUT.nudgeLeftPx;
+    const mFooterNudge = (() => {
+        if (!isMobileViewport()) {
+            return 0;
+        }
+        const m = readCompanyUiConfig().mobile;
+        const fb = m && typeof m === "object" && m.footerActionBar && typeof m.footerActionBar === "object"
+            ? m.footerActionBar
+            : null;
+        return fb && typeof fb.nudgeRightExtraPx === "number" && Number.isFinite(fb.nudgeRightExtraPx)
+            ? fb.nudgeRightExtraPx
+            : 0;
+    })();
     const nudgeActionBarRightPx = FOOTER_ACTION_BAR_LAYOUT.nudgeRightPx
-        + (isMobileViewport() ? MOBILE_FOOTER_ICONS_NUDGE_RIGHT_EXTRA_PX : 0);
+        + (isMobileViewport() ? MOBILE_FOOTER_ICONS_NUDGE_RIGHT_EXTRA_PX : 0)
+        + mFooterNudge;
     const nudgeActionBarUpPx = FOOTER_ACTION_BAR_LAYOUT.nudgeUpPx;
     const gapBeforeSend = FOOTER_ACTION_BAR_LAYOUT.gapBeforeSendPx;
 
