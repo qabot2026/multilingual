@@ -838,7 +838,7 @@ const UI_TRANSLATIONS = {
     en: {
         contactFormTitle: "Contact Form",
         contactFormSubtitle: "Share your contact details.",
-        closeContactFormAria: "Close form",
+        closeFormAria: "Close form",
         namePlaceholder: "Name",
         mobilePlaceholder: "Mobile number",
         emailPlaceholder: "Email",
@@ -879,7 +879,7 @@ const UI_TRANSLATIONS = {
     hi: {
         contactFormTitle: "संपर्क करें",
         contactFormSubtitle: "अपनी जानकारी साझा करें, हम आपसे संपर्क करेंगे।",
-        closeContactFormAria: "संपर्क फॉर्म बंद करें",
+        closeFormAria: "फॉर्म बंद करें",
         namePlaceholder: "नाम",
         mobilePlaceholder: "मोबाइल नंबर",
         emailPlaceholder: "ईमेल",
@@ -920,7 +920,7 @@ const UI_TRANSLATIONS = {
     mr: {
         contactFormTitle: "आमच्याशी संपर्क करा",
         contactFormSubtitle: "तुमची माहिती शेअर करा, आम्ही तुमच्याशी संपर्क करू.",
-        closeContactFormAria: "संपर्क फॉर्म बंद करा",
+        closeFormAria: "फॉर्म बंद करा",
         namePlaceholder: "नाव",
         mobilePlaceholder: "मोबाईल नंबर",
         emailPlaceholder: "ईमेल",
@@ -979,7 +979,7 @@ function mountDfchatContactFormHostIfNeeded() {
         + "<h2 class=\"dfchat-contact-form__title\" data-i18n=\"contactFormTitle\">Contact Us</h2>"
         + "<p class=\"dfchat-contact-form__subtitle\" data-i18n=\"contactFormSubtitle\">Share your details and we will contact you.</p>"
         + "</div>"
-        + "<button id=\"dfchat-contact-form-close\" class=\"dfchat-contact-form__icon-button\" type=\"button\" aria-label=\"Close contact form\" data-i18n-aria-label=\"closeContactFormAria\">x</button>"
+        + "<button id=\"dfchat-contact-form-close\" class=\"dfchat-contact-form__icon-button\" type=\"button\" aria-label=\"Close form\" data-i18n-aria-label=\"closeFormAria\">x</button>"
         + "</div>"
         + "<form id=\"dfchat-contact-form-fields\" class=\"dfchat-contact-form__fields dfchat-contact-form__fields--stacked\">"
         + "<div id=\"dfchat-contact-form-inputs\" class=\"dfchat-contact-form__inputs\" data-i18n-aria-label=\"contactFormTitle\"></div>"
@@ -990,12 +990,14 @@ function mountDfchatContactFormHostIfNeeded() {
     document.body.appendChild(section);
 }
 
-window.addEventListener("DOMContentLoaded", () => {
+function runCompanyDomReadyInit() {
     mountDfchatContactFormHostIfNeeded();
     applyThemeConfig(COMPANY_UI_CONFIG);
     if (!IS_MULTI_LANGUAGE_ENABLED) {
         activeLanguage = DEFAULT_LANGUAGE;
     }
+    // Mount chat before the inline form and other UI — if form init throws, the bubble should still show.
+    runMessengerMountWhenCustomElementReady();
     // Contact fields mount from config; applyLanguage must run after so placeholders/labels apply.
     initializeContactForm();
     applyLanguage(activeLanguage);
@@ -1009,9 +1011,63 @@ window.addEventListener("DOMContentLoaded", () => {
         `debug: add ?${COMPANY_DEBUG_QUERY_FLAG}=1`
     ]);
     initializeClientContextCapture();
+}
 
-    createAndMountMessenger();
-});
+/**
+ * The widget bundle can load in the same turn as `df-messenger.js` onload. In some browsers the
+ * `df-messenger` custom element is not yet defined when this script first runs; wait for it
+ * (embed / Flask `test-embed` and similar).
+ */
+function runMessengerMountWhenCustomElementReady() {
+    if (typeof customElements === "undefined" || typeof customElements.get !== "function") {
+        createAndMountMessenger();
+        return;
+    }
+    if (customElements.get("df-messenger")) {
+        createAndMountMessenger();
+        return;
+    }
+    if (typeof customElements.whenDefined !== "function") {
+        createAndMountMessenger();
+        return;
+    }
+    let didMount = false;
+    const tryMount = () => {
+        if (didMount) {
+            return;
+        }
+        if (!customElements.get("df-messenger")) {
+            // eslint-disable-next-line no-console
+            console.error("[company chat] df-messenger is still undefined — check Network tab: df-messenger.js must load from Google (not blocked by ad blocker / CSP).");
+        }
+        didMount = true;
+        createAndMountMessenger();
+    };
+    const failSafeMs = 12000;
+    const timer = window.setTimeout(() => {
+        if (!didMount) {
+            // eslint-disable-next-line no-console
+            console.warn("[company chat] df-messenger not registered after " + failSafeMs + "ms; attempting mount.");
+        }
+        tryMount();
+    }, failSafeMs);
+    customElements.whenDefined("df-messenger").then(() => {
+        window.clearTimeout(timer);
+        tryMount();
+    }).catch((e) => {
+        window.clearTimeout(timer);
+        // eslint-disable-next-line no-console
+        console.error("[company chat] whenDefined(df-messenger) failed; mounting anyway.", e);
+        tryMount();
+    });
+}
+
+if (document.readyState === "loading") {
+    window.addEventListener("DOMContentLoaded", runCompanyDomReadyInit);
+} else {
+    // Script loaded after DOMContentLoaded (e.g. async `company-loader.js` on /test-embed) — run now.
+    runCompanyDomReadyInit();
+}
 
 function initializeHardActionBar() {
     const messenger = activeDfMessenger || document.querySelector("df-messenger");
@@ -1080,9 +1136,10 @@ function initializeHardActionBar() {
         langWrap.appendChild(menu);
         headerControls.appendChild(langWrap);
 
+        /* Bubble phase: capture would run before the button and clear the menu, breaking toggle on 2nd click. */
         document.addEventListener("click", () => {
             menu.style.display = "none";
-        }, true);
+        }, false);
     }
 
     if (IS_RESTART_CHAT_ENABLED) {
@@ -1111,7 +1168,7 @@ function initializeHardActionBar() {
     closeButton.textContent = "×";
     closeButton.style.cssText = "width: 44px; height: 44px; border: none; border-radius: 12px; background: transparent; color: #0369a1; display: grid; place-items: center; padding: 0; cursor: pointer; font-size: 28px; margin: 0; transition: background 0.2s ease; font-weight: 500; line-height: 1;";
 
-    closeButton.addEventListener("click", closeContactForm);
+    closeButton.addEventListener("click", closeForm);
 
     headerControls.appendChild(closeButton);
 
@@ -1197,6 +1254,15 @@ function createAndMountMessenger() {
     scheduleChatBubbleLauncherCircleStyle(df);
     ensureCircularBubbleIcon(df);
     startBubbleVisibilityWatcher(df);
+    [200, 500, 1200, 2500, 4000].forEach((ms) => {
+        window.setTimeout(() => {
+            if (activeDfMessenger !== df) {
+                return;
+            }
+            ensureBubbleVisible(df);
+            applyChatBubbleLauncherCircleStyle(df);
+        }, ms);
+    });
     if (IS_FORCE_TITLEBAR_CLOSE_X_ENABLED) {
         ensureCloseIconIsX(df);
     }
@@ -1441,7 +1507,7 @@ function mountFooterOverlayControls(restartConfig, restartEnabled) {
 
         document.addEventListener("click", () => {
             menu.style.display = "none";
-        }, true);
+        }, false);
 
         overlay.appendChild(langWrapper);
     }
@@ -1644,7 +1710,7 @@ function ensureChatActionBar() {
 
         document.addEventListener("click", () => {
             languageMenu.style.display = "none";
-        }, true);
+        }, false);
     }
 
     if (IS_RESTART_CHAT_ENABLED) {
@@ -5435,17 +5501,17 @@ function initializeChatStateSync(dfMessenger) {
         }
 
         stopCloseXWhileChatOpenMonitor();
-        // Do not close the contact/appointment overlay when the chat panel minimizes. Live sites
-        // often keep the bubble collapsed; open_form would open then instantly hide. Reposition only.
+        // When the panel closes, dismiss any open (or scheduled) inline form (contact / appointment / upload) so it
+        // does not float without the chat. Restart also clears the form (see restartChatSession).
         window.setTimeout(() => {
-            syncContactFormPosition();
+            closeForm();
         }, 0);
     });
 
     document.addEventListener("click", (event) => {
         if (didUserCloseChat(event)) {
             window.setTimeout(() => {
-                syncContactFormPosition();
+                closeForm();
             }, 0);
         }
     }, true);
@@ -5457,7 +5523,7 @@ function initializeChatStateSync(dfMessenger) {
         }
         if (!isChatWindowOpen) {
             window.setTimeout(() => {
-                syncContactFormPosition();
+                closeForm();
             }, 0);
         }
         scheduleSyncChatActionBarPosition();
@@ -5580,7 +5646,7 @@ function initializeContactForm() {
     }
 
     if (closeButton) {
-        closeButton.addEventListener("click", closeContactForm);
+        closeButton.addEventListener("click", closeForm);
     }
 
     window.addEventListener("dfchat-open-contact-form", (e) => {
@@ -5794,27 +5860,17 @@ function openContactForm() {
     scheduleSyncChatActionBarPosition();
 }
 
-function closeContactForm() {
+function closeForm() {
+    contactFormOpenPending = false;
+    if (contactFormOpenTimer) {
+        window.clearTimeout(contactFormOpenTimer);
+        contactFormOpenTimer = null;
+    }
+
     const form = document.getElementById("dfchat-contact-form");
 
     if (!form) {
-        contactFormOpenPending = false;
-        if (contactFormOpenTimer) {
-            window.clearTimeout(contactFormOpenTimer);
-            contactFormOpenTimer = null;
-        }
         return;
-    }
-
-    // Chat-minimize calls this while the open_form delay is still pending. Clearing the timer here
-    // used to cancel the appointment/contact overlay entirely on many live sites (chat often closed).
-    const formWasOpen = form.classList.contains("dfchat-is-open");
-    if (formWasOpen) {
-        contactFormOpenPending = false;
-        if (contactFormOpenTimer) {
-            window.clearTimeout(contactFormOpenTimer);
-            contactFormOpenTimer = null;
-        }
     }
 
     stripContactFormDocking();
@@ -6081,7 +6137,7 @@ function submitContactForm(event) {
                 }
             }
 
-            closeContactForm();
+            closeForm();
         })
         .catch((error) => {
             if (status) {
@@ -6584,6 +6640,7 @@ function isUsableFooterHost(host) {
 }
 
 function restartChatSession() {
+    closeForm();
     const wasOpen = !!isChatWindowOpen || (activeDfMessenger && isChatExpanded(activeDfMessenger));
     const previousMessenger = activeDfMessenger;
     if (previousMessenger && previousMessenger.parentElement) {

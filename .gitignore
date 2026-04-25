@@ -1,0 +1,2 @@
+# Build output (upload to your CDN; do not commit if you build in CI)
+dist/
