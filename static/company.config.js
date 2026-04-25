@@ -540,7 +540,9 @@ window.COMPANY_CHAT_UI_CONFIG = {
       dockNudgeDownPx: 20,
       sideInsetPx: 15,
       maxCardHeightPx: 300,
-      showSubtitle: true
+      showSubtitle: true,
+      /* Max width when the form is docked in the chat window (right-docked chat = grows to the left). */
+      formDockMaxWidthPx: 360
     }
   },
 
@@ -613,6 +615,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
       sideInsetPx: 15,
       maxCardHeightPx: 300,
       showSubtitle: true,
+      formDockMaxWidthPx: 340,
       insetLeftPx: 30,
       insetRightPx: 20
     }

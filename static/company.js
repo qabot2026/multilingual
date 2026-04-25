@@ -2018,18 +2018,23 @@ function ensureChatActionBar() {
             resetChatActionBarPositionCaches();
             window.setTimeout(scheduleSyncChatActionBarPosition, 120);
         });
-        const onActionBarLayoutEnvChange = () => {
+        // Resize / viewport: reset caches (width + anchor insets can change a lot). Do **not** reset on scroll
+        // — that cleared stabilization every frame and made Language/Restart “blink” while the user scrolled.
+        const onActionBarLayoutResize = () => {
             resetChatActionBarPositionCaches();
             scheduleSyncChatActionBarPosition();
         };
-        window.addEventListener("resize", onActionBarLayoutEnvChange);
+        const onActionBarLayoutScroll = () => {
+            scheduleSyncChatActionBarPosition();
+        };
+        window.addEventListener("resize", onActionBarLayoutResize);
         if (window.visualViewport) {
-            window.visualViewport.addEventListener("resize", onActionBarLayoutEnvChange);
+            window.visualViewport.addEventListener("resize", onActionBarLayoutResize);
         }
         // Page or nested scroll: Send row moves in viewport; re-sync `position:fixed` Language / Restart / Powered by.
         // (`visualViewport` scroll is wired in `initializeMobileChatLayout` to avoid clobbering the panel on keyboard.)
-        window.addEventListener("scroll", onActionBarLayoutEnvChange, { passive: true, capture: true });
-        document.addEventListener("scroll", onActionBarLayoutEnvChange, { passive: true, capture: true });
+        window.addEventListener("scroll", onActionBarLayoutScroll, { passive: true, capture: true });
+        document.addEventListener("scroll", onActionBarLayoutScroll, { passive: true, capture: true });
     }
 }
 
@@ -3441,6 +3446,10 @@ function readContactFormConfig() {
         o && typeof o.maxCardHeightPx === "number" ? o.maxCardHeightPx : c.maxCardHeightPx,
         300
     );
+    const rawDockMaxW = o && typeof o.formDockMaxWidthPx === "number" && o.formDockMaxWidthPx > 0
+        ? o.formDockMaxWidthPx
+        : (typeof c.formDockMaxWidthPx === "number" && c.formDockMaxWidthPx > 0 ? c.formDockMaxWidthPx : undefined);
+    const formDockMaxWidthPx = n(rawDockMaxW, isMobileViewport() ? 340 : 360);
     return {
         formKey: resolved.formKey,
         maxCardHeightPx: maxFromBlock != null ? maxFromBlock : maxCardFallback,
@@ -3462,6 +3471,7 @@ function readContactFormConfig() {
         sideInsetPx,
         sideInsetLeftPx,
         sideInsetRightPx,
+        formDockMaxWidthPx,
         chatSummaryFieldNames: chatNames,
         fields,
         titleI18nKey,
@@ -4224,8 +4234,9 @@ function syncContactFormPosition() {
     const padL = typeof cfg.sideInsetLeftPx === "number" && Number.isFinite(cfg.sideInsetLeftPx) ? cfg.sideInsetLeftPx : cfg.sideInsetPx;
     const padR = typeof cfg.sideInsetRightPx === "number" && Number.isFinite(cfg.sideInsetRightPx) ? cfg.sideInsetRightPx : cfg.sideInsetPx;
     const pad = (padL + padR) / 2;
-    // Desktop: +20px max width (extends toward the left when docked to the right edge).
-    const formMaxOuter = isMobileViewport() ? 340 : 360;
+    const formMaxOuter = typeof cfg.formDockMaxWidthPx === "number" && Number.isFinite(cfg.formDockMaxWidthPx) && cfg.formDockMaxWidthPx > 0
+        ? cfg.formDockMaxWidthPx
+        : (isMobileViewport() ? 340 : 360);
     const formW = Math.min(formMaxOuter, Math.max(200, rect.width - padL - padR));
     const card = el.querySelector(".dfchat-contact-form__card");
     const inputs = el.querySelector(".dfchat-contact-form__inputs");
