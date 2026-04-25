@@ -2945,6 +2945,8 @@ function readContactFormConfig() {
         dockAboveFooter: c.dockAboveFooter !== false,
         titleInsetPx: n(c.titleInsetPx, 48),
         dockNudgeDownPx: n(c.dockNudgeDownPx, 0),
+        /* Move the floating form up (higher on screen) by this many pixels when docked or fallback-fixed. */
+        formBottomNudgeUpPx: n(c.formBottomNudgeUpPx, 20),
         gapAboveFooterPx: n(c.gapAboveFooterPx, 8),
         sideInsetPx: n(c.sideInsetPx, 10),
         chatSummaryFieldNames: chatNames,
@@ -3644,24 +3646,27 @@ function applyContactFormFallbackFixedPosition(el) {
     }
     const mobile = typeof isMobileViewport === "function" && isMobileViewport();
     const side = resolveChatLayoutSide(readCompanyUiConfig());
+    const cfgF = readContactFormConfig();
+    const nudge = typeof cfgF.formBottomNudgeUpPx === "number" && Number.isFinite(cfgF.formBottomNudgeUpPx)
+        ? cfgF.formBottomNudgeUpPx
+        : 0;
     el.style.position = "fixed";
     el.style.zIndex = "2147483630";
     if (mobile) {
         el.style.left = "10px";
         el.style.right = "10px";
         el.style.width = "auto";
-        /* Match company.css: 92px → 100px lower (toward bottom) */
-        el.style.bottom = "8px";
+        el.style.bottom = `${8 + nudge}px`;
     } else if (side === "left") {
         el.style.right = "auto";
         el.style.left = "28px";
         el.style.width = "";
-        el.style.bottom = "6px";
+        el.style.bottom = `${6 + nudge}px`;
     } else {
         el.style.left = "auto";
         el.style.right = "28px";
         el.style.width = "";
-        el.style.bottom = "6px";
+        el.style.bottom = `${6 + nudge}px`;
     }
     el.style.top = "auto";
     el.style.removeProperty("max-height");
@@ -3707,6 +3712,9 @@ function syncContactFormPosition() {
     const formW = Math.min(340, Math.max(200, rect.width - pad * 2));
     const card = el.querySelector(".dfchat-contact-form__card");
     const inputs = el.querySelector(".dfchat-contact-form__inputs");
+    const nudgeUp = typeof cfg.formBottomNudgeUpPx === "number" && Number.isFinite(cfg.formBottomNudgeUpPx)
+        ? cfg.formBottomNudgeUpPx
+        : 0;
 
     let fromTop;
     let sectionMaxH;
@@ -3744,7 +3752,7 @@ function syncContactFormPosition() {
     }
 
     if (!useBottom) {
-        fromTop = rect.top + cfg.titleInsetPx + cfg.dockNudgeDownPx;
+        fromTop = rect.top + cfg.titleInsetPx + cfg.dockNudgeDownPx - nudgeUp;
         const availableBelowTop = Math.floor(rect.bottom - fromTop - pad);
         const panelH = Math.max(220, Math.min(availableBelowTop, rect.height - cfg.titleInsetPx));
         sectionMaxH = Math.max(180, Math.min(cfg.maxCardHeightPx + 80, panelH));
@@ -3768,7 +3776,7 @@ function syncContactFormPosition() {
 
     if (useBottom) {
         el.style.top = "auto";
-        el.style.bottom = `${window.innerHeight - fromTop}px`;
+        el.style.bottom = `${window.innerHeight - fromTop + nudgeUp}px`;
         el.style.maxHeight = `${sectionMaxH}px`;
     } else {
         el.style.removeProperty("bottom");
@@ -5393,16 +5401,19 @@ function initializeMobileChatLayout(dfMessenger, config) {
         const viewportHeight = viewport ? viewport.height : window.innerHeight;
         const horizontalInset = typeof mobileConfig.horizontalInsetPx === "number" ? mobileConfig.horizontalInsetPx : 12;
         const bottomInset = typeof mobileConfig.bottomInsetPx === "number" ? mobileConfig.bottomInsetPx : 10;
-        const topInset = typeof mobileConfig.topInsetPx === "number" ? mobileConfig.topInsetPx : 14;
+        const topInset = typeof mobileConfig.topInsetPx === "number" ? mobileConfig.topInsetPx : 20;
         const minWidth = typeof mobileConfig.minWidthPx === "number" ? mobileConfig.minWidthPx : 280;
         const minHeight = typeof mobileConfig.minHeightPx === "number" ? mobileConfig.minHeightPx : 340;
         const mobileExtraH = typeof mobileConfig.extraHeightTowardBubblePx === "number" && Number.isFinite(mobileConfig.extraHeightTowardBubblePx)
             ? mobileConfig.extraHeightTowardBubblePx
             : 0;
+        const safeTopReserve = typeof mobileConfig.safeAreaTopReservePx === "number" && Number.isFinite(mobileConfig.safeAreaTopReservePx)
+            ? mobileConfig.safeAreaTopReservePx
+            : 28;
         const availableWidth = Math.max(minWidth, Math.floor(viewportWidth - horizontalInset * 2));
         const availableHeight = Math.max(
             minHeight,
-            Math.floor(viewportHeight - topInset - bottomInset + mobileExtraH)
+            Math.floor(viewportHeight - topInset - bottomInset - safeTopReserve + mobileExtraH)
         );
 
         const mobileDock = resolveChatLayoutSide(config);
@@ -6761,6 +6772,23 @@ function findChatWindowRect(dfMessenger) {
     }
 
     const roots = collectSearchRoots(dfMessenger);
+    // Prefer the real chat surface (title + body + composer). A generic `[class*='chat']` match can be a
+    // large inner scroller (bigger area) and sit below the titlebar — docking math then missed the header.
+    for (const root of roots) {
+        if (!root || typeof root.querySelector !== "function") {
+            continue;
+        }
+        const win0 = root.querySelector("df-messenger-chat-window");
+        if (win0 && typeof win0.getBoundingClientRect === "function") {
+            const r0 = win0.getBoundingClientRect();
+            const s0 = window.getComputedStyle(win0);
+            if (r0 && r0.width >= 100 && r0.height >= 100 && s0
+                && s0.display !== "none" && s0.visibility !== "hidden" && s0.opacity !== "0") {
+                return r0;
+            }
+        }
+    }
+
     const selectors = [
         "df-messenger-chat-window",
         "df-messenger-chat",

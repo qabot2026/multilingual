@@ -245,6 +245,8 @@ window.COMPANY_CHAT_UI_CONFIG = {
       gapAboveFooterPx: 8,
       titleInsetPx: 48,
       dockNudgeDownPx: 20,
+      /* Move the inline form a bit higher on the screen (px). Docked + fallback-fixed. Set 0 to disable. */
+      formBottomNudgeUpPx: 20,
       sideInsetPx: 10,
       maxCardHeightPx: 300,
       showSubtitle: true,
@@ -545,8 +547,10 @@ window.COMPANY_CHAT_UI_CONFIG = {
 
     chatWindow: {
       horizontalInsetPx: 12,
-      topInsetPx: 14,
+      topInsetPx: 20,
       bottomInsetPx: 10,
+      /* Shrinks the open panel height on mobile so the titlebar stays in view (notches, browser chrome). */
+      safeAreaTopReservePx: 28,
       minWidthPx: 280,
       minHeightPx: 340,
 
