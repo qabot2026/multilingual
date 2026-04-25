@@ -118,7 +118,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
 
     footerActionBar: {
       // when type strip is disabled
-      nudgeRightPx: -170,
+      nudgeRightPx: -190,
       nudgeUpPx: -8,
       nudgeDownPx: 40,
       // nudgeLeftPx: 100,
