@@ -194,16 +194,16 @@ window.COMPANY_CHAT_UI_CONFIG = {
 
     // Page colors.
     theme: {
-      "--company-bg-1": "#e8f4fc",
-      "--company-bg-2": "#f7fbff",
-      "--company-brand-900": "#0f172a",
-      "--company-brand-700": "#0369a1",
-      "--company-brand-500": "#0ea5e9",
-      "--company-accent-200": "#e0f2fe",
-      "--company-surface": "#ffffff",
-      "--company-text": "#0f172a",
-      "--company-text-soft": "#475569",
-      "--company-border": "#dbe5ec"
+      "--dfchat-bg-1": "#e8f4fc",
+      "--dfchat-bg-2": "#f7fbff",
+      "--dfchat-brand-900": "#0f172a",
+      "--dfchat-brand-700": "#0369a1",
+      "--dfchat-brand-500": "#0ea5e9",
+      "--dfchat-accent-200": "#e0f2fe",
+      "--dfchat-surface": "#ffffff",
+      "--dfchat-text": "#0f172a",
+      "--dfchat-text-soft": "#475569",
+      "--dfchat-border": "#dbe5ec"
     },
 
     // Where the chat bubble + “Hi” strip sit: "right" | "left" (one switch for both).

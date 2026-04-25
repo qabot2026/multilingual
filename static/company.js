@@ -28,7 +28,7 @@ const CHAT_CLIENT_CONTEXT_STORAGE_KEY = "company_chat_client_context";
 const CONTACT_FORM_OPEN_DELAY_MS = 3000;
 const CONTACT_FORM_OPEN_ACTION = "open_form";
 const CONTACT_FORM_ENDPOINT = "/contact-form-submissions";
-const API_BASE_URL_META_NAME = "company-api-base-url";
+const API_BASE_URL_META_NAME = "dfchat-api-base-url";
 const MOBILE_CHAT_BREAKPOINT_PX = 768;
 const AUTO_START_CHAT_EVENT_NAME = "FRESH";
 const AUTO_START_CHAT_DELAY_MS = 600;
@@ -53,8 +53,8 @@ const CHAT_MESSAGELIST_CONFIG = COMMON_CONFIG.chatMessageList && typeof COMMON_C
 const SHOW_MESSAGELIST_SCROLLBAR = typeof CHAT_MESSAGELIST_CONFIG.showScrollbar === "boolean"
     ? CHAT_MESSAGELIST_CONFIG.showScrollbar
     : true;
-const MESSAGE_LIST_SCROLLBAR_STYLE_ID = "company-messagelist-scrollbar-style";
-const PERSONA_IMAGE_GUARD_STYLE_ID = "company-persona-image-guard";
+const MESSAGE_LIST_SCROLLBAR_STYLE_ID = "dfchat-messagelist-scrollbar-style";
+const PERSONA_IMAGE_GUARD_STYLE_ID = "dfchat-persona-image-guard";
 /** Dialogflow “jump to bottom” / scroll-hint UI; mirrored onto `df-messenger-chat-bubble` :host. */
 const DF_MESSENGER_CHAT_SCROLL_JUMP_VAR_KEYS = [
     "--df-messenger-chat-scroll-button-enabled-display",
@@ -64,10 +64,10 @@ const DF_MESSENGER_CHAT_SCROLL_JUMP_VAR_KEYS = [
 const FOOTER_INPUT_BOX_CONFIG = COMMON_CONFIG.footerInputBox && typeof COMMON_CONFIG.footerInputBox === "object"
     ? COMMON_CONFIG.footerInputBox
     : {};
-const FOOTER_INPUT_BOX_STYLE_ID = "company-footer-input-box-overrides";
+const FOOTER_INPUT_BOX_STYLE_ID = "dfchat-footer-input-box-overrides";
 /** Keeps the closed launcher `.bubble` circular when Dialogflow rebuilds shadow DOM. */
-const CHAT_BUBBLE_LAUNCHER_STYLE_ID = "company-chat-bubble-launcher-circle";
-const CHAT_BUBBLE_UNREAD_BADGE_ID = "company-bubble-unread-badge";
+const CHAT_BUBBLE_LAUNCHER_STYLE_ID = "dfchat-chat-bubble-launcher-circle";
+const CHAT_BUBBLE_UNREAD_BADGE_ID = "dfchat-bubble-unread-badge";
 const FOOTER_INPUT_BOX_ALIGN_ALLOWED = new Set(["flex-end", "flex-start", "center", "stretch", "baseline", "start", "end"]);
 const FOOTER_INPUT_BOX_OVERFLOW_Y_ALLOWED = new Set(["auto", "hidden", "visible", "scroll", "clip"]);
 const FEATURES_CONFIG = COMMON_CONFIG.features && typeof COMMON_CONFIG.features === "object"
@@ -90,17 +90,17 @@ const POWERED_BY_PREFIX = typeof POWERED_BY_CONFIG.prefix === "string" ? POWERED
 const POWERED_BY_VALUE = typeof POWERED_BY_CONFIG.value === "string" && POWERED_BY_CONFIG.value.trim()
     ? POWERED_BY_CONFIG.value.trim()
     : "demo";
-const POWERED_BY_STRIP_ID = "company-powered-by-strip";
+const POWERED_BY_STRIP_ID = "dfchat-powered-by-strip";
 const POWERED_BY_STYLE = readPoweredByStyleConfig();
 const HEADER_CONFIG = COMMON_CONFIG.header && typeof COMMON_CONFIG.header === "object" ? COMMON_CONFIG.header : {};
 /** When not `false` (default in config), the chat **title** dismiss control is always ×, never an arrow, all languages. */
 const IS_FORCE_TITLEBAR_CLOSE_X_ENABLED = HEADER_CONFIG.forceCloseIconX !== false;
 const BOT_PERSONA_CONFIG = readBotPersonaConfig();
 const CHAT_BUBBLE_LAUNCHER_CONFIG = readChatBubbleLauncherConfig();
-const PERSONA_MARKER_BOT = "company-persona-bot";
-const PERSONA_MARKER_BOT_TIME = "company-persona-bot-time";
-const PERSONA_MARKER_USER = "company-persona-user";
-const PERSONA_URL_MARKER_BOT_IMG = "company-bot-persona";
+const PERSONA_MARKER_BOT = "dfchat-persona-bot";
+const PERSONA_MARKER_BOT_TIME = "dfchat-persona-bot-time";
+const PERSONA_MARKER_USER = "dfchat-persona-user";
+const PERSONA_URL_MARKER_BOT_IMG = "dfchat-bot-persona";
 
 function readBotPersonaConfig() {
     const raw = COMMON_CONFIG.botPersona && typeof COMMON_CONFIG.botPersona === "object"
@@ -327,7 +327,7 @@ function syncBubbleUnreadBadge(dfMessenger) {
         el = document.createElement("span");
         el.id = CHAT_BUBBLE_UNREAD_BADGE_ID;
         el.setAttribute("aria-live", "polite");
-        el.setAttribute("data-company-no-translate", "true");
+        el.setAttribute("data-dfchat-no-translate", "true");
         root.appendChild(el);
     } else if (el.parentNode !== root) {
         root.appendChild(el);
@@ -375,14 +375,14 @@ function buildChatBubbleLauncherInjectedCss(cfg) {
     const inner = "var(--df-messenger-chat-bubble-background,linear-gradient(150deg,#0369a1 0%,#0284c7 45%,#0ea5e9 100%))";
     const rotSec = cfg.storyRingRotateSeconds;
     const extraDeg = cfg.storyRingRevolutions * 360;
-    const kfName = "company-story-ring-spin";
+    const kfName = "dfchat-story-ring-spin";
     let ringGrad = CHAT_BUBBLE_STORY_RING_GRADIENT;
     let prelude = "";
     let animDecl = "";
     if (rotSec > 0 && extraDeg > 0) {
-        prelude = "@property --company-story-ring-angle{syntax:\"<angle>\";inherits:false;initial-value:200deg;}"
-            + `@keyframes ${kfName}{to{--company-story-ring-angle:${200 + extraDeg}deg}}`;
-        ringGrad = CHAT_BUBBLE_STORY_RING_GRADIENT.replace("from 200deg", "from var(--company-story-ring-angle,200deg)");
+        prelude = "@property --dfchat-story-ring-angle{syntax:\"<angle>\";inherits:false;initial-value:200deg;}"
+            + `@keyframes ${kfName}{to{--dfchat-story-ring-angle:${200 + extraDeg}deg}}`;
+        ringGrad = CHAT_BUBBLE_STORY_RING_GRADIENT.replace("from 200deg", "from var(--dfchat-story-ring-angle,200deg)");
         animDecl = `animation:${kfName} ${rotSec}s linear forwards!important;`;
     }
     return prelude
@@ -542,7 +542,7 @@ const CHAT_LANGUAGE_OPTIONS = Array.isArray(MULTI_LANGUAGE_CONFIG.enabledLanguag
 const SUPPORTED_LANGUAGES = CHAT_LANGUAGE_OPTIONS
     .map((option) => normalizeLanguageCode(option && option.code ? option.code : ""))
     .filter((value) => value);
-const CHAT_LANGUAGE_DROPDOWN_ID = "company-chat-language-dropdown";
+const CHAT_LANGUAGE_DROPDOWN_ID = "dfchat-chat-language-dropdown";
 const GOOGLE_TRANSLATE_ENDPOINT = "https://translate.googleapis.com/translate_a/single";
 const DOM_TRANSLATION_DEBOUNCE_MS = 180;
 let activeLanguage = getInitialLanguage();
@@ -568,7 +568,7 @@ const originalElementAttributes = new Map();
 const googleTranslationCache = new Map();
 
 const COMPANY_JS_BUILD_TAG = "20260423-11";
-const COMPANY_DEBUG_QUERY_FLAG = "companyDebug";
+const COMPANY_DEBUG_QUERY_FLAG = "dfchatDebug";
 let debugMountAttemptSeq = 0;
 let debugBadgeLastRenderAt = 0;
 let debugBadgePendingLines = null;
@@ -589,8 +589,8 @@ const CHAT_COLLAPSE_X_ICON_DATA_URL
         + "</svg>"
     );
 
-const FOOTER_OVERLAY_ID = "company-chat-footer-overlay";
-const COMPANY_LAUNCHER_INPUT_STRIP_ID = "company-chat-launcher-input-strip";
+const FOOTER_OVERLAY_ID = "dfchat-chat-footer-overlay";
+const COMPANY_LAUNCHER_INPUT_STRIP_ID = "dfchat-chat-launcher-input-strip";
 /** Max wait after opening chat before sending text from the launcher input strip (ms). */
 const LAUNCHER_INPUT_SEND_MAX_WAIT_MS = 5000;
 let companyLauncherInputStripWindowListenersAttached = false;
@@ -600,7 +600,7 @@ let footerOverlayLastPos = { left: null, bottom: null, visible: null };
 let footerOverlayHealTimer = null;
 let footerOverlayGlobalEnsureTimer = null;
 let overlayStatusNode = null;
-const CHAT_ACTION_BAR_ID = "company-chat-action-bar";
+const CHAT_ACTION_BAR_ID = "dfchat-chat-action-bar";
 /** @type {HTMLDivElement | null} */
 let poweredByStripNode = null;
 /** Shift the user input / footer row: positive = up (`translateY(-n)`), negative = down, 0 = default. */
@@ -670,7 +670,7 @@ function getChatActionBar() {
 function getRestartIconHtml(sizePx) {
     const s = Number.isFinite(sizePx) && sizePx > 0 ? Math.round(sizePx) : 16;
     return (
-        "<span class=\"company-restart-icon-glyph\" style=\"font-size:" + s + "px\" aria-hidden=\"true\">↻</span>"
+        "<span class=\"dfchat-restart-icon-glyph\" style=\"font-size:" + s + "px\" aria-hidden=\"true\">↻</span>"
     );
 }
 let embeddedFooterControlsTimer = null;
@@ -681,7 +681,7 @@ function updateOverlayStatus(text) {
 
 function isCompanyDebugFrozen() {
     try {
-        return window.localStorage.getItem("company_debug_freeze") === "1";
+        return window.localStorage.getItem("dfchat_debug_freeze") === "1";
     } catch {
         return false;
     }
@@ -690,7 +690,7 @@ function isCompanyDebugFrozen() {
 function toggleCompanyDebugFrozen() {
     try {
         const nextValue = isCompanyDebugFrozen() ? "0" : "1";
-        window.localStorage.setItem("company_debug_freeze", nextValue);
+        window.localStorage.setItem("dfchat_debug_freeze", nextValue);
     } catch {
         // ignore
     }
@@ -702,10 +702,10 @@ function isCompanyDebugEnabled() {
         if (params.get(COMPANY_DEBUG_QUERY_FLAG) === "1") {
             return true;
         }
-        if (window.__companyDebug === true) {
+        if (window.__dfchatDebug === true) {
             return true;
         }
-        return window.localStorage.getItem("company_debug_footer") === "1";
+        return window.localStorage.getItem("dfchat_debug_footer") === "1";
     } catch {
         return false;
     }
@@ -720,7 +720,7 @@ function updateCompanyDebugBadge(lines) {
         return;
     }
 
-    const id = "company-debug-badge";
+    const id = "dfchat-debug-badge";
     let badge = document.getElementById(id);
     if (!badge) {
         badge = document.createElement("pre");
@@ -967,11 +967,11 @@ function initializeHardActionBar() {
 
     if (IS_MULTI_LANGUAGE_ENABLED) {
         const langWrap = document.createElement("div");
-        langWrap.id = "company-hard-language-wrap";
+        langWrap.id = "dfchat-hard-language-wrap";
         langWrap.style.position = "relative";
 
         const langButton = document.createElement("button");
-        langButton.id = "company-hard-language-btn";
+        langButton.id = "dfchat-hard-language-btn";
         langButton.type = "button";
         langButton.setAttribute("aria-label", "Language");
         langButton.setAttribute("title", "Language");
@@ -979,7 +979,7 @@ function initializeHardActionBar() {
         langButton.style.cssText = "width: 34px; height: 34px; border: none; border-radius: 10px; background: transparent; color: #0369a1; display: grid; place-items: center; padding: 0; cursor: pointer; font-size: 22px; margin: 0; transition: background 0.2s ease;";
 
         const menu = document.createElement("div");
-        menu.id = "company-hard-language-menu";
+        menu.id = "dfchat-hard-language-menu";
         menu.setAttribute("role", "menu");
         menu.setAttribute("aria-label", "Language options");
         menu.style.cssText = "position: absolute; right: 0; bottom: 42px; min-width: 148px; border: 1px solid rgba(203, 213, 225, 0.95); border-radius: 12px; background: #ffffff; box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18); padding: 6px; display: none;";
@@ -1016,11 +1016,11 @@ function initializeHardActionBar() {
 
     if (IS_RESTART_CHAT_ENABLED) {
         const restartButton = document.createElement("button");
-        restartButton.id = "company-hard-restart-btn";
+        restartButton.id = "dfchat-hard-restart-btn";
         restartButton.type = "button";
         restartButton.setAttribute("aria-label", "Restart");
         restartButton.setAttribute("title", "Restart");
-        restartButton.setAttribute("data-company-no-translate", "true");
+        restartButton.setAttribute("data-dfchat-no-translate", "true");
         restartButton.style.cssText = "width: 34px; height: 34px; border: none; border-radius: 10px; background: transparent; color: #0369a1; display: grid; place-items: center; padding: 0; cursor: pointer; margin: 0; transition: background 0.2s ease;";
         restartButton.innerHTML = getRestartIconHtml(22);
 
@@ -1032,11 +1032,11 @@ function initializeHardActionBar() {
 
     // Create close button
     const closeButton = document.createElement("button");
-    closeButton.id = "contact-form-close";
+    closeButton.id = "dfchat-contact-form-close";
     closeButton.type = "button";
     closeButton.setAttribute("aria-label", "Close");
     closeButton.setAttribute("title", "Close");
-    closeButton.setAttribute("data-company-close-icon", "x");
+    closeButton.setAttribute("data-dfchat-close-icon", "x");
     closeButton.textContent = "×";
     closeButton.style.cssText = "width: 44px; height: 44px; border: none; border-radius: 12px; background: transparent; color: #0369a1; display: grid; place-items: center; padding: 0; cursor: pointer; font-size: 28px; margin: 0; transition: background 0.2s ease; font-weight: 500; line-height: 1;";
 
@@ -1305,7 +1305,7 @@ function mountFooterOverlayControls(restartConfig, restartEnabled) {
             "</svg>";
 
         const menu = document.createElement("div");
-        menu.setAttribute("data-company-language-menu", "true");
+        menu.setAttribute("data-dfchat-language-menu", "true");
         menu.style.position = "absolute";
         menu.style.right = "0";
         menu.style.bottom = "44px";
@@ -1377,7 +1377,7 @@ function mountFooterOverlayControls(restartConfig, restartEnabled) {
 
     if (restartEnabled) {
         const button = makeIconButton("Restart", "Restart");
-        button.setAttribute("data-company-no-translate", "true");
+        button.setAttribute("data-dfchat-no-translate", "true");
         button.innerHTML = getRestartIconHtml(22);
         button.addEventListener("click", () => restartChatSession());
         overlay.appendChild(button);
@@ -1470,7 +1470,7 @@ function ensureChatActionBar() {
     resetChatActionBarPositionCaches();
     bar = document.createElement("div");
     bar.id = CHAT_ACTION_BAR_ID;
-    bar.className = "company-chat-action-bar";
+    bar.className = "dfchat-chat-action-bar";
     // Hidden until mounted inline in footer row.
     bar.style.position = "static";
     bar.style.zIndex = "2147483647";
@@ -1481,16 +1481,16 @@ function ensureChatActionBar() {
 
     if (IS_MULTI_LANGUAGE_ENABLED) {
         const langWrapper = document.createElement("div");
-        langWrapper.className = "company-chat-action-menu-wrapper";
+        langWrapper.className = "dfchat-chat-action-menu-wrapper";
         langWrapper.style.position = "relative";
 
         const languageButton = document.createElement("button");
         languageButton.type = "button";
-        languageButton.className = "company-chat-action-icon company-chat-action-pill";
-        languageButton.setAttribute("data-company-lang-pill", "true");
+        languageButton.className = "dfchat-chat-action-icon dfchat-chat-action-pill";
+        languageButton.setAttribute("data-dfchat-lang-pill", "true");
         applyChatActionButtonStyles(languageButton);
         const languageIcon = document.createElement("span");
-        languageIcon.className = "company-chat-action-pill__icon";
+        languageIcon.className = "dfchat-chat-action-pill__icon";
         languageIcon.setAttribute("aria-hidden", "true");
         languageIcon.innerHTML =
             "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='20' height='20' fill='none'>" +
@@ -1500,7 +1500,7 @@ function ensureChatActionBar() {
             "<path d='M12 2c-3.5 3-3.5 17 0 20' stroke='currentColor' stroke-width='2'/>" +
             "</svg>";
         const languageText = document.createElement("span");
-        languageText.className = "company-chat-action-pill__text";
+        languageText.className = "dfchat-chat-action-pill__text";
         languageText.textContent = getActiveChatLanguageDisplayLabel();
         languageButton.appendChild(languageIcon);
         languageButton.appendChild(languageText);
@@ -1512,7 +1512,7 @@ function ensureChatActionBar() {
         }
 
         const languageMenu = document.createElement("div");
-        languageMenu.className = "company-chat-action-menu";
+        languageMenu.className = "dfchat-chat-action-menu";
         languageMenu.style.display = "none";
         languageMenu.style.position = "absolute";
         languageMenu.style.left = "0";
@@ -1531,7 +1531,7 @@ function ensureChatActionBar() {
             for (const optionData of CHAT_LANGUAGE_OPTIONS) {
                 const optionButton = document.createElement("button");
                 optionButton.type = "button";
-                optionButton.className = "company-chat-action-menu-item";
+                optionButton.className = "dfchat-chat-action-menu-item";
                 optionButton.textContent = optionData.label;
                 optionButton.style.width = "100%";
                 optionButton.style.textAlign = "left";
@@ -1579,17 +1579,17 @@ function ensureChatActionBar() {
     if (IS_RESTART_CHAT_ENABLED) {
         const restartButton = document.createElement("button");
         restartButton.type = "button";
-        restartButton.className = "company-chat-action-icon company-chat-action-pill";
+        restartButton.className = "dfchat-chat-action-icon dfchat-chat-action-pill";
         restartButton.setAttribute("data-i18n-aria-label", "restartButtonLabel");
         restartButton.setAttribute("aria-label", getTranslation("restartButtonLabel"));
         restartButton.title = getTranslation("restartButtonLabel");
         applyChatActionButtonStyles(restartButton);
         const restartIcon = document.createElement("span");
-        restartIcon.className = "company-chat-action-pill__icon";
+        restartIcon.className = "dfchat-chat-action-pill__icon";
         restartIcon.setAttribute("aria-hidden", "true");
         restartIcon.innerHTML = getRestartIconHtml(20);
         const restartText = document.createElement("span");
-        restartText.className = "company-chat-action-pill__text";
+        restartText.className = "dfchat-chat-action-pill__text";
         restartText.setAttribute("data-i18n", "restartButtonLabel");
         restartText.textContent = getTranslation("restartButtonLabel");
         restartButton.appendChild(restartIcon);
@@ -1644,18 +1644,18 @@ function refreshChatActionBarLanguageState(bar) {
     if (!bar || !bar.querySelectorAll) {
         return;
     }
-    const pillBtn = bar.querySelector("button[data-company-lang-pill]");
+    const pillBtn = bar.querySelector("button[data-dfchat-lang-pill]");
     if (pillBtn) {
         const name = getActiveChatLanguageDisplayLabel();
         const hint = getTranslation("languageLabel");
         pillBtn.setAttribute("aria-label", `${hint}: ${name}`);
         pillBtn.title = `${hint}: ${name}`;
-        const labelSpan = pillBtn.querySelector(".company-chat-action-pill__text");
+        const labelSpan = pillBtn.querySelector(".dfchat-chat-action-pill__text");
         if (labelSpan) {
             labelSpan.textContent = name;
         }
     }
-    const menuItems = bar.querySelectorAll(".company-chat-action-menu-item");
+    const menuItems = bar.querySelectorAll(".dfchat-chat-action-menu-item");
     for (const item of menuItems) {
         if (!item || typeof item.textContent !== "string") {
             continue;
@@ -1678,14 +1678,14 @@ function syncChatActionBarPosition() {
     const messenger = activeDfMessenger || document.querySelector("df-messenger");
     if (!messenger) {
         bar.style.display = "none";
-        bar.removeAttribute("data-company-anchor");
+        bar.removeAttribute("data-dfchat-anchor");
         resetChatActionBarPositionCaches();
         return;
     }
 
     if (!isChatWindowOpen) {
         bar.style.display = "none";
-        bar.removeAttribute("data-company-anchor");
+        bar.removeAttribute("data-dfchat-anchor");
         resetChatActionBarPositionCaches();
         return;
     }
@@ -1769,7 +1769,7 @@ function syncChatActionBarPosition() {
         }
         if (!anchorRect) {
             bar.style.display = "none";
-            bar.removeAttribute("data-company-anchor");
+            bar.removeAttribute("data-dfchat-anchor");
             chatActionBarFixedPos = null;
             chatActionBarStableTopPx = null;
             return;
@@ -1820,13 +1820,13 @@ function syncChatActionBarPosition() {
     }
 
     if (anchoredToSend) {
-        bar.setAttribute("data-company-anchor", "send");
+        bar.setAttribute("data-dfchat-anchor", "send");
     } else {
-        bar.removeAttribute("data-company-anchor");
+        bar.removeAttribute("data-dfchat-anchor");
     }
 
-    bar.classList.remove("company-chat-action-bar--inline");
-    bar.classList.add("company-chat-action-bar--body-fixed");
+    bar.classList.remove("dfchat-chat-action-bar--inline");
+    bar.classList.add("dfchat-chat-action-bar--body-fixed");
     bar.style.position = "fixed";
     const nextLeft = `${left}px`;
     const nextTop = `${top}px`;
@@ -1857,7 +1857,7 @@ function ensurePoweredByStrip() {
     const withLink = POWERED_BY_LINK_URL.length > 0;
     const el = withLink ? document.createElement("a") : document.createElement("div");
     el.id = POWERED_BY_STRIP_ID;
-    el.setAttribute("data-company-no-translate", "true");
+    el.setAttribute("data-dfchat-no-translate", "true");
     if (withLink) {
         el.href = POWERED_BY_LINK_URL;
         el.target = "_blank";
@@ -2035,11 +2035,11 @@ function mountChatActionBarInline(messenger, bar) {
     const targetRow = resolveActionBarTargetRow(messenger, footerHost);
 
     if (!targetRow || typeof targetRow.insertBefore !== "function") {
-        bar.classList.remove("company-chat-action-bar--inline");
+        bar.classList.remove("dfchat-chat-action-bar--inline");
         return false;
     }
 
-    bar.classList.add("company-chat-action-bar--inline");
+    bar.classList.add("dfchat-chat-action-bar--inline");
     bar.style.position = "static";
     bar.style.left = "";
     bar.style.right = "";
@@ -2168,7 +2168,7 @@ function initializeLauncherStrip(dfMessenger, bubbleNode, config) {
         : "Hey, there 👋";
     const typingDurationMs = readLauncherStripTypingDurationMs(stripConfig);
 
-    const existing = document.getElementById("company-chat-launcher-strip");
+    const existing = document.getElementById("dfchat-chat-launcher-strip");
     if (existing) {
         existing.setAttribute("aria-label", text);
         clearLauncherStripTypingTimers(existing);
@@ -2184,8 +2184,8 @@ function initializeLauncherStrip(dfMessenger, bubbleNode, config) {
     }
 
     const strip = document.createElement("div");
-    strip.id = "company-chat-launcher-strip";
-    strip.className = "company-chat-launcher-strip";
+    strip.id = "dfchat-chat-launcher-strip";
+    strip.className = "dfchat-chat-launcher-strip";
     strip.setAttribute("role", "button");
     strip.setAttribute("tabindex", "0");
     strip.setAttribute("aria-label", text);
@@ -2338,7 +2338,7 @@ function scheduleLauncherStripsStackSync(dfMessenger) {
 function syncLauncherStripsStackLayout(dfMessenger) {
     const ui = readCompanyUiConfig();
     const inputCfg = readLauncherInputStripConfig(ui);
-    const greetingEl = document.getElementById("company-chat-launcher-strip");
+    const greetingEl = document.getElementById("dfchat-chat-launcher-strip");
     const inputEl = document.getElementById(COMPANY_LAUNCHER_INPUT_STRIP_ID);
 
     if (!inputCfg || !isFeatureEnabledFromConfig(inputCfg, true) || !inputEl) {
@@ -2432,7 +2432,7 @@ function ensureLauncherStripsResizeListener() {
         // Language/Restart: only `ensureChatActionBar` resize (resets caches + schedules). Duplicating here caused double sync and drift.
         const ui = readCompanyUiConfig();
         const sc = readLauncherStripConfig(ui);
-        const g = document.getElementById("company-chat-launcher-strip");
+        const g = document.getElementById("dfchat-chat-launcher-strip");
         if (g && sc) {
             applyLauncherStripStyle(g, sc);
         }
@@ -2452,9 +2452,9 @@ function applyLauncherInputStripStyle(wrapEl, inputConfig) {
         ? inputConfig.style
         : {};
     if (typeof styleConfig.fontSizePx === "number" && Number.isFinite(styleConfig.fontSizePx)) {
-        wrapEl.style.setProperty("--company-launcher-input-font-size", `${styleConfig.fontSizePx}px`);
+        wrapEl.style.setProperty("--dfchat-launcher-input-font-size", `${styleConfig.fontSizePx}px`);
     } else {
-        wrapEl.style.removeProperty("--company-launcher-input-font-size");
+        wrapEl.style.removeProperty("--dfchat-launcher-input-font-size");
     }
     if (typeof styleConfig.maxWidthPx === "number" && Number.isFinite(styleConfig.maxWidthPx)) {
         wrapEl.style.maxWidth = `${styleConfig.maxWidthPx}px`;
@@ -2577,17 +2577,17 @@ function initializeLauncherInputStrip(dfMessenger, bubbleNode, config) {
     if (!wrap) {
         wrap = document.createElement("div");
         wrap.id = COMPANY_LAUNCHER_INPUT_STRIP_ID;
-        wrap.className = "company-chat-launcher-input-strip";
-        wrap.setAttribute("data-company-no-translate", "true");
+        wrap.className = "dfchat-chat-launcher-input-strip";
+        wrap.setAttribute("data-dfchat-no-translate", "true");
 
         const input = document.createElement("input");
         input.type = "text";
         input.autocomplete = "off";
-        input.className = "company-chat-launcher-input-strip__field";
+        input.className = "dfchat-chat-launcher-input-strip__field";
 
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "company-chat-launcher-input-strip__send";
+        btn.className = "dfchat-chat-launcher-input-strip__send";
 
         wrap.appendChild(input);
         wrap.appendChild(btn);
@@ -2844,7 +2844,7 @@ function pickContactFormLocalizedLine(map, lang) {
  * @returns {"otp" | "mobile"}
  */
 function getOtpFormStep() {
-    const root = document.querySelector("#contact-form-inputs .contact-form-otp-views");
+    const root = document.querySelector("#dfchat-contact-form-inputs .dfchat-contact-form-otp-views");
     if (!root) {
         return "otp";
     }
@@ -2855,7 +2855,7 @@ function getOtpFormStep() {
  * @param {"otp" | "mobile"} step
  */
 function applyOtpFormStepSubtitle(step) {
-    const s = document.querySelector("#contact-form .contact-form__subtitle");
+    const s = document.querySelector("#dfchat-contact-form .dfchat-contact-form__subtitle");
     if (!s) {
         return;
     }
@@ -2883,7 +2883,7 @@ function applyOtpFormStepSubtitle(step) {
  * @param {"otp" | "mobile"} step
  */
 function setOtpFormStep(step) {
-    const root = document.querySelector("#contact-form-inputs .contact-form-otp-views");
+    const root = document.querySelector("#dfchat-contact-form-inputs .dfchat-contact-form-otp-views");
     if (!root) {
         return;
     }
@@ -2907,7 +2907,7 @@ function setOtpFormStep(step) {
 }
 
 function syncContactFormNoValidateForActiveForm() {
-    const form = document.getElementById("contact-form-fields");
+    const form = document.getElementById("dfchat-contact-form-fields");
     if (!form) {
         return;
     }
@@ -2920,7 +2920,7 @@ function syncContactFormNoValidateForActiveForm() {
 
 function submitOtpResendRequest(clickedButton) {
     const endpoint = getApiEndpoint(CONTACT_FORM_ENDPOINT);
-    const status = document.getElementById("contact-form-status");
+    const status = document.getElementById("dfchat-contact-form-status");
     if (!endpoint) {
         if (status) {
             status.textContent = getTranslation("statusOpenViaFlask");
@@ -2993,40 +2993,40 @@ function setupOtpFormTwoStepIfNeeded() {
     if (cfg.formKey !== "otp") {
         return;
     }
-    const slot = document.getElementById("contact-form-inputs");
+    const slot = document.getElementById("dfchat-contact-form-inputs");
     if (!slot) {
         return;
     }
     const otpEl = document.getElementById("o-otp");
     const mobileEl = document.getElementById("o-mobile");
-    const otpRow = otpEl && otpEl.closest && otpEl.closest(".contact-form__row");
-    const mobileRow = mobileEl && mobileEl.closest && mobileEl.closest(".contact-form__row");
+    const otpRow = otpEl && otpEl.closest && otpEl.closest(".dfchat-contact-form__row");
+    const mobileRow = mobileEl && mobileEl.closest && mobileEl.closest(".dfchat-contact-form__row");
     if (!otpRow || !mobileRow) {
         return;
     }
 
     const wrap = document.createElement("div");
-    wrap.className = "contact-form-otp-views";
+    wrap.className = "dfchat-contact-form-otp-views";
     wrap.setAttribute("data-otp-form-step", "otp");
 
     const panelOtp = document.createElement("div");
-    panelOtp.className = "contact-form-otp-views__panel";
+    panelOtp.className = "dfchat-contact-form-otp-views__panel";
     panelOtp.setAttribute("data-otp-step", "otp");
 
     const panelMobile = document.createElement("div");
-    panelMobile.className = "contact-form-otp-views__panel";
+    panelMobile.className = "dfchat-contact-form-otp-views__panel";
     panelMobile.setAttribute("data-otp-step", "mobile");
     panelMobile.hidden = true;
 
     const changeBtn = document.createElement("button");
     changeBtn.type = "button";
-    changeBtn.className = "contact-form-otp-change-mobile";
+    changeBtn.className = "dfchat-contact-form-otp-change-mobile";
     changeBtn.setAttribute("data-i18n", "changeMobileButton");
     changeBtn.textContent = getTranslation("changeMobileButton");
 
     const resendBtn = document.createElement("button");
     resendBtn.type = "button";
-    resendBtn.className = "contact-form-otp-resend";
+    resendBtn.className = "dfchat-contact-form-otp-resend";
     resendBtn.setAttribute("data-i18n", "resendOtpButton");
     resendBtn.textContent = getTranslation("resendOtpButton");
     resendBtn.addEventListener("click", () => {
@@ -3035,12 +3035,12 @@ function setupOtpFormTwoStepIfNeeded() {
 
     const backBtn = document.createElement("button");
     backBtn.type = "button";
-    backBtn.className = "contact-form-otp-back";
+    backBtn.className = "dfchat-contact-form-otp-back";
     backBtn.setAttribute("data-i18n", "backToOtpButton");
     backBtn.textContent = getTranslation("backToOtpButton");
 
     const linkRow = document.createElement("div");
-    linkRow.className = "contact-form-otp-views__links";
+    linkRow.className = "dfchat-contact-form-otp-views__links";
     linkRow.appendChild(resendBtn);
     linkRow.appendChild(changeBtn);
 
@@ -3106,8 +3106,8 @@ function applyContactFormHeaderFromConfig() {
     const lang = activeLanguage;
     const titleInline = pickContactFormLocalizedLine(cfg.titleByLanguage, lang);
     const subInline = pickContactFormLocalizedLine(cfg.subtitleByLanguage, lang);
-    const t = document.querySelector("#contact-form .contact-form__title");
-    const s = document.querySelector("#contact-form .contact-form__subtitle");
+    const t = document.querySelector("#dfchat-contact-form .dfchat-contact-form__title");
+    const s = document.querySelector("#dfchat-contact-form .dfchat-contact-form__subtitle");
     if (t) {
         if (titleInline != null) {
             t.removeAttribute("data-i18n");
@@ -3127,7 +3127,7 @@ function applyContactFormHeaderFromConfig() {
         }
         s.style.display = cfg.showSubtitle ? "" : "none";
     }
-    const slot = document.getElementById("contact-form-inputs");
+    const slot = document.getElementById("dfchat-contact-form-inputs");
     if (slot) {
         if (titleInline != null) {
             slot.removeAttribute("data-i18n-aria-label");
@@ -3290,11 +3290,11 @@ function buildContactFormFieldRow(field) {
     const iconKey = resolveContactFormFieldIconKey(field);
 
     const row = document.createElement("div");
-    row.className = "contact-form__row";
+    row.className = "dfchat-contact-form__row";
     row.setAttribute("data-icon", iconKey);
 
     const iconWrap = document.createElement("span");
-    iconWrap.className = "contact-form__row-icon";
+    iconWrap.className = "dfchat-contact-form__row-icon";
     if (field.iconHtml && typeof field.iconHtml === "string" && field.iconHtml.indexOf("<") !== -1) {
         iconWrap.innerHTML = field.iconHtml;
     } else {
@@ -3308,7 +3308,7 @@ function buildContactFormFieldRow(field) {
     if (t === "textarea") {
         control = document.createElement("textarea");
         control.id = field.id;
-        control.className = "contact-form__control";
+        control.className = "dfchat-contact-form__control";
         control.name = typeof field.name === "string" ? field.name : field.id;
         const rows = typeof field.rows === "number" && field.rows > 0 ? field.rows : 2;
         control.setAttribute("rows", String(Math.min(rows, 6)));
@@ -3336,7 +3336,7 @@ function buildContactFormFieldRow(field) {
         control = document.createElement("input");
         control.type = "file";
         control.id = field.id;
-        control.className = "contact-form__control contact-form__control--file contact-form__control--file-lg";
+        control.className = "dfchat-contact-form__control dfchat-contact-form__control--file dfchat-contact-form__control--file-lg";
         control.name = typeof field.name === "string" ? field.name : field.id;
         if (field.multiple === true) {
             control.setAttribute("multiple", "multiple");
@@ -3358,7 +3358,7 @@ function buildContactFormFieldRow(field) {
         }
         const clearBtn = document.createElement("button");
         clearBtn.type = "button";
-        clearBtn.className = "contact-form__file-clear";
+        clearBtn.className = "dfchat-contact-form__file-clear";
         clearBtn.setAttribute("data-i18n", "clearFileSelectionButton");
         clearBtn.textContent = getTranslation("clearFileSelectionButton");
         clearBtn.hidden = true;
@@ -3369,14 +3369,14 @@ function buildContactFormFieldRow(field) {
             ev.preventDefault();
             control.value = "";
             clearBtn.hidden = true;
-            const st = document.getElementById("contact-form-status");
+            const st = document.getElementById("dfchat-contact-form-status");
             if (st) {
                 st.textContent = "";
                 st.classList.remove("is-error", "is-success");
             }
         });
         control.addEventListener("change", () => {
-            const st = document.getElementById("contact-form-status");
+            const st = document.getElementById("dfchat-contact-form-status");
             if (!control.files || !control.files.length) {
                 syncFileClearVisible();
                 return;
@@ -3400,13 +3400,13 @@ function buildContactFormFieldRow(field) {
             syncFileClearVisible();
         });
         fileWrap = document.createElement("div");
-        fileWrap.className = "contact-form__file-wrap";
+        fileWrap.className = "dfchat-contact-form__file-wrap";
         fileWrap.appendChild(control);
         fileWrap.appendChild(clearBtn);
     } else {
         control = document.createElement("input");
         control.id = field.id;
-        control.className = "contact-form__control";
+        control.className = "dfchat-contact-form__control";
         control.name = typeof field.name === "string" ? field.name : field.id;
         control.type = CONTACT_FORM_INPUT_TYPES.has(t) ? t : "text";
         if (pl0 != null) {
@@ -3443,7 +3443,7 @@ function buildContactFormFieldRow(field) {
 }
 
 function mountContactFormFieldsFromConfig() {
-    const slot = document.getElementById("contact-form-inputs");
+    const slot = document.getElementById("dfchat-contact-form-inputs");
     if (!slot) {
         return;
     }
@@ -3463,24 +3463,24 @@ function mountContactFormFieldsFromConfig() {
 
 function applyContactFormLayoutFromConfig() {
     const cfg = readContactFormConfig();
-    const cf = document.getElementById("contact-form");
-    const card = document.querySelector("#contact-form .contact-form__card");
-    if (card && (!cf || !cf.classList.contains("contact-form--docked"))) {
+    const cf = document.getElementById("dfchat-contact-form");
+    const card = document.querySelector("#dfchat-contact-form .dfchat-contact-form__card");
+    if (card && (!cf || !cf.classList.contains("dfchat-contact-form--docked"))) {
         card.style.maxHeight = `${cfg.maxCardHeightPx}px`;
     }
 
-    const subtitle = document.querySelector("#contact-form .contact-form__subtitle");
+    const subtitle = document.querySelector("#dfchat-contact-form .dfchat-contact-form__subtitle");
     if (subtitle) {
         subtitle.style.display = cfg.showSubtitle ? "" : "none";
     }
 }
 
 function stripContactFormDocking() {
-    const el = document.getElementById("contact-form");
+    const el = document.getElementById("dfchat-contact-form");
     if (!el) {
         return;
     }
-    el.classList.remove("contact-form--docked");
+    el.classList.remove("dfchat-contact-form--docked");
     el.style.removeProperty("left");
     el.style.removeProperty("right");
     el.style.removeProperty("top");
@@ -3488,11 +3488,11 @@ function stripContactFormDocking() {
     el.style.removeProperty("width");
     el.style.removeProperty("max-height");
     el.style.removeProperty("z-index");
-    const card = el.querySelector(".contact-form__card");
+    const card = el.querySelector(".dfchat-contact-form__card");
     if (card) {
         card.style.removeProperty("max-height");
     }
-    const inputs = el.querySelector(".contact-form__inputs");
+    const inputs = el.querySelector(".dfchat-contact-form__inputs");
     if (inputs) {
         inputs.style.removeProperty("max-height");
     }
@@ -3500,9 +3500,9 @@ function stripContactFormDocking() {
 }
 
 function syncContactFormPosition() {
-    const el = document.getElementById("contact-form");
-    if (!el || !el.classList.contains("is-open")) {
-        if (el && el.classList.contains("contact-form--docked")) {
+    const el = document.getElementById("dfchat-contact-form");
+    if (!el || !el.classList.contains("dfchat-is-open")) {
+        if (el && el.classList.contains("dfchat-contact-form--docked")) {
             stripContactFormDocking();
         }
         return;
@@ -3510,14 +3510,14 @@ function syncContactFormPosition() {
 
     const cfg = readContactFormConfig();
     if (!cfg.dockToChatWindow) {
-        if (el.classList.contains("contact-form--docked")) {
+        if (el.classList.contains("dfchat-contact-form--docked")) {
             stripContactFormDocking();
         }
         return;
     }
 
     if (!isChatWindowOpen) {
-        if (el.classList.contains("contact-form--docked")) {
+        if (el.classList.contains("dfchat-contact-form--docked")) {
             stripContactFormDocking();
         }
         return;
@@ -3536,8 +3536,8 @@ function syncContactFormPosition() {
     const side = resolveChatLayoutSide(readCompanyUiConfig());
     const pad = cfg.sideInsetPx;
     const formW = Math.min(340, Math.max(200, rect.width - pad * 2));
-    const card = el.querySelector(".contact-form__card");
-    const inputs = el.querySelector(".contact-form__inputs");
+    const card = el.querySelector(".dfchat-contact-form__card");
+    const inputs = el.querySelector(".dfchat-contact-form__inputs");
 
     let fromTop;
     let sectionMaxH;
@@ -3584,7 +3584,7 @@ function syncContactFormPosition() {
     const cardMax = Math.max(150, Math.min(cfg.maxCardHeightPx, sectionMaxH - 6));
     const inputsMax = Math.max(100, Math.min(240, cardMax - 160));
 
-    el.classList.add("contact-form--docked");
+    el.classList.add("dfchat-contact-form--docked");
     el.style.position = "fixed";
     // Below Powered by (2147483642), above the page; language bar stays 2147483647.
     el.style.zIndex = "2147483630";
@@ -4570,10 +4570,10 @@ function isCompanyHeaderChromeButton(button) {
         return false;
     }
     const id = (button.id && String(button.id)) || "";
-    if (id === "contact-form-close" || id === "company-hard-language-btn" || id === "company-hard-restart-btn") {
+    if (id === "dfchat-contact-form-close" || id === "dfchat-hard-language-btn" || id === "dfchat-hard-restart-btn") {
         return true;
     }
-    if (typeof button.closest === "function" && button.closest("#company-hard-language-wrap")) {
+    if (typeof button.closest === "function" && button.closest("#dfchat-hard-language-wrap")) {
         return true;
     }
     return false;
@@ -4693,7 +4693,7 @@ function clearOpenShadowRootForCloseGlyph(host, closeFontPx) {
         }
     }
     const span = document.createElement("span");
-    span.setAttribute("data-company-close-x", "1");
+    span.setAttribute("data-dfchat-close-x", "1");
     span.textContent = "×";
     span.style.setProperty("font-size", closeFontPx, "important");
     span.style.setProperty("line-height", "1", "important");
@@ -4757,8 +4757,8 @@ function replaceCloseButtonWithXGlyph(button, closeTapPx, closeFontPx) {
     button.style.setProperty("place-items", "center", "important");
     button.style.setProperty("font-family", "Manrope, Segoe UI, Arial, sans-serif", "important");
     button.setAttribute("aria-label", "Close");
-    button.setAttribute("data-company-no-translate", "true");
-    button.setAttribute("data-company-native-close-override", "1");
+    button.setAttribute("data-dfchat-no-translate", "true");
+    button.setAttribute("data-dfchat-native-close-override", "1");
     if (button.dataset) {
         button.dataset.companyCloseIcon = "x";
     }
@@ -4806,7 +4806,7 @@ function shouldTreatAsHeaderCloseByLabel(button) {
  * @returns {boolean}
  */
 function tryApplyCloseXInHeaderContext(button, headerHost, closeTapPx, closeFontPx) {
-    if (!button || button.id === "contact-form-close" || !headerHost) {
+    if (!button || button.id === "dfchat-contact-form-close" || !headerHost) {
         return false;
     }
     if (typeof button.closest === "function" && button.closest("df-messenger-chat-bubble")) {
@@ -4928,7 +4928,7 @@ function findChatCloseButton(dfMessenger) {
         );
 
         for (const button of candidates) {
-            if (!button || button.id === "contact-form-close") {
+            if (!button || button.id === "dfchat-contact-form-close") {
                 continue;
             }
 
@@ -5461,8 +5461,8 @@ function initializeContactForm() {
     applyContactFormLayoutFromConfig();
     applyContactFormHeaderFromConfig();
 
-    const form = document.getElementById("contact-form-fields");
-    const closeButton = document.getElementById("contact-form-close");
+    const form = document.getElementById("dfchat-contact-form-fields");
+    const closeButton = document.getElementById("dfchat-contact-form-close");
 
     if (form) {
         form.addEventListener("submit", submitContactForm);
@@ -5472,7 +5472,7 @@ function initializeContactForm() {
         closeButton.addEventListener("click", closeContactForm);
     }
 
-    window.addEventListener("company-open-contact-form", (e) => {
+    window.addEventListener("dfchat-open-contact-form", (e) => {
         const d = (e && e.detail) || {};
         if (d.formId) {
             setActiveContactFormId(String(d.formId).trim());
@@ -5635,8 +5635,8 @@ function convertDialogflowValue(value) {
 }
 
 function openContactForm() {
-    const form = document.getElementById("contact-form");
-    const status = document.getElementById("contact-form-status");
+    const form = document.getElementById("dfchat-contact-form");
+    const status = document.getElementById("dfchat-contact-form-status");
 
     if (!form) {
         return;
@@ -5647,7 +5647,7 @@ function openContactForm() {
         status.classList.remove("is-success", "is-error");
     }
 
-    form.classList.add("is-open");
+    form.classList.add("dfchat-is-open");
     form.setAttribute("aria-hidden", "false");
     contactFormOpenPending = false;
     resetChatActionBarPositionCaches();
@@ -5658,7 +5658,7 @@ function openContactForm() {
 }
 
 function closeContactForm() {
-    const form = document.getElementById("contact-form");
+    const form = document.getElementById("dfchat-contact-form");
 
     contactFormOpenPending = false;
 
@@ -5672,7 +5672,7 @@ function closeContactForm() {
     }
 
     stripContactFormDocking();
-    form.classList.remove("is-open");
+    form.classList.remove("dfchat-is-open");
     form.setAttribute("aria-hidden", "true");
     resetChatActionBarPositionCaches();
     scheduleSyncChatActionBarPosition();
@@ -5699,8 +5699,8 @@ function submitContactForm(event) {
 
     const cfg0 = readContactFormConfig();
     const fieldDefs = cfg0.fields;
-    const submitButton = document.getElementById("contact-form-submit");
-    const status = document.getElementById("contact-form-status");
+    const submitButton = document.getElementById("dfchat-contact-form-submit");
+    const status = document.getElementById("dfchat-contact-form-status");
 
     const isOtpForm = cfg0.formKey === "otp";
     const otpStep = isOtpForm ? getOtpFormStep() : "otp";
@@ -6092,7 +6092,7 @@ function mountChatLanguageDropdown(dfMessenger) {
     }
 
     const wrapper = document.createElement("div");
-    wrapper.setAttribute("data-company-chat-language", "true");
+    wrapper.setAttribute("data-dfchat-chat-language", "true");
     wrapper.style.display = "inline-flex";
     wrapper.style.alignItems = "center";
     wrapper.style.gap = "6px";
@@ -6212,12 +6212,12 @@ function mountRestartButton(dfMessenger, restartConfig) {
         return;
     }
 
-    if (host.querySelector("[data-company-chat-restart='true']")) {
+    if (host.querySelector("[data-dfchat-chat-restart='true']")) {
         return;
     }
 
     const wrapper = document.createElement("div");
-    wrapper.setAttribute("data-company-chat-restart", "true");
+    wrapper.setAttribute("data-dfchat-chat-restart", "true");
     wrapper.style.display = "inline-flex";
     wrapper.style.alignItems = "center";
     wrapper.style.marginRight = "0";
@@ -6310,7 +6310,7 @@ function resolveFooterInlineControlsHost(dfMessenger) {
 }
 
 function isNodeInsidePageContactForm(node) {
-    return node && node.closest && node.closest("#contact-form");
+    return node && node.closest && node.closest("#dfchat-contact-form");
 }
 
 function findSendButton(scope) {
@@ -6358,9 +6358,9 @@ function findFooterInlineInsertionPoint(dfMessenger) {
         }
 
         // First, try the nearest footer host in this root.
-        // `document` + `form` would otherwise match the page #contact-form-fields before the chat widget.
+        // `document` + `form` would otherwise match the page #dfchat-contact-form-fields before the chat widget.
         const footerLike = root.querySelector(
-            "footer, form:not(#contact-form-fields), [data-testid*='footer'], [data-testid*='composer'], [part*='footer'], [part*='composer'], [class*='composer'], [class*='footer']"
+            "footer, form:not(#dfchat-contact-form-fields), [data-testid*='footer'], [data-testid*='composer'], [part*='footer'], [part*='composer'], [class*='composer'], [class*='footer']"
         );
         if (footerLike && isNodeInsidePageContactForm(footerLike)) {
             continue;
@@ -6788,11 +6788,11 @@ function shouldSkipTranslationElement(element) {
         return true;
     }
 
-    if (element.closest("#contact-form-fields") && element.matches("input, textarea")) {
+    if (element.closest("#dfchat-contact-form-fields") && element.matches("input, textarea")) {
         return true;
     }
 
-    if (element.closest("[data-company-no-translate='true']")) {
+    if (element.closest("[data-dfchat-no-translate='true']")) {
         return true;
     }
 
@@ -6803,7 +6803,7 @@ function shouldSkipTranslationElement(element) {
         for (let r = 0; r < roots.length; r++) {
             const root = roots[r];
             if (root && typeof root.contains === "function" && root.contains(element)) {
-                if (!element.closest("#contact-form")) {
+                if (!element.closest("#dfchat-contact-form")) {
                     return true;
                 }
             }
@@ -6960,7 +6960,8 @@ function getConfiguredApiBaseUrl() {
         return globalBaseUrl;
     }
 
-    const metaTag = document.querySelector(`meta[name="${API_BASE_URL_META_NAME}"]`);
+    const metaTag = document.querySelector(`meta[name="${API_BASE_URL_META_NAME}"]`)
+        || document.querySelector('meta[name="company-api-base-url"]');
     const metaBaseUrl = metaTag && typeof metaTag.content === "string"
         ? metaTag.content.trim()
         : "";
@@ -7265,8 +7266,8 @@ function getPersonaImageGuardCss() {
     const catW = cfg.mode === "image" ? `${img.widthPx}px` : "32px";
     const catH = cfg.mode === "image" ? `${img.heightPx}px` : "32px";
     return `
-img[src*="company-bot-persona"],
-img[src*="%23company-bot-persona"] {
+img[src*="dfchat-bot-persona"],
+img[src*="%23dfchat-bot-persona"] {
   width: ${catW} !important;
   height: ${catH} !important;
   max-width: ${catW} !important;
@@ -7276,7 +7277,7 @@ img[src*="%23company-bot-persona"] {
   vertical-align: middle !important;
   box-sizing: border-box !important;
 }
-img[src*="company-persona-bot-time"] {
+img[src*="dfchat-persona-bot-time"] {
   height: 28px !important;
   width: auto !important;
   max-width: min(220px, 100%) !important;
@@ -7286,8 +7287,8 @@ img[src*="company-persona-bot-time"] {
   object-fit: contain !important;
   box-sizing: border-box !important;
 }
-img[src*="company-persona-user|"],
-img[src*="company-persona-bot|"] {
+img[src*="dfchat-persona-user|"],
+img[src*="dfchat-persona-bot|"] {
   max-height: ${BOT_PERSONA_CONFIG.mode === "emojiTime" ? "28" : "36"}px !important;
   max-width: 100% !important;
   width: auto !important;
@@ -7299,26 +7300,26 @@ img[src*="company-persona-bot|"] {
 }
 ${BOT_PERSONA_CONFIG.mode === "emojiTime" ? `
 /* .entry:has(img) cannot see into df-messenger-utterance shadow — class set in applyBotEmojiPersonaCaptionChrome */
-.entry.bot.company-bot-emoji-caption-entry:not(:first-child) {
+.entry.bot.dfchat-bot-emoji-caption-entry:not(:first-child) {
   margin-top: -44px !important;
 }
 /* Caption sits in df-markdown-message after df-text-message in same stack — pull host up */
-df-markdown-message.company-bot-emoji-caption-md-host {
+df-markdown-message.dfchat-bot-emoji-caption-md-host {
   margin-top: -22px !important;
   margin-bottom: 0 !important;
 }
 /* Stack gap inside an utterance (~10px via --df-messenger-message-stack-spacing) */
-.message-stack:has(img[src*="company-persona-bot|"]):not(:first-child),
-.message-stack:has(img[src*="company-persona-bot%7C"]):not(:first-child) {
+.message-stack:has(img[src*="dfchat-persona-bot|"]):not(:first-child),
+.message-stack:has(img[src*="dfchat-persona-bot%7C"]):not(:first-child) {
   margin-top: -30px !important;
 }
-.message-stack:has(img[src*="company-persona-bot|"]),
-.message-stack:has(img[src*="company-persona-bot%7C"]) {
+.message-stack:has(img[src*="dfchat-persona-bot|"]),
+.message-stack:has(img[src*="dfchat-persona-bot%7C"]) {
   margin-bottom: 0 !important;
 }
 /* Inner bubble + markdown wrapper (12px bot padding + p margins read as “gap”) */
-.message.bot-message.markdown:has(img[src*="company-persona-bot|"]),
-.message.bot-message.markdown:has(img[src*="company-persona-bot%7C"]) {
+.message.bot-message.markdown:has(img[src*="dfchat-persona-bot|"]),
+.message.bot-message.markdown:has(img[src*="dfchat-persona-bot%7C"]) {
   background: transparent !important;
   background-color: transparent !important;
   padding: 0 8px !important;
@@ -7329,14 +7330,14 @@ df-markdown-message.company-bot-emoji-caption-md-host {
   border: none !important;
   box-shadow: none !important;
 }
-.message.bot-message.markdown:has(img[src*="company-persona-bot|"]) > *,
-.message.bot-message.markdown:has(img[src*="company-persona-bot%7C"]) > * {
+.message.bot-message.markdown:has(img[src*="dfchat-persona-bot|"]) > *,
+.message.bot-message.markdown:has(img[src*="dfchat-persona-bot%7C"]) > * {
   margin-top: 0 !important;
   margin-bottom: 0 !important;
 }
 /* Bubble chrome (non-markdown path) */
-.message.bot-message:has(img[src*="company-persona-bot|"]):not(.markdown),
-.message.bot-message:has(img[src*="company-persona-bot%7C"]):not(.markdown) {
+.message.bot-message:has(img[src*="dfchat-persona-bot|"]):not(.markdown),
+.message.bot-message:has(img[src*="dfchat-persona-bot%7C"]):not(.markdown) {
   background: transparent !important;
   background-color: transparent !important;
   padding: 0 8px 0 8px !important;
@@ -7455,7 +7456,7 @@ function collectSearchRoots(dfMessenger) {
     return roots;
 }
 
-const MESSAGELIST_SCROLLBAR_CLASS = "company-messagelist-hide-scrollbar";
+const MESSAGELIST_SCROLLBAR_CLASS = "dfchat-messagelist-hide-scrollbar";
 const MESSAGELIST_SCROLLBAR_SKIP = new Set(["TEXTAREA", "INPUT", "SELECT", "BUTTON"]);
 
 /**
@@ -7773,7 +7774,7 @@ function applyBotEmojiPersonaCaptionChrome(imageNode) {
         try {
             if (isMarkdownMessageHost && el.previousElementSibling) {
                 try {
-                    el.classList.add("company-bot-emoji-caption-md-host");
+                    el.classList.add("dfchat-bot-emoji-caption-md-host");
                 } catch (eMd) {
                     /* ignore */
                 }
@@ -7782,7 +7783,7 @@ function applyBotEmojiPersonaCaptionChrome(imageNode) {
             }
             if (isBotEntry && el.previousElementSibling) {
                 try {
-                    el.classList.add("company-bot-emoji-caption-entry");
+                    el.classList.add("dfchat-bot-emoji-caption-entry");
                 } catch (eCls) {
                     /* ignore */
                 }

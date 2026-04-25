@@ -1,16 +1,16 @@
 @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap");
 
 :root {
-  --company-bg-1: #e8f4fc;
-  --company-bg-2: #f7fbff;
-  --company-brand-900: #0f172a;
-  --company-brand-700: #0369a1;
-  --company-brand-500: #0ea5e9;
-  --company-accent-200: #e0f2fe;
-  --company-surface: #ffffff;
-  --company-text: #0f172a;
-  --company-text-soft: #475569;
-  --company-border: #dbe5ec;
+  --dfchat-bg-1: #e8f4fc;
+  --dfchat-bg-2: #f7fbff;
+  --dfchat-brand-900: #0f172a;
+  --dfchat-brand-700: #0369a1;
+  --dfchat-brand-500: #0ea5e9;
+  --dfchat-accent-200: #e0f2fe;
+  --dfchat-surface: #ffffff;
+  --dfchat-text: #0f172a;
+  --dfchat-text-soft: #475569;
+  --dfchat-border: #dbe5ec;
 }
 
 html,
@@ -21,8 +21,8 @@ body {
   background:
     radial-gradient(1200px circle at 12% 14%, rgba(14, 165, 233, 0.14), transparent 52%),
     radial-gradient(900px circle at 88% 84%, rgba(3, 105, 161, 0.13), transparent 48%),
-    linear-gradient(180deg, var(--company-bg-2), var(--company-bg-1));
-  color: var(--company-text);
+    linear-gradient(180deg, var(--dfchat-bg-2), var(--dfchat-bg-1));
+  color: var(--dfchat-text);
 }
 
 df-messenger {
@@ -32,10 +32,10 @@ df-messenger {
   left: auto;
   z-index: 999;
   overflow: visible;
-  animation: company-fade-up 320ms ease-out;
+  animation: dfchat-fade-up 320ms ease-out;
 
   --df-messenger-font-family: "Manrope", "Segoe UI", sans-serif;
-  --df-messenger-font-color: var(--company-text);
+  --df-messenger-font-color: var(--dfchat-text);
   --df-messenger-primary-color: #0284c7;
 
   --df-messenger-message-bot-background: linear-gradient(165deg, #e0f2fe 0%, #bae6fd 45%, #7dd3fc 100%);
@@ -47,9 +47,9 @@ df-messenger {
   --df-messenger-message-spacing: 8px;
   --df-messenger-chat-padding: 12px;
 
-  --df-messenger-input-background: var(--company-surface);
-  --df-messenger-input-box-background: var(--company-surface);
-  --df-messenger-input-font-color: var(--company-text);
+  --df-messenger-input-background: var(--dfchat-surface);
+  --df-messenger-input-box-background: var(--dfchat-surface);
+  --df-messenger-input-font-color: var(--dfchat-text);
   /* 29px top, 8px sides, 16px bottom */
   --df-messenger-input-padding: 29px 8px 16px 8px;
 
@@ -86,7 +86,7 @@ df-messenger {
 }
 
 /* "Powered by …" strip (sits just above the composer; positioned by company.js) */
-#company-powered-by-strip {
+#dfchat-powered-by-strip {
   box-sizing: border-box;
   display: inline-block;
   /* margin: set at runtime from company.config.js poweredBy.marginPx (company.js) */
@@ -101,16 +101,16 @@ df-messenger {
   vertical-align: top;
 }
 /* Clicks only when `poweredBy.linkUrl` is set (rendered as <a href="...">). */
-#company-powered-by-strip[href] {
+#dfchat-powered-by-strip[href] {
   pointer-events: auto;
   cursor: pointer;
 }
-#company-powered-by-strip:not([href]) {
+#dfchat-powered-by-strip:not([href]) {
   pointer-events: none;
 }
 
 /* Footer controls (Language + Restart) anchored near Send */
-#company-chat-footer-overlay {
+#dfchat-chat-footer-overlay {
   position: fixed !important;
   z-index: 2147483646 !important;
   display: none !important;
@@ -122,7 +122,7 @@ df-messenger {
   pointer-events: auto !important;
 }
 
-#company-chat-footer-overlay button {
+#dfchat-chat-footer-overlay button {
   width: 34px !important;
   height: 34px !important;
   display: grid !important;
@@ -135,12 +135,12 @@ df-messenger {
   padding: 0 !important;
 }
 
-#company-chat-footer-overlay button:hover {
+#dfchat-chat-footer-overlay button:hover {
   background: #ffffff !important;
 }
 
 /* Stable action bar near Send button */
-#company-chat-action-bar {
+#dfchat-chat-action-bar {
   position: static;
   z-index: 2147483647;
   display: none;
@@ -154,11 +154,11 @@ df-messenger {
   flex: 0 0 auto !important;
 }
 
-#company-chat-action-bar-fixed {
+#dfchat-chat-action-bar-fixed {
   display: none !important;
 }
 
-#company-chat-action-bar.company-chat-action-bar--inline {
+#dfchat-chat-action-bar.dfchat-chat-action-bar--inline {
   position: static !important;
   z-index: auto !important;
   left: auto !important;
@@ -174,15 +174,15 @@ df-messenger {
 }
 
 /* Bar stays in document body (not shadow DOM); JS sets inline position + display */
-#company-chat-action-bar.company-chat-action-bar--body-fixed {
+#dfchat-chat-action-bar.dfchat-chat-action-bar--body-fixed {
   flex-direction: row !important;
   align-items: center !important;
   gap: 8px !important;
   box-sizing: border-box !important;
 }
 
-#company-chat-action-bar .company-chat-action-menu-wrapper,
-.company-chat-action-menu-wrapper {
+#dfchat-chat-action-bar .dfchat-chat-action-menu-wrapper,
+.dfchat-chat-action-menu-wrapper {
   position: relative;
   top: 0;
   order: 0 !important;
@@ -192,19 +192,19 @@ df-messenger {
   transform: none;
 }
 
-#company-chat-action-bar[data-company-anchor="send"] > .company-chat-action-icon {
+#dfchat-chat-action-bar[data-dfchat-anchor="send"] > .dfchat-chat-action-icon {
   transform: none !important;
 }
 
-[data-company-chat-language="true"] {
+[data-dfchat-chat-language="true"] {
   display: none !important;
 }
 
-[data-company-chat-restart="true"] {
+[data-dfchat-chat-restart="true"] {
   display: none !important;
 }
 
-.company-chat-action-icon {
+.dfchat-chat-action-icon {
   width: 34px;
   height: 34px;
   display: grid;
@@ -217,11 +217,11 @@ df-messenger {
   padding: 0;
 }
 
-.company-chat-action-icon:hover {
+.dfchat-chat-action-icon:hover {
   background: rgba(0, 0, 0, 0.08);
 }
 
-.company-chat-action-pill {
+.dfchat-chat-action-pill {
   width: auto !important;
   min-height: 0 !important;
   height: auto !important;
@@ -241,34 +241,34 @@ df-messenger {
   -webkit-tap-highlight-color: transparent;
 }
 
-.company-chat-action-pill:hover {
+.dfchat-chat-action-pill:hover {
   background: #f8fafc !important;
   border: none !important;
 }
 
-.company-chat-action-pill:active {
+.dfchat-chat-action-pill:active {
   background: #f1f5f9 !important;
 }
 
-.company-chat-action-pill:focus-visible {
-  outline: 2px solid var(--company-brand-500, #0ea5e9);
+.dfchat-chat-action-pill:focus-visible {
+  outline: 2px solid var(--dfchat-brand-500, #0ea5e9);
   outline-offset: 2px;
 }
 
-.company-chat-action-pill__text {
+.dfchat-chat-action-pill__text {
   white-space: nowrap;
   pointer-events: none;
   font-weight: 700 !important;
 }
 
-.company-chat-action-pill__icon {
+.dfchat-chat-action-pill__icon {
   display: inline-flex;
   flex-shrink: 0;
   color: #0369a1;
   pointer-events: none;
 }
 
-.company-restart-icon-glyph {
+.dfchat-restart-icon-glyph {
   display: inline-block;
   line-height: 1;
   font-weight: 500;
@@ -276,7 +276,7 @@ df-messenger {
   font-family: "Segoe UI Symbol", "Segoe UI", "Apple Symbols", "Noto Sans Symbols 2", sans-serif;
 }
 
-.company-chat-action-menu {
+.dfchat-chat-action-menu {
   position: absolute;
   right: 0;
   bottom: 42px;
@@ -288,7 +288,7 @@ df-messenger {
   padding: 6px;
 }
 
-.company-chat-action-menu-item {
+.dfchat-chat-action-menu-item {
   width: 100%;
   text-align: left;
   border: 0;
@@ -300,26 +300,26 @@ df-messenger {
   cursor: pointer;
 }
 
-.company-chat-action-menu-item:hover {
+.dfchat-chat-action-menu-item:hover {
   background: rgba(3, 105, 161, 0.08);
 }
 
-.company-chat-action-menu-item[data-active="true"] {
+.dfchat-chat-action-menu-item[data-active="true"] {
   color: #0369a1;
 }
 
 /* Reliable footer action bar (icon only) */
-#company-hard-language-wrap {
+#dfchat-hard-language-wrap {
   position: relative;
 }
 
-#company-hard-language-btn:hover,
-#company-hard-restart-btn:hover,
-#contact-form-close:hover {
+#dfchat-hard-language-btn:hover,
+#dfchat-hard-restart-btn:hover,
+#dfchat-contact-form-close:hover {
   background: rgba(14, 165, 233, 0.1) !important;
 }
 
-#contact-form-close {
+#dfchat-contact-form-close {
   width: 44px !important;
   height: 44px !important;
   border-radius: 12px !important;
@@ -328,7 +328,7 @@ df-messenger {
   font-size: 28px !important;
 }
 
-#company-hard-language-menu {
+#dfchat-hard-language-menu {
   position: absolute;
   right: 0;
   bottom: 42px;
@@ -341,7 +341,7 @@ df-messenger {
   display: none;
 }
 
-#company-hard-language-menu button {
+#dfchat-hard-language-menu button {
   width: 100% !important;
   height: auto !important;
   text-align: left !important;
@@ -355,16 +355,16 @@ df-messenger {
   transition: background 0.2s ease !important;
 }
 
-#company-hard-language-menu button:hover {
+#dfchat-hard-language-menu button:hover {
   background: rgba(3, 105, 161, 0.08) !important;
 }
 
-#company-hard-language-menu button[data-active="true"] {
+#dfchat-hard-language-menu button[data-active="true"] {
   color: #0369a1 !important;
   font-weight: 700 !important;
 }
 
-.company-chat-launcher-strip {
+.dfchat-chat-launcher-strip {
   position: fixed;
   z-index: 1000;
   padding: 10px 14px;
@@ -372,22 +372,22 @@ df-messenger {
   background: rgba(255, 255, 255, 0.98);
   border: 1px solid rgba(3, 105, 161, 0.22);
   box-shadow: 0 14px 34px rgba(15, 23, 42, 0.16);
-  color: var(--company-text);
+  color: var(--dfchat-text);
   font: 700 13px "Manrope", "Segoe UI", sans-serif;
   letter-spacing: 0.2px;
   backdrop-filter: blur(10px);
   user-select: none;
 }
 
-.company-chat-launcher-strip:hover {
+.dfchat-chat-launcher-strip:hover {
   transform: translateY(-1px);
 }
 
-.company-chat-launcher-strip:active {
+.dfchat-chat-launcher-strip:active {
   transform: translateY(0);
 }
 
-.company-chat-launcher-input-strip {
+.dfchat-chat-launcher-input-strip {
   position: fixed;
   z-index: 1001;
   display: none;
@@ -404,22 +404,22 @@ df-messenger {
   min-width: min(220px, calc(100vw - 32px));
 }
 
-.company-chat-launcher-input-strip__field {
+.dfchat-chat-launcher-input-strip__field {
   flex: 1;
   min-width: 0;
   border: none;
   background: transparent;
   outline: none;
-  color: var(--company-text);
-  font: 600 var(--company-launcher-input-font-size, 14px) "Manrope", "Segoe UI", sans-serif;
+  color: var(--dfchat-text);
+  font: 600 var(--dfchat-launcher-input-font-size, 14px) "Manrope", "Segoe UI", sans-serif;
 }
 
-.company-chat-launcher-input-strip__field::placeholder {
+.dfchat-chat-launcher-input-strip__field::placeholder {
   color: rgba(15, 23, 42, 0.45);
   font-weight: 500;
 }
 
-.company-chat-launcher-input-strip__send {
+.dfchat-chat-launcher-input-strip__send {
   flex-shrink: 0;
   border: none;
   border-radius: 999px;
@@ -431,15 +431,15 @@ df-messenger {
   transition: filter 0.15s ease, transform 0.1s ease;
 }
 
-.company-chat-launcher-input-strip__send:hover {
+.dfchat-chat-launcher-input-strip__send:hover {
   filter: brightness(1.05);
 }
 
-.company-chat-launcher-input-strip__send:active {
+.dfchat-chat-launcher-input-strip__send:active {
   transform: scale(0.98);
 }
 
-@keyframes company-fade-up {
+@keyframes dfchat-fade-up {
   from {
     opacity: 0;
     transform: translateY(12px);
@@ -462,7 +462,7 @@ df-messenger {
   }
 }
 
-.contact-form {
+.dfchat-contact-form {
   position: fixed;
   right: 28px;
   bottom: 106px;
@@ -471,14 +471,14 @@ df-messenger {
   display: none;
 }
 
-.contact-form.is-open {
+.dfchat-contact-form.dfchat-is-open {
   display: block;
-  animation: company-fade-up 220ms ease-out;
+  animation: dfchat-fade-up 220ms ease-out;
 }
 
-.contact-form__card {
+.dfchat-contact-form__card {
   background: rgba(255, 255, 255, 0.98);
-  border: 1px solid var(--company-border);
+  border: 1px solid var(--dfchat-border);
   border-radius: 16px;
   box-shadow: 0 18px 52px rgba(15, 23, 42, 0.18);
   padding: 10px 12px 12px;
@@ -489,7 +489,7 @@ df-messenger {
   max-height: min(50dvh, 300px);
 }
 
-.contact-form__header {
+.dfchat-contact-form__header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -498,33 +498,33 @@ df-messenger {
   flex-shrink: 0;
 }
 
-.contact-form__title {
+.dfchat-contact-form__title {
   margin: 0;
   font-size: 0.98rem;
   font-weight: 700;
   line-height: 1.2;
 }
 
-.contact-form__subtitle {
+.dfchat-contact-form__subtitle {
   margin: 2px 0 0;
   font-size: 0.78rem;
   line-height: 1.25;
-  color: var(--company-text-soft);
+  color: var(--dfchat-text-soft);
 }
 
-.contact-form__icon-button {
+.dfchat-contact-form__icon-button {
   border: 0;
   border-radius: 999px;
   width: 30px;
   height: 30px;
   background: #eef6f7;
-  color: var(--company-brand-900);
+  color: var(--dfchat-brand-900);
   cursor: pointer;
   font: inherit;
   font-size: 1rem;
 }
 
-.contact-form__fields {
+.dfchat-contact-form__fields {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -532,7 +532,7 @@ df-messenger {
   flex: 0 1 auto;
 }
 
-.contact-form__fields--stacked {
+.dfchat-contact-form__fields--stacked {
   display: flex;
   flex-direction: column;
   flex: 0 1 auto;
@@ -541,7 +541,7 @@ df-messenger {
   overflow: visible;
 }
 
-.contact-form__inputs {
+.dfchat-contact-form__inputs {
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -554,7 +554,7 @@ df-messenger {
   flex: 0 1 auto;
 }
 
-.contact-form__row {
+.dfchat-contact-form__row {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
@@ -563,7 +563,7 @@ df-messenger {
   width: 100%;
 }
 
-.contact-form__row-icon {
+.dfchat-contact-form__row-icon {
   flex: 0 0 32px;
   width: 32px;
   height: 32px;
@@ -572,58 +572,58 @@ df-messenger {
   justify-content: center;
   margin-top: 2px;
   border-radius: 9px;
-  background: var(--company-accent-200, #d7f2ef);
-  color: var(--company-brand-700, #0369a1);
+  background: var(--dfchat-accent-200, #d7f2ef);
+  color: var(--dfchat-brand-700, #0369a1);
 }
 
-.contact-form__row-icon svg {
+.dfchat-contact-form__row-icon svg {
   display: block;
 }
 
-.contact-form__fields .contact-form__control,
-.contact-form__fields > input,
-.contact-form__fields > textarea {
+.dfchat-contact-form__fields .dfchat-contact-form__control,
+.dfchat-contact-form__fields > input,
+.dfchat-contact-form__fields > textarea {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid var(--company-border);
+  border: 1px solid var(--dfchat-border);
   border-radius: 10px;
   padding: 7px 9px;
   background: #fbfdff;
   font: inherit;
   font-size: 0.88rem;
-  color: var(--company-text);
+  color: var(--dfchat-text);
 }
 
-.contact-form__row .contact-form__control {
+.dfchat-contact-form__row .dfchat-contact-form__control {
   flex: 1 1 auto;
   min-width: 0;
   width: auto;
   box-sizing: border-box;
-  border: 1px solid var(--company-border);
+  border: 1px solid var(--dfchat-border);
   border-radius: 10px;
   padding: 7px 9px;
   background: #fbfdff;
   font: inherit;
   font-size: 0.88rem;
-  color: var(--company-text);
+  color: var(--dfchat-text);
 }
 
-.contact-form__fields textarea {
+.dfchat-contact-form__fields textarea {
   resize: none;
   min-height: 48px;
   line-height: 1.3;
   max-height: 72px;
 }
 
-.contact-form__fields input:focus,
-.contact-form__fields textarea:focus,
-.contact-form__row .contact-form__control:focus {
+.dfchat-contact-form__fields input:focus,
+.dfchat-contact-form__fields textarea:focus,
+.dfchat-contact-form__row .dfchat-contact-form__control:focus {
   outline: 2px solid rgba(14, 165, 233, 0.18);
-  border-color: var(--company-brand-500);
+  border-color: var(--dfchat-brand-500);
 }
 
-.contact-form__row .contact-form__control--file,
-.contact-form__row input[type="file"].contact-form__control {
+.dfchat-contact-form__row .dfchat-contact-form__control--file,
+.dfchat-contact-form__row input[type="file"].dfchat-contact-form__control {
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -635,8 +635,8 @@ df-messenger {
 }
 
 /* Larger “Choose file” control (all upload fields use --file-lg) */
-.contact-form__row .contact-form__control--file-lg::file-selector-button,
-.contact-form__row input[type="file"].contact-form__control--file-lg::-webkit-file-upload-button {
+.dfchat-contact-form__row .dfchat-contact-form__control--file-lg::file-selector-button,
+.dfchat-contact-form__row input[type="file"].dfchat-contact-form__control--file-lg::-webkit-file-upload-button {
   -webkit-appearance: button;
   appearance: button;
   font: inherit;
@@ -645,20 +645,20 @@ df-messenger {
   padding: 10px 18px;
   margin-right: 12px;
   border-radius: 10px;
-  border: 1px solid var(--company-border, #dbe5ec);
+  border: 1px solid var(--dfchat-border, #dbe5ec);
   background: linear-gradient(180deg, #f8fffe, #e8f7f4);
-  color: var(--company-brand-900, #0f172a);
+  color: var(--dfchat-brand-900, #0f172a);
   cursor: pointer;
   min-height: 2.5rem;
 }
 
-.contact-form__row .contact-form__control--file-lg::file-selector-button:hover,
-.contact-form__row input[type="file"].contact-form__control--file-lg::-webkit-file-upload-button:hover {
-  border-color: var(--company-brand-500, #0ea5e9);
+.dfchat-contact-form__row .dfchat-contact-form__control--file-lg::file-selector-button:hover,
+.dfchat-contact-form__row input[type="file"].dfchat-contact-form__control--file-lg::-webkit-file-upload-button:hover {
+  border-color: var(--dfchat-brand-500, #0ea5e9);
   background: linear-gradient(180deg, #f0fdfa, #d7f2ef);
 }
 
-.contact-form__file-wrap {
+.dfchat-contact-form__file-wrap {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
@@ -667,7 +667,7 @@ df-messenger {
   gap: 6px;
 }
 
-button.contact-form__file-clear {
+button.dfchat-contact-form__file-clear {
   align-self: flex-start;
   margin: 0;
   padding: 5px 12px;
@@ -676,38 +676,38 @@ button.contact-form__file-clear {
   font-weight: 600;
   line-height: 1.2;
   border-radius: 8px;
-  border: 1px solid var(--company-border, #dbe5ec);
+  border: 1px solid var(--dfchat-border, #dbe5ec);
   background: #fff;
-  color: var(--company-text-soft, #475569);
+  color: var(--dfchat-text-soft, #475569);
   cursor: pointer;
 }
 
-button.contact-form__file-clear:hover {
+button.dfchat-contact-form__file-clear:hover {
   border-color: #b91c1c;
   color: #b91c1c;
   background: #fef2f2;
 }
 
 /* OTP: OTP field + small “change mobile”; second step = mobile + back */
-.contact-form-otp-views {
+.dfchat-contact-form-otp-views {
   display: flex;
   flex-direction: column;
   gap: 2px;
   width: 100%;
 }
 
-.contact-form-otp-views__panel {
+.dfchat-contact-form-otp-views__panel {
   display: flex;
   flex-direction: column;
   gap: 3px;
   width: 100%;
 }
 
-.contact-form-otp-views__panel[hidden] {
+.dfchat-contact-form-otp-views__panel[hidden] {
   display: none !important;
 }
 
-.contact-form-otp-views__links {
+.dfchat-contact-form-otp-views__links {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -718,9 +718,9 @@ button.contact-form__file-clear:hover {
   gap: 2em;
 }
 
-button.contact-form-otp-change-mobile,
-button.contact-form-otp-resend,
-button.contact-form-otp-back {
+button.dfchat-contact-form-otp-change-mobile,
+button.dfchat-contact-form-otp-resend,
+button.dfchat-contact-form-otp-back {
   align-self: flex-start;
   margin: 0;
   padding: 0;
@@ -729,41 +729,41 @@ button.contact-form-otp-back {
   font: inherit;
   font-size: 0.72rem;
   line-height: 1.25;
-  color: var(--company-brand-700, #0369a1);
+  color: var(--dfchat-brand-700, #0369a1);
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;
 }
 
-button.contact-form-otp-resend:disabled {
+button.dfchat-contact-form-otp-resend:disabled {
   opacity: 0.55;
   cursor: wait;
 }
 
-button.contact-form-otp-change-mobile:hover,
-button.contact-form-otp-resend:hover,
-button.contact-form-otp-back:hover {
-  color: var(--company-brand-500, #0ea5e9);
+button.dfchat-contact-form-otp-change-mobile:hover,
+button.dfchat-contact-form-otp-resend:hover,
+button.dfchat-contact-form-otp-back:hover {
+  color: var(--dfchat-brand-500, #0ea5e9);
 }
 
-.contact-form__status {
+.dfchat-contact-form__status {
   min-height: 1rem;
   margin: 0;
   font-size: 0.8rem;
   line-height: 1.2;
-  color: var(--company-text-soft);
+  color: var(--dfchat-text-soft);
   flex-shrink: 0;
 }
 
-.contact-form__status.is-success {
+.dfchat-contact-form__status.is-success {
   color: #0369a1;
 }
 
-.contact-form__status.is-error {
+.dfchat-contact-form__status.is-error {
   color: #b91c1c;
 }
 
-.contact-form__submit {
+.dfchat-contact-form__submit {
   border: 0;
   border-radius: 10px;
   padding: 8px 12px;
@@ -776,25 +776,25 @@ button.contact-form-otp-back:hover {
   flex-shrink: 0;
 }
 
-.contact-form__submit:disabled {
+.dfchat-contact-form__submit:disabled {
   opacity: 0.7;
   cursor: wait;
 }
 
-.contact-form.contact-form--docked {
+.dfchat-contact-form.dfchat-contact-form--docked {
   right: auto;
   bottom: auto;
   overflow: visible;
 }
 
 /* Docked: card is the only height box; form body flexes so the field list is never 0px tall. */
-.contact-form--docked .contact-form__card {
+.dfchat-contact-form--docked .dfchat-contact-form__card {
   min-height: 0;
   overflow: hidden;
   max-height: min(90dvh, 420px);
 }
 
-.contact-form--docked .contact-form__fields--stacked {
+.dfchat-contact-form--docked .dfchat-contact-form__fields--stacked {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
@@ -803,14 +803,14 @@ button.contact-form-otp-back:hover {
   width: 100%;
 }
 
-.contact-form--docked .contact-form__inputs {
+.dfchat-contact-form--docked .dfchat-contact-form__inputs {
   flex: 1 1 auto;
   min-height: 6rem;
   min-width: 0;
 }
 
 @media (max-width: 768px) {
-  .contact-form:not(.contact-form--docked) {
+  .dfchat-contact-form:not(.dfchat-contact-form--docked) {
     right: 10px;
     left: 10px;
     bottom: 92px;
