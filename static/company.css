@@ -81,6 +81,26 @@ df-messenger {
   --df-messenger-input-border-top: 1px solid rgba(14, 165, 233, 0.28);
 }
 
+/* Smaller titlebar on phones so the header stays on-screen with the open panel. */
+@media (max-width: 768px) {
+  df-messenger {
+    --df-messenger-titlebar-padding: 0 8px 0 8px;
+    --df-messenger-titlebar-title-font-size: 15px;
+    --df-messenger-titlebar-title-line-height: 1.25;
+    --df-messenger-titlebar-subtitle-font-size: 12px;
+    --df-messenger-titlebar-subtitle-line-height: 1.25;
+    --df-messenger-titlebar-icon-height: 40px;
+    --df-messenger-titlebar-icon-width: 40px;
+    --df-messenger-titlebar-icon-padding: 0 6px 0 0;
+  }
+}
+
+/* Footer chrome: stay viewport-fixed even if the host page overrides `position` */
+#dfchat-chat-action-bar.dfchat-chat-action-bar--body-fixed,
+#dfchat-powered-by-strip {
+  position: fixed !important;
+}
+
 /* "Powered by …" strip (sits just above the composer; positioned by company.js) */
 #dfchat-powered-by-strip {
   box-sizing: border-box;

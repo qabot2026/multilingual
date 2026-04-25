@@ -1751,6 +1751,10 @@ function ensureChatActionBar() {
         if (window.visualViewport) {
             window.visualViewport.addEventListener("resize", onActionBarLayoutEnvChange);
         }
+        // Page or nested scroll: Send row moves in viewport; re-sync `position:fixed` Language / Restart / Powered by.
+        // (`visualViewport` scroll is wired in `initializeMobileChatLayout` to avoid clobbering the panel on keyboard.)
+        window.addEventListener("scroll", onActionBarLayoutEnvChange, { passive: true, capture: true });
+        document.addEventListener("scroll", onActionBarLayoutEnvChange, { passive: true, capture: true });
     }
 }
 
@@ -1941,7 +1945,7 @@ function syncChatActionBarPosition() {
         document.body.appendChild(bar);
     }
 
-    const jitterEps = 6;
+    const jitterEps = isMobileViewport() ? 12 : 6;
     if (chatActionBarFixedPos) {
         const closeEnough =
             Math.abs(left - chatActionBarFixedPos.left) < jitterEps
@@ -2044,8 +2048,11 @@ function clampPoweredByStripInViewport(el) {
         return;
     }
     let dx = 0;
-    if (br.right > window.innerWidth - 4) {
-        dx = (window.innerWidth - 4) - br.right;
+    const vwW = window.visualViewport && Number.isFinite(window.visualViewport.width)
+        ? window.visualViewport.width
+        : window.innerWidth;
+    if (br.right > vwW - 4) {
+        dx = (vwW - 4) - br.right;
     }
     if (br.left + dx < 4) {
         dx = 4 - br.left;
@@ -2070,7 +2077,10 @@ function setPoweredByStripGeometry(el, L, fr, topPx) {
     const lineH = L.lineHeightPx;
     const deltaLeft = L.offsetLeftPx + L.nudgeRightPx - L.nudgeLeftPx;
     const textAlign = L.textAlign || "center";
-    const wMax = Math.max(120, window.innerWidth - 8);
+    const vwW = window.visualViewport && Number.isFinite(window.visualViewport.width)
+        ? window.visualViewport.width
+        : window.innerWidth;
+    const wMax = Math.max(120, vwW - 8);
     el.style.position = "fixed";
     el.style.zIndex = "2147483642";
     el.style.top = `${topPx}px`;
@@ -5381,10 +5391,12 @@ function initializeMobileChatLayout(dfMessenger, config) {
             dfMessenger.style.setProperty("--df-messenger-chat-window-width", `${capDialogflowChatWindowWidthPx(desktopWidth)}px`);
             dfMessenger.style.setProperty("--df-messenger-chat-window-height", `${desktopHeight}px`);
             setDfMessengerChatWindowOffsetPx(dfMessenger, desktopWindow.chatWindowOffsetPx);
+            scheduleSyncChatActionBarPosition();
             return;
         }
 
         if (!isFeatureEnabledFromConfig(mobileRoot, true)) {
+            scheduleSyncChatActionBarPosition();
             return;
         }
 
@@ -5399,10 +5411,13 @@ function initializeMobileChatLayout(dfMessenger, config) {
         const mobileExtraH = typeof mobileConfig.extraHeightTowardBubblePx === "number" && Number.isFinite(mobileConfig.extraHeightTowardBubblePx)
             ? mobileConfig.extraHeightTowardBubblePx
             : 0;
+        const safeTopReserve = typeof mobileConfig.safeAreaTopReservePx === "number" && Number.isFinite(mobileConfig.safeAreaTopReservePx)
+            ? mobileConfig.safeAreaTopReservePx
+            : 28;
         const availableWidth = Math.max(minWidth, Math.floor(viewportWidth - horizontalInset * 2));
         const availableHeight = Math.max(
             minHeight,
-            Math.floor(viewportHeight - topInset - bottomInset + mobileExtraH)
+            Math.floor(viewportHeight - topInset - bottomInset - safeTopReserve + mobileExtraH)
         );
 
         const mobileDock = resolveChatLayoutSide(config);
@@ -5426,6 +5441,7 @@ function initializeMobileChatLayout(dfMessenger, config) {
         dfMessenger.style.setProperty("--df-messenger-chat-window-width", `${availableWidth}px`);
         dfMessenger.style.setProperty("--df-messenger-chat-window-height", `${availableHeight}px`);
         setDfMessengerChatWindowOffsetPx(dfMessenger, mobileConfig.chatWindowOffsetPx);
+        scheduleSyncChatActionBarPosition();
     };
 
     applyLayout();
@@ -5439,7 +5455,9 @@ function initializeMobileChatLayout(dfMessenger, config) {
 
     if (window.visualViewport) {
         window.visualViewport.addEventListener("resize", applyLayout);
-        window.visualViewport.addEventListener("scroll", applyLayout);
+        // Do not re-run full `applyLayout` on vV scroll — it can fight the runtime and jiggle the panel;
+        // only re-anchor fixed footer chrome to the moving composer.
+        window.visualViewport.addEventListener("scroll", scheduleSyncChatActionBarPosition, { passive: true });
     }
 
     document.addEventListener("focusin", applyLayout);
@@ -6761,6 +6779,22 @@ function findChatWindowRect(dfMessenger) {
     }
 
     const roots = collectSearchRoots(dfMessenger);
+    // Prefer the real chat shell so we do not pick a large inner scroller as the "window" rect.
+    for (const root of roots) {
+        if (!root || typeof root.querySelector !== "function") {
+            continue;
+        }
+        const win0 = root.querySelector("df-messenger-chat-window");
+        if (win0 && typeof win0.getBoundingClientRect === "function") {
+            const r0 = win0.getBoundingClientRect();
+            const s0 = window.getComputedStyle(win0);
+            if (r0 && r0.width >= 100 && r0.height >= 100 && s0
+                && s0.display !== "none" && s0.visibility !== "hidden" && s0.opacity !== "0") {
+                return r0;
+            }
+        }
+    }
+
     const selectors = [
         "df-messenger-chat-window",
         "df-messenger-chat",
