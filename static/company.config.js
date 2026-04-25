@@ -98,8 +98,9 @@ window.COMPANY_CHAT_UI_CONFIG = {
     },
     // Language + Restart pill (next to Send). All values are pixels. Tune after you set `chatLayout.side`
     // (right-docked chat usually keeps Send on the right; nudges only move the pill, not the bubble).
-    // nudgeUpPx is subtracted from the computed `top` — LARGER values move the bar UP. Use a small value (0–20)
-    // to keep the pill on the real footer / composer row. nudgeDownPx ADDS; use it to nudge slightly downward.
+    // nudgeUpPx: **positive** moves Language/Restart **up** (fixed `top` and inline `translateY`). **Negative**
+    // moves them **down** — do not use negative if you want the bar higher. Use a small value (0–20) unless
+    // you are fine-tuning. nudgeDownPx ADDS to fixed `top`; it does not apply when the bar is inline below the composer.
     // Keep nudges near 0 unless you are fine-tuning a specific layout. Large values (especially negative
     // `nudgeRightPx`) easily push Language/Restart over the typing area or off the composer row.
    
@@ -127,7 +128,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
     footerActionBar: {
       // when type strip is disabled
       nudgeRightPx: -160,
-      nudgeUpPx: -8,
+      nudgeUpPx: 6,
       nudgeDownPx: 70,
       nudgeLeftPx: 100,
       gapBeforeSendPx: 8,

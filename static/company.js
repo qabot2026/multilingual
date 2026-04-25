@@ -48,6 +48,23 @@ const COMMON_CONFIG = COMPANY_UI_CONFIG.common && typeof COMPANY_UI_CONFIG.commo
     ? COMPANY_UI_CONFIG.common
     : {};
 const FOOTER_ACTION_BAR_LAYOUT = readFooterActionBarLayoutConfig();
+/**
+ * Pixels: added to `common.footerActionBar.nudgeUpPx` for the *fixed* (non-inline) action bar.
+ * The inline (below-composer) bar used to ignore `nudgeUpPx` — see `applyChatActionBarInlineTransform`.
+ */
+const CHAT_ACTION_BAR_EXTRA_NUDGE_UP_PX = 10;
+/**
+ * Base vertical lift for the inline action bar, before `footerActionBar.nudgeUpPx`.
+ * Prior visual was ~-25px (15 + CHAT_ACTION_BAR_EXTRA_NUDGE_UP_PX); this adds at least 5px more.
+ */
+const CHAT_ACTION_BAR_INLINE_BASE_UP_PX = 20;
+/** Positive shifts Language/Restart **down** (px); applied in inline and fixed action-bar layout. */
+const CHAT_ACTION_BAR_GLOBAL_DOWN_PX = 30;
+/**
+ * Positive shifts Language/Restart **right** (px), after `footerActionBar.nudgeRightPx` (fixed) or on the
+ * same transform as the inline lift (see `applyChatActionBarInlineTransform`).
+ */
+const CHAT_ACTION_BAR_GLOBAL_RIGHT_PX = 10;
 const CHAT_MESSAGELIST_CONFIG = COMMON_CONFIG.chatMessageList && typeof COMMON_CONFIG.chatMessageList === "object"
     ? COMMON_CONFIG.chatMessageList
     : {};
@@ -592,7 +609,7 @@ let activeLanguage = getInitialLanguage();
 /** Visible name for a chat language (from `enabledLanguages`). Omit `explicitCode` to use `activeLanguage`. */
 function getActiveChatLanguageDisplayLabel(explicitCode) {
     const raw = explicitCode !== undefined ? explicitCode : activeLanguage;
-    const lang = normalizeLanguage(raw);
+    const lang = resolveToSupportedLanguageCode(raw);
     const row = CHAT_LANGUAGE_OPTIONS.find((o) => normalizeLanguageCode(o && o.code) === lang);
     if (row && typeof row.label === "string" && row.label.trim()) {
         return row.label.trim();
@@ -609,7 +626,7 @@ const originalTextNodeContent = new Map();
 const originalElementAttributes = new Map();
 const googleTranslationCache = new Map();
 
-const COMPANY_JS_BUILD_TAG = "20260425-9";
+const COMPANY_JS_BUILD_TAG = "20260425-21";
 const COMPANY_DEBUG_QUERY_FLAG = "dfchatDebug";
 let debugMountAttemptSeq = 0;
 let debugBadgeLastRenderAt = 0;
@@ -942,20 +959,35 @@ function getChatActionBar() {
         }
         return el;
     }
+    // After `mountChatActionBarInline`, the bar may live in a *nested* shadow (below composer) — the top-level
+    // `df-messenger.shadowRoot.getElementById` does not see IDs inside child components' shadow roots.
     const ms = activeDfMessenger || document.querySelector("df-messenger");
-    if (ms && ms.shadowRoot && typeof ms.shadowRoot.getElementById === "function") {
-        el = ms.shadowRoot.getElementById(CHAT_ACTION_BAR_ID);
-        if (el) {
-            if (isChatActionBarInlineElement(el)) {
-                return el;
+    if (ms) {
+        const roots = collectSearchRoots(ms);
+        for (let i = 0; i < roots.length; i += 1) {
+            const root = roots[i];
+            if (!root || typeof root.getElementById !== "function" || root === document) {
+                continue;
             }
+            const found = root.getElementById(CHAT_ACTION_BAR_ID);
+            if (found) {
+                el = found;
+                break;
+            }
+        }
+    }
+    if (el) {
+        if (isChatActionBarInlineElement(el)) {
+            return el;
+        }
+        if (el.parentElement !== document.body) {
             try {
                 document.body.appendChild(el);
             } catch {
                 // ignore
             }
-            return el;
         }
+        return el;
     }
     return null;
 }
@@ -1233,7 +1265,8 @@ function mountDfchatContactFormHostIfNeeded() {
         + "<h2 class=\"dfchat-contact-form__title\" data-i18n=\"contactFormTitle\">Contact Us</h2>"
         + "<p class=\"dfchat-contact-form__subtitle\" data-i18n=\"contactFormSubtitle\">Share your details and we will contact you.</p>"
         + "</div>"
-        + "<button id=\"dfchat-contact-form-close\" class=\"dfchat-contact-form__icon-button\" type=\"button\" aria-label=\"Close form\" data-i18n-aria-label=\"closeFormAria\">x</button>"
+        + "<button id=\"dfchat-contact-form-close\" class=\"dfchat-contact-form__icon-button\" type=\"button\" "
+        + "aria-label=\"Close form\" data-i18n-aria-label=\"closeFormAria\" data-dfchat-no-translate=\"true\">X</button>"
         + "</div>"
         + "<form id=\"dfchat-contact-form-fields\" class=\"dfchat-contact-form__fields dfchat-contact-form__fields--stacked\">"
         + "<div id=\"dfchat-contact-form-inputs\" class=\"dfchat-contact-form__inputs\" data-i18n-aria-label=\"contactFormTitle\"></div>"
@@ -1501,17 +1534,18 @@ function initializeHardActionBar() {
     closeButton.setAttribute("aria-label", "Close");
     closeButton.setAttribute("title", "Close");
     closeButton.setAttribute("data-dfchat-close-icon", "x");
-    closeButton.textContent = "×";
+    closeButton.setAttribute("data-dfchat-no-translate", "true");
+    closeButton.textContent = "X";
     closeButton.style.cssText = "width: 44px; height: 44px; border: none; border-radius: 12px; background: transparent; color: #0369a1; display: grid; place-items: center; padding: 0; cursor: pointer; font-size: 28px; margin: 0; transition: background 0.2s ease; font-weight: 500; line-height: 1;";
 
     closeButton.addEventListener("click", closeForm);
 
     headerControls.appendChild(closeButton);
 
-    // Ensure close button always shows × icon
+    // Keep Latin "X" if DOM translation (or re-renders) try to script-localize the glyph.
     const ensureCloseButtonIsX = () => {
-        if (closeButton && closeButton.textContent !== "×") {
-            closeButton.textContent = "×";
+        if (closeButton && closeButton.textContent !== "X") {
+            closeButton.textContent = "X";
             closeButton.style.setProperty("font-weight", "500", "important");
             closeButton.style.setProperty("line-height", "1", "important");
             closeButton.style.setProperty("font-size", "28px", "important");
@@ -1917,6 +1951,40 @@ function updateFooterOverlayPosition(dfMessenger) {
     overlay.style.top = "";
 }
 
+/**
+ * Page-level CSS does not apply to `#dfchat-chat-action-bar` once it is moved under `df-messenger` shadow.
+ * Inject rules on the bar itself so Language / Restart pills stay white with correct hover.
+ */
+function ensureChatActionBarEncapsulatedSkin(bar) {
+    if (!bar || bar.querySelector("style[data-dfchat-action-bar-skin]")) {
+        return;
+    }
+    const skin = document.createElement("style");
+    skin.setAttribute("data-dfchat-action-bar-skin", "true");
+    skin.textContent = ""
+        + "#dfchat-chat-action-bar .dfchat-chat-action-pill,\n"
+        + "#dfchat-chat-action-bar .dfchat-chat-action-icon.dfchat-chat-action-pill {\n"
+        + "  background-color: #ffffff !important;\n"
+        + "  color: #0f172a !important;\n"
+        + "  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06) !important;\n"
+        + "  border: none !important;\n"
+        + "  -webkit-appearance: none;\n"
+        + "  appearance: none;\n"
+        + "}\n"
+        + "#dfchat-chat-action-bar .dfchat-chat-action-pill:hover,\n"
+        + "#dfchat-chat-action-bar .dfchat-chat-action-icon.dfchat-chat-action-pill:hover {\n"
+        + "  background-color: #f8fafc !important;\n"
+        + "}\n"
+        + "#dfchat-chat-action-bar .dfchat-chat-action-pill:active,\n"
+        + "#dfchat-chat-action-bar .dfchat-chat-action-icon.dfchat-chat-action-pill:active {\n"
+        + "  background-color: #f1f5f9 !important;\n"
+        + "}\n"
+        + "#dfchat-chat-action-bar .dfchat-chat-action-pill__icon {\n"
+        + "  color: #0369a1 !important;\n"
+        + "}\n";
+    bar.insertBefore(skin, bar.firstChild);
+}
+
 function ensureChatActionBar() {
     // Hide legacy overlay if present.
     const legacyOverlay = document.getElementById(FOOTER_OVERLAY_ID);
@@ -1935,6 +2003,12 @@ function ensureChatActionBar() {
 
     let bar = getChatActionBar();
     if (bar) {
+        try {
+            bar.setAttribute("data-dfchat-no-translate", "true");
+        } catch {
+            /* no-op */
+        }
+        ensureChatActionBarEncapsulatedSkin(bar);
         refreshChatActionBarLanguageState(bar);
         syncChatActionBarPosition();
         return;
@@ -1944,6 +2018,8 @@ function ensureChatActionBar() {
     bar = document.createElement("div");
     bar.id = CHAT_ACTION_BAR_ID;
     bar.className = "dfchat-chat-action-bar";
+    // Skip Google `applyDomTranslation` here — it overwrote the language *name* and broke menu `data-active` matching.
+    bar.setAttribute("data-dfchat-no-translate", "true");
     // Hidden until mounted inline in footer row.
     bar.style.position = "static";
     bar.style.zIndex = "2147483647";
@@ -1951,6 +2027,8 @@ function ensureChatActionBar() {
     bar.style.alignItems = "center";
     bar.style.gap = "8px";
     bar.style.pointerEvents = "auto";
+
+    ensureChatActionBarEncapsulatedSkin(bar);
 
     if (IS_MULTI_LANGUAGE_ENABLED) {
         const langWrapper = document.createElement("div");
@@ -1974,6 +2052,9 @@ function ensureChatActionBar() {
             "</svg>";
         const languageText = document.createElement("span");
         languageText.className = "dfchat-chat-action-pill__text";
+        languageText.id = "dfchat-active-lang-label";
+        languageText.setAttribute("data-dfchat-active-lang-label", "true");
+        languageText.setAttribute("data-dfchat-no-translate", "true");
         languageText.textContent = getActiveChatLanguageDisplayLabel();
         languageButton.appendChild(languageIcon);
         languageButton.appendChild(languageText);
@@ -2005,6 +2086,7 @@ function ensureChatActionBar() {
                 const optionButton = document.createElement("button");
                 optionButton.type = "button";
                 optionButton.className = "dfchat-chat-action-menu-item";
+                optionButton.dataset.dfchatLangCode = resolveToSupportedLanguageCode(optionData.code);
                 optionButton.textContent = optionData.label;
                 optionButton.style.width = "100%";
                 optionButton.style.textAlign = "left";
@@ -2118,8 +2200,10 @@ function applyChatActionButtonStyles(button) {
     button.style.cursor = "pointer";
     button.style.padding = "0 12px";
     button.style.userSelect = "none";
-    button.style.color = "inherit";
-    button.style.fontWeight = "700";
+    button.style.setProperty("font-weight", "700", "important");
+    button.style.setProperty("background-color", "#ffffff", "important");
+    button.style.setProperty("color", "#0f172a", "important");
+    button.style.setProperty("box-shadow", "0 1px 2px rgba(15, 23, 42, 0.06)", "important");
 }
 
 function refreshChatActionBarLanguageState(bar) {
@@ -2132,22 +2216,57 @@ function refreshChatActionBarLanguageState(bar) {
         const hint = getTranslation("languageLabel");
         pillBtn.setAttribute("aria-label", `${hint}: ${name}`);
         pillBtn.title = `${hint}: ${name}`;
-        const labelSpan = pillBtn.querySelector(".dfchat-chat-action-pill__text");
+        const labelSpan = bar.querySelector("#dfchat-active-lang-label, [data-dfchat-active-lang-label]")
+            || pillBtn.querySelector(".dfchat-chat-action-pill__text");
         if (labelSpan) {
             labelSpan.textContent = name;
         }
     }
     const menuItems = bar.querySelectorAll(".dfchat-chat-action-menu-item");
     for (const item of menuItems) {
-        if (!item || typeof item.textContent !== "string") {
+        if (!item) {
             continue;
         }
-        const match = CHAT_LANGUAGE_OPTIONS.find((option) => option.label === item.textContent);
-        if (match && normalizeLanguage(match.code) === activeLanguage) {
+        const fromData = item.dataset && item.dataset.dfchatLangCode
+            ? resolveToSupportedLanguageCode(item.dataset.dfchatLangCode)
+            : null;
+        const isActive = fromData
+            ? fromData === activeLanguage
+            : (() => {
+                const match = CHAT_LANGUAGE_OPTIONS.find((option) => option.label === item.textContent);
+                return !!(match && resolveToSupportedLanguageCode(match.code) === activeLanguage);
+            })();
+        if (isActive) {
             item.dataset.active = "true";
         } else {
             item.removeAttribute("data-active");
         }
+    }
+}
+
+/**
+ * Inline action bar lives in the composer; only `transform: translateY` moves it — `footerActionBar.nudgeUpPx`
+ * must be applied here (page CSS alone could not see shadow, and the fixed `top` math never runs on this path).
+ * Same sign as fixed: **larger positive** `nudgeUpPx` moves the bar **up** (more negative translateY).
+ */
+function applyChatActionBarInlineTransform(bar) {
+    if (!bar) {
+        return;
+    }
+    const nu = FOOTER_ACTION_BAR_LAYOUT.nudgeUpPx;
+    const nudge = typeof nu === "number" && Number.isFinite(nu) ? nu : 0;
+    const totalUpPx = Math.max(
+        0,
+        CHAT_ACTION_BAR_INLINE_BASE_UP_PX
+            + CHAT_ACTION_BAR_EXTRA_NUDGE_UP_PX
+            + nudge
+            - CHAT_ACTION_BAR_GLOBAL_DOWN_PX
+    );
+    const rx = CHAT_ACTION_BAR_GLOBAL_RIGHT_PX;
+    try {
+        bar.style.setProperty("transform", `translate(${rx}px, -${totalUpPx}px)`, "important");
+    } catch {
+        bar.style.transform = `translate(${rx}px, -${totalUpPx}px)`;
     }
 }
 
@@ -2179,7 +2298,15 @@ function syncChatActionBarPosition() {
         bar.style.zIndex = "";
         refreshChatActionBarLanguageState(bar);
         bar.style.display = "inline-flex";
+        applyChatActionBarInlineTransform(bar);
         return;
+    }
+
+    // Inline `transform: translateY(...)` (below) is `!important`; clear before fixed positioning.
+    try {
+        bar.style.removeProperty("transform");
+    } catch {
+        // ignore
     }
 
     const insertionPoint = findFooterInlineInsertionPoint(messenger);
@@ -2203,7 +2330,7 @@ function syncChatActionBarPosition() {
     const nudgeActionBarRightPx = FOOTER_ACTION_BAR_LAYOUT.nudgeRightPx
         + (isMobileViewport() ? MOBILE_FOOTER_ICONS_NUDGE_RIGHT_EXTRA_PX : 0)
         + mFooterNudge;
-    const nudgeActionBarUpPx = FOOTER_ACTION_BAR_LAYOUT.nudgeUpPx;
+    const nudgeActionBarUpPx = FOOTER_ACTION_BAR_LAYOUT.nudgeUpPx + CHAT_ACTION_BAR_EXTRA_NUDGE_UP_PX;
     const gapBeforeSend = FOOTER_ACTION_BAR_LAYOUT.gapBeforeSendPx;
 
     let left;
@@ -2301,8 +2428,8 @@ function syncChatActionBarPosition() {
         }
     }
 
-    left = Math.max(4, left + nudgeActionBarRightPx);
-    top = Math.max(4, top - nudgeActionBarUpPx);
+    left = Math.max(4, left + nudgeActionBarRightPx + CHAT_ACTION_BAR_GLOBAL_RIGHT_PX);
+    top = Math.max(4, top - nudgeActionBarUpPx + CHAT_ACTION_BAR_GLOBAL_DOWN_PX);
 
     const rowLockPx = FOOTER_ACTION_BAR_LAYOUT.lockVerticalWhenComposerRowTallerThanPx;
     if (rowLockPx > 0) {
@@ -6344,6 +6471,12 @@ function initializeContactForm() {
     }
 
     if (closeButton) {
+        try {
+            closeButton.setAttribute("data-dfchat-no-translate", "true");
+            closeButton.textContent = "X";
+        } catch {
+            /* no-op */
+        }
         closeButton.addEventListener("click", closeForm);
     }
 
@@ -6897,6 +7030,9 @@ function applyLanguage(languageCode) {
         if (!isNodeInsideChatLanguageUiScope(node)) {
             continue;
         }
+        if (node.id === "dfchat-active-lang-label" || node.hasAttribute("data-dfchat-active-lang-label")) {
+            continue;
+        }
         const key = node.getAttribute("data-i18n") || "";
         node.textContent = getTranslation(key);
     }
@@ -6970,6 +7106,15 @@ function applyLanguage(languageCode) {
                 applyChatInputPlaceholderToChatBubble(activeDfMessenger);
             }
         }, delay);
+    });
+    // Re-apply the language name on the pill after `data-i18n` / other async work.
+    [0, 10, 80].forEach((d) => {
+        window.setTimeout(() => {
+            const ab2 = getChatActionBar();
+            if (ab2) {
+                refreshChatActionBarLanguageState(ab2);
+            }
+        }, d);
     });
 }
 
@@ -7619,6 +7764,10 @@ async function applyDomTranslation(languageCode) {
 
     if (normalizedLanguage === DEFAULT_LANGUAGE) {
         restoreOriginalDomContent();
+        const actionBarRest = getChatActionBar();
+        if (actionBarRest) {
+            refreshChatActionBarLanguageState(actionBarRest);
+        }
         return;
     }
 
@@ -7650,6 +7799,11 @@ async function applyDomTranslation(languageCode) {
         if (target.type === "attr") {
             target.element.setAttribute(target.attribute, translatedText);
         }
+    }
+
+    const actionBarAfter = getChatActionBar();
+    if (actionBarAfter) {
+        refreshChatActionBarLanguageState(actionBarAfter);
     }
 }
 
@@ -7793,6 +7947,11 @@ function shouldSkipTranslationElement(element) {
         return true;
     }
 
+    // Latin "X" only — never run Google text translation on the contact-form close glyph.
+    if (element.id === "dfchat-contact-form-close") {
+        return true;
+    }
+
     // Chat composer placeholder is driven by `getChatInputPlaceholder` + `syncNativeComposerPlaceholders`.
     // Auto-translate used a frozen "original" placeholder and fought language switches.
     if (element.matches && element.matches("textarea") && activeDfMessenger) {
@@ -7897,8 +8056,8 @@ function getInitialLanguage() {
 
     try {
         const storedLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
-        if (SUPPORTED_LANGUAGES.includes(storedLanguage)) {
-            return storedLanguage;
+        if (storedLanguage) {
+            return resolveToSupportedLanguageCode(storedLanguage);
         }
     } catch {
         // Ignore storage failures and fall back to defaults.
@@ -7906,11 +8065,11 @@ function getInitialLanguage() {
 
     const browserLanguage = (navigator.language || "").toLowerCase();
     if (browserLanguage.startsWith("hi")) {
-        return "hi";
+        return resolveToSupportedLanguageCode("hi");
     }
 
     if (browserLanguage.startsWith("mr")) {
-        return "mr";
+        return resolveToSupportedLanguageCode("mr");
     }
 
     return DEFAULT_LANGUAGE;
@@ -7931,9 +8090,46 @@ function persistLanguage(languageCode) {
     }
 }
 
+/**
+ * Map a BCP-47 tag (e.g. `mr-IN`, `en-US`) or short code to a code from `enabledLanguages`.
+ * Pairs `mr` with `mr-IN` in config, etc., so the pill label matches the selected option.
+ * @param {string} [languageCode]
+ * @returns {string}
+ */
+function resolveToSupportedLanguageCode(languageCode) {
+    const raw = typeof languageCode === "string" ? languageCode.trim().toLowerCase() : "";
+    if (!raw) {
+        return DEFAULT_LANGUAGE;
+    }
+    if (SUPPORTED_LANGUAGES.includes(raw)) {
+        return raw;
+    }
+    const base = raw.split(/[-_]/)[0] || raw;
+    for (let i = 0; i < CHAT_LANGUAGE_OPTIONS.length; i++) {
+        const opt = CHAT_LANGUAGE_OPTIONS[i];
+        const oc = normalizeLanguageCode(opt && opt.code);
+        if (!oc) {
+            continue;
+        }
+        const optBase = oc.split(/[-_]/)[0] || oc;
+        if (raw === oc || raw.startsWith(`${oc}-`) || base === optBase) {
+            return oc;
+        }
+    }
+    if (SUPPORTED_LANGUAGES.includes(base)) {
+        return base;
+    }
+    for (let j = 0; j < SUPPORTED_LANGUAGES.length; j++) {
+        const s = SUPPORTED_LANGUAGES[j];
+        if (s && (raw === s || raw.startsWith(`${s}-`))) {
+            return s;
+        }
+    }
+    return DEFAULT_LANGUAGE;
+}
+
 function normalizeLanguage(languageCode) {
-    const normalizedCode = (languageCode || "").toLowerCase();
-    return SUPPORTED_LANGUAGES.includes(normalizedCode) ? normalizedCode : DEFAULT_LANGUAGE;
+    return resolveToSupportedLanguageCode(languageCode);
 }
 
 
