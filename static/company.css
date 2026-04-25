@@ -108,9 +108,10 @@ df-messenger {
     margin-bottom: -10px;
   }
 
-  /* While typing in the composer, show only the conversation + input (saves space with keyboard) */
+  /* Typing: do not hide the whole title bar — that removed close / Language / Restart in header-controls.
+     Space is already tightened via mobile titlebar vars; optional padding trim only: */
   df-messenger.dfchat-composer-typing df-messenger-header {
-    display: none !important;
+    min-height: 0;
   }
 }
 

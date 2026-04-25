@@ -32,6 +32,8 @@ const API_BASE_URL_META_NAME = "dfchat-api-base-url";
 const MOBILE_CHAT_BREAKPOINT_PX = 768;
 /** Extra `nudgeRight` for Language / Restart + Powered by on small viewports only (see company.config.js mobile layout). */
 const MOBILE_FOOTER_ICONS_NUDGE_RIGHT_EXTRA_PX = 30;
+/** Shift "Powered by" right so it does not cover Language / Restart (`setPoweredByStripGeometry` deltaLeft). */
+const POWERED_BY_STRIP_NUDGE_RIGHT_PX = 30;
 const AUTO_START_CHAT_EVENT_NAME = "FRESH";
 const AUTO_START_CHAT_DELAY_MS = 600;
 const AUTO_START_SENDREQUEST_POLL_MS = 120;
@@ -626,7 +628,7 @@ const originalTextNodeContent = new Map();
 const originalElementAttributes = new Map();
 const googleTranslationCache = new Map();
 
-const COMPANY_JS_BUILD_TAG = "20260425-22";
+const COMPANY_JS_BUILD_TAG = "20260425-23";
 const COMPANY_DEBUG_QUERY_FLAG = "dfchatDebug";
 let debugMountAttemptSeq = 0;
 let debugBadgeLastRenderAt = 0;
@@ -2658,7 +2660,7 @@ function clampPoweredByStripInViewport(el) {
 function setPoweredByStripGeometry(el, L, fr, topPx) {
     const lineH = L.lineHeightPx;
     const nudgeRight = L.nudgeRightPx + (isMobileViewport() ? MOBILE_FOOTER_ICONS_NUDGE_RIGHT_EXTRA_PX : 0);
-    const deltaLeft = L.offsetLeftPx + nudgeRight - L.nudgeLeftPx;
+    const deltaLeft = L.offsetLeftPx + nudgeRight - L.nudgeLeftPx + POWERED_BY_STRIP_NUDGE_RIGHT_PX;
     const textAlign = L.textAlign || "center";
     const vwW = window.visualViewport && Number.isFinite(window.visualViewport.width)
         ? window.visualViewport.width
