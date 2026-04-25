@@ -589,7 +589,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
 
     /* Extra horizontal nudge for Language/Restart (added in company.js; positive = toward the right). */
     footerActionBar: {
-      nudgeRightExtraPx: 2
+      nudgeRightExtraPx: 30
     },
 
     /* Mobile-only: form horizontal insets (5px to the right vs symmetric 25/25: left+5, right-5). */
