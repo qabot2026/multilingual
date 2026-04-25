@@ -3481,6 +3481,7 @@ function stripContactFormDocking() {
         return;
     }
     el.classList.remove("dfchat-contact-form--docked");
+    el.style.removeProperty("position");
     el.style.removeProperty("left");
     el.style.removeProperty("right");
     el.style.removeProperty("top");
@@ -3497,6 +3498,35 @@ function stripContactFormDocking() {
         inputs.style.removeProperty("max-height");
     }
     applyContactFormLayoutFromConfig();
+}
+
+/** When chat is minimized, dock coords are cleared — inline `position:fixed` without insets sticks to 0,0. Pin like company.css defaults. */
+function applyContactFormFallbackFixedPosition(el) {
+    if (!el) {
+        return;
+    }
+    const mobile = typeof isMobileViewport === "function" && isMobileViewport();
+    const side = resolveChatLayoutSide(readCompanyUiConfig());
+    el.style.position = "fixed";
+    el.style.zIndex = "2147483630";
+    if (mobile) {
+        el.style.left = "10px";
+        el.style.right = "10px";
+        el.style.width = "auto";
+        el.style.bottom = "92px";
+    } else if (side === "left") {
+        el.style.right = "auto";
+        el.style.left = "28px";
+        el.style.width = "";
+        el.style.bottom = "106px";
+    } else {
+        el.style.left = "auto";
+        el.style.right = "28px";
+        el.style.width = "";
+        el.style.bottom = "106px";
+    }
+    el.style.top = "auto";
+    el.style.removeProperty("max-height");
 }
 
 function syncContactFormPosition() {
@@ -3520,6 +3550,7 @@ function syncContactFormPosition() {
         if (el.classList.contains("dfchat-contact-form--docked")) {
             stripContactFormDocking();
         }
+        applyContactFormFallbackFixedPosition(el);
         return;
     }
 
