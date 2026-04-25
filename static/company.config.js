@@ -11,11 +11,6 @@
  * Load Dialogflow default CSS, then `company.css`, then this file, then `company.js`.
  * The contact form DOM is injected by `company.js`.
  * If you host files under different names or folders, update every `<link>` / `<script src>` in your HTML to match.
- *
- * Viewport keys (easy to spot in this file):
- * - `common` — shared on every screen.
- * - `desk` — wide viewports (company.js treats width ≥ 768px as “desktop” unless overridden).
- * - `mob` — small viewports (phone / narrow; below that breakpoint). Still uses `{"name":"mobile",…}` in forms — that is the field name, not this block.
  */
 
 window.COMPANY_CHAT_UI_CONFIG = {
@@ -218,7 +213,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
 
     // Where the chat bubble + “Hi” strip sit: "right" | "left" (one switch for both).
     // Use matching edges everywhere below:
-    // - "right" → `rightPx` + `bottomPx` (set `leftPx: null` on desk + mob bubble + both launcherStrips)
+    // - "right" → `rightPx` + `bottomPx` (set `leftPx: null` on desktop/mobile bubble + both launcherStrips)
     // - "left"  → `leftPx` + `bottomPx` (set `rightPx: null`)
     chatLayout: {
       side: "right"
@@ -250,8 +245,6 @@ window.COMPANY_CHAT_UI_CONFIG = {
       gapAboveFooterPx: 8,
       titleInsetPx: 48,
       dockNudgeDownPx: 20,
-      /* Move the inline form a bit higher on the screen (px). Docked + fallback-fixed. Set 0 to disable. */
-      formBottomNudgeUpPx: 20,
       sideInsetPx: 10,
       maxCardHeightPx: 300,
       showSubtitle: true,
@@ -465,15 +458,6 @@ window.COMPANY_CHAT_UI_CONFIG = {
     // Chat colors + other widget styling (technical names — ask a developer if unsure).
     // Tip: the floating button’s roundness is controlled above in `chatBubbleLauncher` (easier for edits).
     dfMessengerTheme: {
-      /* Smaller title bar (tighter than Dialogflow 18px defaults) */
-      "--df-messenger-titlebar-padding": "0 10px 0 10px",
-      "--df-messenger-titlebar-title-font-size": "15px",
-      "--df-messenger-titlebar-title-line-height": "1.2",
-      "--df-messenger-titlebar-subtitle-font-size": "12px",
-      "--df-messenger-titlebar-subtitle-line-height": "1.2",
-      "--df-messenger-titlebar-icon-width": "16px",
-      "--df-messenger-titlebar-icon-height": "16px",
-      "--df-messenger-titlebar-icon-padding": "0 8px 0 0",
       "--df-messenger-input-inner-padding": "0 46px 8px 10px",
       "--df-messenger-input-box-padding": "8px 16px 8px 16px",
       "--df-messenger-input-box-focus-padding": "8px 16px 8px 16px",
@@ -505,12 +489,12 @@ window.COMPANY_CHAT_UI_CONFIG = {
   },
 
   // =========================
-  // DESK (wide viewports)
+  // DESKTOP
   // =========================
-  desk: {
+  desktop: {
     chatWindow: {
-      widthPx: 420,
-      heightPx: 540,
+      widthPx: 500,
+      heightPx: 620,
 
       // right + bottom (matches `common.chatLayout.side: "right"`).
       bubblePosition: { rightPx: 20, bottomPx: 20, leftPx: null, topPx: null },
@@ -554,23 +538,23 @@ window.COMPANY_CHAT_UI_CONFIG = {
   },
 
   // =========================
-  // MOB (narrow / phone viewports; `enabled` can turn this layout off)
+  // MOBILE
   // =========================
-  mob: {
+  mobile: {
     enabled: true,
 
     chatWindow: {
       horizontalInsetPx: 12,
-      topInsetPx: 20,
+      topInsetPx: 14,
       bottomInsetPx: 10,
-      /* Shrinks the open panel height on mob so the titlebar stays in view (notches, browser chrome). */
+      /* Shrinks the open panel height on mobile so the titlebar stays in view (notches, browser chrome). */
       safeAreaTopReservePx: 28,
       minWidthPx: 260,
       minHeightPx: 200,
 
       bubblePosition: { rightPx: 12, bottomPx: 10, leftPx: null, topPx: null },
 
-      // Optional: set only the bubble–window gap: `chatWindowOffsetPx: 10` (see `desk` above).
+      // Optional: set only the bubble–window gap: `chatWindowOffsetPx: 10` (see desktop).
 
       // Add to the panel height; optional, separate from `chatWindowOffsetPx`.
       extraHeightTowardBubblePx: 0
@@ -582,7 +566,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
     },
 
     launcherStrip: {
-      // Same edge as the bubble (bottom-right on mob)
+      // Same edge as the bubble (bottom-right on mobile)
       enabled: true,
       text: "Hello, how are you?",
       typingDurationMs: 2000,
@@ -591,7 +575,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
     },
 
     launcherInputStrip: {
-      enabled: false,
+      enabled: true,
       placeholder: "What is your query?",
       sendLabel: "Send",
       gapAboveBubblePx: 5,
