@@ -31,7 +31,7 @@ const CONTACT_FORM_ENDPOINT = "/contact-form-submissions";
 const API_BASE_URL_META_NAME = "dfchat-api-base-url";
 const MOBILE_CHAT_BREAKPOINT_PX = 768;
 /** Extra `nudgeRight` for Language / Restart + Powered by on small viewports only (see company.config.js mobile layout). */
-const MOBILE_FOOTER_ICONS_NUDGE_RIGHT_EXTRA_PX = 20;
+const MOBILE_FOOTER_ICONS_NUDGE_RIGHT_EXTRA_PX = 30;
 const AUTO_START_CHAT_EVENT_NAME = "FRESH";
 const AUTO_START_CHAT_DELAY_MS = 600;
 const AUTO_START_SENDREQUEST_POLL_MS = 120;
