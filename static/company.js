@@ -25,7 +25,7 @@ const USER_PERSONA_TOKEN = encodeURIComponent("🙂User");
 const BOT_PERSONA_TOKEN = encodeURIComponent("Bot 🤖");
 const CHAT_CLIENT_CONTEXT_ENDPOINT = "/chat-client-context";
 const CHAT_CLIENT_CONTEXT_STORAGE_KEY = "company_chat_client_context";
-const CONTACT_FORM_OPEN_DELAY_MS = 3000;
+const CONTACT_FORM_OPEN_DELAY_MS = 600;
 const CONTACT_FORM_OPEN_ACTION = "open_form";
 const CONTACT_FORM_ENDPOINT = "/contact-form-submissions";
 const API_BASE_URL_META_NAME = "dfchat-api-base-url";
@@ -5332,12 +5332,18 @@ function initializeChatStateSync(dfMessenger) {
         }
 
         stopCloseXWhileChatOpenMonitor();
-        closeContactForm();
+        // Do not close the contact/appointment overlay when the chat panel minimizes. Live sites
+        // often keep the bubble collapsed; open_form would open then instantly hide. Reposition only.
+        window.setTimeout(() => {
+            syncContactFormPosition();
+        }, 0);
     });
 
     document.addEventListener("click", (event) => {
         if (didUserCloseChat(event)) {
-            closeContactForm();
+            window.setTimeout(() => {
+                syncContactFormPosition();
+            }, 0);
         }
     }, true);
 
@@ -5347,7 +5353,9 @@ function initializeChatStateSync(dfMessenger) {
             resetBubbleUnreadBadge();
         }
         if (!isChatWindowOpen) {
-            closeContactForm();
+            window.setTimeout(() => {
+                syncContactFormPosition();
+            }, 0);
         }
         scheduleSyncChatActionBarPosition();
     });
@@ -5581,16 +5589,42 @@ function extractOpenFormIdFromEvent(event) {
 }
 
 function extractPayload(message) {
-    if (!message || !message.payload) {
+    if (!message || typeof message !== "object") {
         return null;
     }
 
-    if (typeof message.payload.action === "string") {
-        return message.payload;
+    let raw = message.payload;
+    if (raw == null && message.customPayload != null) {
+        raw = message.customPayload;
+    }
+    if (typeof raw === "string") {
+        const t = raw.trim();
+        if (t.startsWith("{")) {
+            try {
+                const o = JSON.parse(t);
+                if (o && typeof o === "object" && typeof o.action === "string") {
+                    return o;
+                }
+            } catch (e) {
+                /* ignore */
+            }
+        }
+        return null;
+    }
+    if (!raw || typeof raw !== "object") {
+        return null;
     }
 
-    if (message.payload.fields) {
-        return convertStructFieldsToObject(message.payload.fields);
+    if (typeof raw.action === "string") {
+        return raw;
+    }
+
+    if (raw.fields) {
+        return convertStructFieldsToObject(raw.fields);
+    }
+
+    if (raw.structValue && raw.structValue.fields) {
+        return convertStructFieldsToObject(raw.structValue.fields);
     }
 
     return null;
