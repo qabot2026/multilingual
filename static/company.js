@@ -780,6 +780,71 @@ function startMobileFooterChromeLayoutLoop() {
     mobileFooterChromeRaf = requestAnimationFrame(runMobileFooterChromeFrame);
 }
 
+/** @type {number} */
+let hostPageScrollLockY = 0;
+let hostPageScrollLockActive = false;
+
+/**
+ * When the chat panel is open on mobile, lock the host page so scrolling the message list
+ * does not move the site behind it (iOS uses `position: fixed` + stored scrollY).
+ */
+function applyHostPageScrollLockForOpenChat() {
+    if (!isMobileViewport() || hostPageScrollLockActive) {
+        return;
+    }
+    hostPageScrollLockActive = true;
+    hostPageScrollLockY = window.pageYOffset
+        || document.documentElement.scrollTop
+        || (document.body && document.body.scrollTop)
+        || 0;
+    const html = document.documentElement;
+    const body = document.body;
+    if (!html || !body) {
+        hostPageScrollLockActive = false;
+        return;
+    }
+    html.classList.add("dfchat-host-scroll-locked");
+    html.style.setProperty("overflow", "hidden");
+    body.style.setProperty("overflow", "hidden");
+    body.style.setProperty("position", "fixed");
+    body.style.setProperty("top", `-${hostPageScrollLockY}px`);
+    body.style.setProperty("left", "0");
+    body.style.setProperty("right", "0");
+    body.style.setProperty("width", "100%");
+    body.style.setProperty("overscroll-behavior", "none");
+    html.style.setProperty("overscroll-behavior", "none");
+}
+
+function releaseHostPageScrollLockForOpenChat() {
+    if (!hostPageScrollLockActive) {
+        return;
+    }
+    const y = hostPageScrollLockY;
+    hostPageScrollLockActive = false;
+    hostPageScrollLockY = 0;
+    const html = document.documentElement;
+    const body = document.body;
+    if (html) {
+        html.classList.remove("dfchat-host-scroll-locked");
+        html.style.removeProperty("overflow");
+        html.style.removeProperty("overscroll-behavior");
+    }
+    if (body) {
+        body.style.removeProperty("overflow");
+        body.style.removeProperty("position");
+        body.style.removeProperty("top");
+        body.style.removeProperty("left");
+        body.style.removeProperty("right");
+        body.style.removeProperty("width");
+        body.style.removeProperty("overscroll-behavior");
+    }
+    try {
+        window.scrollTo(0, y);
+    } catch {
+        /* no-op */
+    }
+}
+
 function resetChatActionBarPositionCaches() {
     chatActionBarFixedPos = null;
     chatActionBarSendWidthCache = 0;
@@ -5546,10 +5611,21 @@ function initializeMobileChatLayout(dfMessenger, config) {
             ? mobileConfig.safeAreaTopReservePx
             : 28;
         const safeInsetTop = getEnvSafeAreaInsetTopPx();
+        const titlebarExtra = typeof mobileConfig.titlebarChromeReservePx === "number" && Number.isFinite(mobileConfig.titlebarChromeReservePx)
+            ? mobileConfig.titlebarChromeReservePx
+            : 48;
         const availableWidth = Math.max(minWidth, Math.floor(viewportWidth - horizontalInset * 2));
         const availableHeight = Math.max(
             minHeight,
-            Math.floor(viewportHeight - topInset - bottomInset - safeTopReserve - safeInsetTop + mobileExtraH)
+            Math.floor(
+                viewportHeight
+                    - topInset
+                    - bottomInset
+                    - safeTopReserve
+                    - safeInsetTop
+                    - titlebarExtra
+                    + mobileExtraH
+            )
         );
 
         const mobileDock = resolveChatLayoutSide(config);
@@ -5651,12 +5727,14 @@ function initializeChatStateSync(dfMessenger) {
                 safeAreaTopInsetCache = null;
                 bindFooterScrollParentsForChat(dfMessenger);
                 startMobileFooterChromeLayoutLoop();
+                applyHostPageScrollLockForOpenChat();
             }
             return;
         }
 
         stopMobileFooterChromeLayoutLoop();
         clearFooterScrollParentListeners();
+        releaseHostPageScrollLockForOpenChat();
         stopCloseXWhileChatOpenMonitor();
         // When the panel closes, dismiss any open (or scheduled) inline form (contact / appointment / upload) so it
         // does not float without the chat. Restart also clears the form (see restartChatSession).
@@ -5690,9 +5768,11 @@ function initializeChatStateSync(dfMessenger) {
             }
             bindFooterScrollParentsForChat(dfMessenger);
             startMobileFooterChromeLayoutLoop();
+            applyHostPageScrollLockForOpenChat();
         } else {
             stopMobileFooterChromeLayoutLoop();
             clearFooterScrollParentListeners();
+            releaseHostPageScrollLockForOpenChat();
         }
         scheduleSyncChatActionBarPosition();
     });

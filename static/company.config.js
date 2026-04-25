@@ -545,10 +545,12 @@ window.COMPANY_CHAT_UI_CONFIG = {
 
     chatWindow: {
       horizontalInsetPx: 12,
-      topInsetPx: 18,
+      topInsetPx: 26,
       bottomInsetPx: 10,
-      /* Extra vertical budget so the open panel titlebar stays below the notch / status area (in addition to env(safe-area-inset-top) in JS). */
-      safeAreaTopReservePx: 40,
+      /* Extra space below the system safe area / status bar. */
+      safeAreaTopReservePx: 56,
+      /* JS subtracts this from open chat height so the Dialogflow titlebar row is not clipped (optional; default 48 in code). */
+      titlebarChromeReservePx: 40,
       minWidthPx: 260,
       minHeightPx: 200,
 

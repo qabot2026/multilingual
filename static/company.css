@@ -29,6 +29,9 @@ df-messenger {
   z-index: 999;
   overflow: visible;
   box-sizing: border-box;
+  /* Scroll inside the chat, not the host page (paired with `applyHostPageScrollLockForOpenChat` in company.js) */
+  overscroll-behavior: contain;
+  touch-action: manipulation;
   animation: dfchat-fade-up 320ms ease-out;
 
   --df-messenger-font-family: "Manrope", "Segoe UI", sans-serif;
@@ -85,15 +88,25 @@ df-messenger {
 /* Smaller titlebar on phones so the header stays on-screen with the open panel. */
 @media (max-width: 768px) {
   df-messenger {
-    --df-messenger-titlebar-padding: 0 8px 0 8px;
-    --df-messenger-titlebar-title-font-size: 15px;
-    --df-messenger-titlebar-title-line-height: 1.25;
-    --df-messenger-titlebar-subtitle-font-size: 12px;
-    --df-messenger-titlebar-subtitle-line-height: 1.25;
-    --df-messenger-titlebar-icon-height: 40px;
-    --df-messenger-titlebar-icon-width: 40px;
-    --df-messenger-titlebar-icon-padding: 0 6px 0 0;
+    --df-messenger-titlebar-padding: 0 6px 0 6px;
+    --df-messenger-titlebar-title-font-size: 14px;
+    --df-messenger-titlebar-title-line-height: 1.2;
+    --df-messenger-titlebar-subtitle-font-size: 11px;
+    --df-messenger-titlebar-subtitle-line-height: 1.2;
+    --df-messenger-titlebar-icon-height: 32px;
+    --df-messenger-titlebar-icon-width: 32px;
+    --df-messenger-titlebar-icon-padding: 0 4px 0 0;
+    max-height: calc(
+      100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 8px
+    );
   }
+}
+
+/* Set by company.js on mobile when the chat is open: freeze host scroll */
+html.dfchat-host-scroll-locked,
+html.dfchat-host-scroll-locked body {
+  overflow: hidden !important;
+  overscroll-behavior: none;
 }
 
 /* Footer chrome: stay viewport-fixed even if the host page overrides `position` */
