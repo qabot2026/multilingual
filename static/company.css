@@ -1,6 +1,5 @@
 /**
- * live.css — production embed: chat + contact form only (no page-level html/body rules).
- * Demo full page: use test.css (imports this file + demo shell).
+ * company.css — Dialogflow chat widget + contact form (no host page html/body rules).
  */
 @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap");
 

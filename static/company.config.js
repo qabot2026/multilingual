@@ -6,11 +6,11 @@
  *   browser reloads this script (cache-bust ?v= on the script tag in HTML helps).
  * - `company.js` reads `window.COMPANY_CHAT_UI_CONFIG` once at startup.
  *
- * This file must load *before* `company.js` (see `company.html` script order).
+ * This file must load *before* `company.js` (see `myweb.html` script order).
  *
- * Live client sites: load Dialogflow default CSS, then `live.css`
- * (widget + contact form — no `html`/`body` overrides), then this file, then `company.js`.
- * The contact form DOM is injected by `company.js`. For the bundled demo page, use `test.css`.
+ * Load Dialogflow default CSS, then `company.css`, then this file, then `company.js`.
+ * The contact form DOM is injected by `company.js`.
+ * If you host files under different names or folders, update every `<link>` / `<script src>` in your HTML to match.
  */
 
 window.COMPANY_CHAT_UI_CONFIG = {

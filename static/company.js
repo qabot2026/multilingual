@@ -922,7 +922,7 @@ const UI_TRANSLATIONS = {
 
 /**
  * Production embeds: no contact-form markup in HTML. Inject once if missing (idempotent).
- * Scoped styles live in `live.css` (not `test.css`, which adds demo html/body chrome only).
+ * Scoped styles live in `company.css`.
  */
 function mountDfchatContactFormHostIfNeeded() {
     if (document.getElementById("dfchat-contact-form")) {
@@ -3531,7 +3531,7 @@ function stripContactFormDocking() {
     applyContactFormLayoutFromConfig();
 }
 
-/** When chat is minimized, dock coords are cleared — inline `position:fixed` without insets sticks to 0,0. Pin like live.css defaults. */
+/** When chat is minimized, dock coords are cleared — inline `position:fixed` without insets sticks to 0,0. Pin like company.css defaults. */
 function applyContactFormFallbackFixedPosition(el) {
     if (!el) {
         return;
@@ -3544,7 +3544,7 @@ function applyContactFormFallbackFixedPosition(el) {
         el.style.left = "10px";
         el.style.right = "10px";
         el.style.width = "auto";
-        /* Match live.css: 92px → 100px lower (toward bottom) */
+        /* Match company.css: 92px → 100px lower (toward bottom) */
         el.style.bottom = "8px";
     } else if (side === "left") {
         el.style.right = "auto";
