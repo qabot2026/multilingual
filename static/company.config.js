@@ -573,7 +573,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
     },
 
     launcherInputStrip: {
-      enabled: false,
+      enabled: true,
       placeholder: "What is your query?",
       sendLabel: "Send",
       gapAboveBubblePx: 5,
