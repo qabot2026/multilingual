@@ -61,7 +61,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
       // - `code` = language code for Dialogflow (`language-code` on df-messenger); `label` = text in the menu.
       // - Changing language = same conversation language + UI labels we translate (not a new “command”).
       multiLanguage: {
-        enabled: false,
+        enabled: true,
         defaultLanguage: "en"
         // Composer hint (`placeholder-text`). Keys = same `code` values as below. Optional: add `inputPlaceholder` on each language row to override only that row.
         // inputPlaceholderByLanguage: {
@@ -78,7 +78,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
 
       // Restart button in footer.
       restartChat: {
-        enabled: false,
+        enabled: true,
         label: "Restart"
       }
     },
