@@ -100,6 +100,18 @@ df-messenger {
       100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 8px
     );
   }
+
+  /* Nudge title bar slightly higher (~10px) */
+  df-messenger df-messenger-header {
+    position: relative;
+    top: -10px;
+    margin-bottom: -10px;
+  }
+
+  /* While typing in the composer, show only the conversation + input (saves space with keyboard) */
+  df-messenger.dfchat-composer-typing df-messenger-header {
+    display: none !important;
+  }
 }
 
 /* Set by company.js on mobile when the chat is open: freeze host scroll */
@@ -495,11 +507,12 @@ html.dfchat-host-scroll-locked body {
 
 .dfchat-contact-form {
   position: fixed;
-  right: 28px;
+  right: 33px;
   /* Was 106px; +100px toward viewport bottom per product request */
   bottom: 6px;
   z-index: 1000;
-  width: min(340px, calc(100vw - 32px));
+  /* 5px tighter on each side vs before (32px → 42px total horizontal margin) */
+  width: min(340px, calc(100vw - 42px));
   display: none;
 }
 
@@ -843,8 +856,8 @@ button.dfchat-contact-form-otp-back:hover {
 
 @media (max-width: 768px) {
   .dfchat-contact-form:not(.dfchat-contact-form--docked) {
-    right: 10px;
-    left: 10px;
+    right: 15px;
+    left: 15px;
     /* Was 92px; moved 100px lower → 8px inset (avoids negative offset) */
     bottom: 8px;
     width: auto;

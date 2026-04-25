@@ -245,7 +245,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
       gapAboveFooterPx: 8,
       titleInsetPx: 48,
       dockNudgeDownPx: 20,
-      sideInsetPx: 10,
+      sideInsetPx: 15,
       maxCardHeightPx: 300,
       showSubtitle: true,
       // Form to use when Dialogflow sends only `{ "action": "open_form" }` (no `form_id`), and on first load.

@@ -1180,12 +1180,94 @@ function mountDfchatContactFormHostIfNeeded() {
     document.body.appendChild(section);
 }
 
+const DFCHAT_COMPOSER_TYPING = "dfchat-composer-typing";
+let dfchatComposerHeaderBehaviorBound = false;
+
+/**
+ * @param {Element} el
+ * @returns {boolean}
+ */
+function isMessageComposerField(el) {
+    if (!el || el.nodeType !== 1) {
+        return false;
+    }
+    const t = (el.tagName || "").toLowerCase();
+    if (t === "textarea") {
+        return true;
+    }
+    if (t === "input") {
+        const ty = (String(el.getAttribute("type") || "text")).toLowerCase();
+        if (ty === "hidden" || ty === "checkbox" || ty === "radio" || ty === "file" || ty === "button" || ty === "submit" || ty === "reset" || ty === "image") {
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
+
+/**
+ * @param {Node | null} m
+ * @param {Node | null} [active]
+ * @returns {boolean}
+ */
+function isFocusInMessenger(m, active) {
+    const a = active || document.activeElement;
+    if (!m || !a) {
+        return false;
+    }
+    const p = typeof a.composedPath === "function" ? a.composedPath() : [];
+    return p.indexOf(m) >= 0;
+}
+
+function syncDfMessengerComposerTypingClass() {
+    const m = activeDfMessenger || document.querySelector("df-messenger");
+    if (!m) {
+        return;
+    }
+    const a = document.activeElement;
+    if (!isFocusInMessenger(m, a)) {
+        m.classList.remove(DFCHAT_COMPOSER_TYPING);
+        return;
+    }
+    if (isMessageComposerField(a)) {
+        m.classList.add(DFCHAT_COMPOSER_TYPING);
+    } else {
+        m.classList.remove(DFCHAT_COMPOSER_TYPING);
+    }
+}
+
+/**
+ * On mobile, hide the chat title bar while the user types in the composer; show again on blur.
+ */
+function ensureComposerHeaderCollapseBehavior() {
+    if (dfchatComposerHeaderBehaviorBound) {
+        return;
+    }
+    dfchatComposerHeaderBehaviorBound = true;
+    document.addEventListener("focusin", (e) => {
+        const m = activeDfMessenger || document.querySelector("df-messenger");
+        if (!m || !e.target) {
+            return;
+        }
+        if (!e.composedPath || e.composedPath().indexOf(m) < 0) {
+            return;
+        }
+        if (isMessageComposerField(/** @type {Element} */(e.target))) {
+            m.classList.add(DFCHAT_COMPOSER_TYPING);
+        }
+    }, true);
+    document.addEventListener("focusout", () => {
+        window.setTimeout(syncDfMessengerComposerTypingClass, 60);
+    }, true);
+}
+
 function runCompanyDomReadyInit() {
     mountDfchatContactFormHostIfNeeded();
     applyThemeConfig(COMPANY_UI_CONFIG);
     if (!IS_MULTI_LANGUAGE_ENABLED) {
         activeLanguage = DEFAULT_LANGUAGE;
     }
+    ensureComposerHeaderCollapseBehavior();
     // Mount chat before the inline form and other UI — if form init throws, the bubble should still show.
     runMessengerMountWhenCustomElementReady();
     // Contact fields mount from config; applyLanguage must run after so placeholders/labels apply.
@@ -3152,7 +3234,7 @@ function readContactFormConfig() {
         titleInsetPx: n(c.titleInsetPx, 48),
         dockNudgeDownPx: n(c.dockNudgeDownPx, 0),
         gapAboveFooterPx: n(c.gapAboveFooterPx, 8),
-        sideInsetPx: n(c.sideInsetPx, 10),
+        sideInsetPx: n(c.sideInsetPx, 15),
         chatSummaryFieldNames: chatNames,
         fields,
         titleI18nKey,
@@ -3850,22 +3932,27 @@ function applyContactFormFallbackFixedPosition(el) {
     }
     const mobile = typeof isMobileViewport === "function" && isMobileViewport();
     const side = resolveChatLayoutSide(readCompanyUiConfig());
+    const inPad = (() => {
+        const c0 = readContactFormConfig();
+        return typeof c0.sideInsetPx === "number" && Number.isFinite(c0.sideInsetPx) ? c0.sideInsetPx : 15;
+    })();
+    const deskPad = 33;
     el.style.position = "fixed";
     el.style.zIndex = "2147483630";
     if (mobile) {
-        el.style.left = "10px";
-        el.style.right = "10px";
+        el.style.left = `${inPad}px`;
+        el.style.right = `${inPad}px`;
         el.style.width = "auto";
         /* Match company.css: 92px → 100px lower (toward bottom) */
         el.style.bottom = "8px";
     } else if (side === "left") {
         el.style.right = "auto";
-        el.style.left = "28px";
+        el.style.left = `${deskPad}px`;
         el.style.width = "";
         el.style.bottom = "6px";
     } else {
         el.style.left = "auto";
-        el.style.right = "28px";
+        el.style.right = `${deskPad}px`;
         el.style.width = "";
         el.style.bottom = "6px";
     }
