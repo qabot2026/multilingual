@@ -465,6 +465,15 @@ window.COMPANY_CHAT_UI_CONFIG = {
     // Chat colors + other widget styling (technical names — ask a developer if unsure).
     // Tip: the floating button’s roundness is controlled above in `chatBubbleLauncher` (easier for edits).
     dfMessengerTheme: {
+      /* Smaller title bar (tighter than Dialogflow 18px defaults) */
+      "--df-messenger-titlebar-padding": "0 10px 0 10px",
+      "--df-messenger-titlebar-title-font-size": "15px",
+      "--df-messenger-titlebar-title-line-height": "1.2",
+      "--df-messenger-titlebar-subtitle-font-size": "12px",
+      "--df-messenger-titlebar-subtitle-line-height": "1.2",
+      "--df-messenger-titlebar-icon-width": "16px",
+      "--df-messenger-titlebar-icon-height": "16px",
+      "--df-messenger-titlebar-icon-padding": "0 8px 0 0",
       "--df-messenger-input-inner-padding": "0 46px 8px 10px",
       "--df-messenger-input-box-padding": "8px 16px 8px 16px",
       "--df-messenger-input-box-focus-padding": "8px 16px 8px 16px",
@@ -500,8 +509,8 @@ window.COMPANY_CHAT_UI_CONFIG = {
   // =========================
   desk: {
     chatWindow: {
-      widthPx: 500,
-      heightPx: 620,
+      widthPx: 420,
+      heightPx: 540,
 
       // right + bottom (matches `common.chatLayout.side: "right"`).
       bubblePosition: { rightPx: 20, bottomPx: 20, leftPx: null, topPx: null },
@@ -556,8 +565,8 @@ window.COMPANY_CHAT_UI_CONFIG = {
       bottomInsetPx: 10,
       /* Shrinks the open panel height on mob so the titlebar stays in view (notches, browser chrome). */
       safeAreaTopReservePx: 28,
-      minWidthPx: 280,
-      minHeightPx: 340,
+      minWidthPx: 260,
+      minHeightPx: 300,
 
       bubblePosition: { rightPx: 12, bottomPx: 10, leftPx: null, topPx: null },
 

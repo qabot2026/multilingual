@@ -1753,6 +1753,17 @@ function ensureChatActionBar() {
         if (window.visualViewport) {
             window.visualViewport.addEventListener("resize", onActionBarLayoutEnvChange);
         }
+        // Window / document / visualViewport scroll: re-run Send-row geometry so Language, Restart, and
+        // Powered by stay aligned when the host page or an inner scroller moves the chat on screen.
+        // (Resize-only updates miss this; `position:fixed` uses screen coords from getBoundingClientRect.)
+        const onScrollRealignChatChrome = () => {
+            scheduleSyncChatActionBarPosition();
+        };
+        window.addEventListener("scroll", onScrollRealignChatChrome, { passive: true, capture: true });
+        document.addEventListener("scroll", onScrollRealignChatChrome, { passive: true, capture: true });
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener("scroll", onScrollRealignChatChrome, { passive: true });
+        }
     }
 }
 

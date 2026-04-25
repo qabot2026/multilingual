@@ -69,9 +69,15 @@ df-messenger {
   --df-messenger-titlebar-background: linear-gradient(120deg, #0369a1 0%, #0284c7 35%, #0ea5e9 70%, #38bdf8 100%);
   --df-messenger-titlebar-font-color: #f0f9ff;
   --df-messenger-titlebar-subtitle-font-color: #bae6fd;
-  --df-messenger-titlebar-title-line-height: 36px;
-  --df-messenger-titlebar-icon-height: 50px;
-  --df-messenger-titlebar-icon-width: 50px;
+  /* Compact titlebar (match `common.dfMessengerTheme` in company.config.js; avoid 50px icons) */
+  --df-messenger-titlebar-padding: 0 10px 0 10px;
+  --df-messenger-titlebar-title-font-size: 15px;
+  --df-messenger-titlebar-title-line-height: 1.2;
+  --df-messenger-titlebar-subtitle-font-size: 12px;
+  --df-messenger-titlebar-subtitle-line-height: 1.2;
+  --df-messenger-titlebar-icon-height: 16px;
+  --df-messenger-titlebar-icon-width: 16px;
+  --df-messenger-titlebar-icon-padding: 0 8px 0 0;
 
   --df-messenger-chat-bubble-icon-size: 64px;
   --df-messenger-chat-bubble-background: linear-gradient(150deg, #0369a1 0%, #0284c7 45%, #0ea5e9 100%);
@@ -80,6 +86,12 @@ df-messenger {
   /* Panel fill: subtle vertical wash (overridden by config when present) */
   --df-messenger-chat-background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 42%, #f8fafc 100%);
   --df-messenger-input-border-top: 1px solid rgba(14, 165, 233, 0.28);
+}
+
+/* Footer chrome: stay viewport-fixed even if the host page overrides `position` */
+#dfchat-chat-action-bar.dfchat-chat-action-bar--body-fixed,
+#dfchat-powered-by-strip {
+  position: fixed !important;
 }
 
 /* "Powered by …" strip (sits just above the composer; positioned by company.js) */
