@@ -2149,10 +2149,10 @@ function syncChatActionBarPosition() {
     if (sendButton) {
         const s = sendButton.getBoundingClientRect();
         if (s && s.width > 0 && s.height > 0) {
-            if (bar.offsetWidth > 0 && !chatActionBarSendWidthCache) {
+            if (bar.offsetWidth > 0) {
                 chatActionBarSendWidthCache = bar.offsetWidth;
             }
-            const estBarW = chatActionBarSendWidthCache || 260;
+            const estBarW = (bar.offsetWidth > 0 ? bar.offsetWidth : (chatActionBarSendWidthCache || 260));
             left = Math.max(4, Math.round(s.left - estBarW - gapBeforeSend));
             // Vertical: center on the full composer row when we have it (taller than Send), else center on Send.
             let vCenterY = s.top + (s.height - btnSize) / 2;
@@ -2274,6 +2274,57 @@ function syncChatActionBarPosition() {
     bar.style.pointerEvents = "auto";
     bar.style.margin = "0";
     bar.style.order = "";
+    if (bar.offsetWidth > 0) {
+        chatActionBarSendWidthCache = bar.offsetWidth;
+    }
+    clampChatActionBarInViewport(bar);
+    window.requestAnimationFrame(() => {
+        if (getChatActionBar() !== bar) {
+            return;
+        }
+        if (bar.offsetWidth > 0) {
+            chatActionBarSendWidthCache = bar.offsetWidth;
+        }
+        clampChatActionBarInViewport(bar);
+    });
+}
+
+/**
+ * Nudge the fixed chat action bar (Language/Restart) so it stays in the visual viewport
+ * (send-anchor width estimates can be too small, or nudges can push it past the right edge).
+ * @param {HTMLElement} bar
+ */
+function clampChatActionBarInViewport(bar) {
+    if (!bar || bar.style.display === "none") {
+        return;
+    }
+    const br = bar.getBoundingClientRect();
+    if (!br.width) {
+        return;
+    }
+    const vwW = window.visualViewport && Number.isFinite(window.visualViewport.width)
+        ? window.visualViewport.width
+        : window.innerWidth;
+    const margin = 4;
+    let curLeft = parseFloat(bar.style.left);
+    if (!Number.isFinite(curLeft)) {
+        curLeft = 0;
+    }
+    let dx = 0;
+    if (br.right > vwW - margin) {
+        dx = (vwW - margin) - br.right;
+    }
+    if (br.left + dx < margin) {
+        dx = margin - br.left;
+    }
+    if (Math.abs(dx) < 0.25) {
+        return;
+    }
+    const next = Math.round(curLeft + dx);
+    bar.style.left = `${next}px`;
+    if (chatActionBarFixedPos) {
+        chatActionBarFixedPos = { left: next, top: chatActionBarFixedPos.top };
+    }
 }
 
 function ensurePoweredByStrip() {

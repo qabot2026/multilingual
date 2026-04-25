@@ -370,6 +370,15 @@ html.dfchat-host-scroll-locked body {
   #dfchat-chat-action-bar.dfchat-chat-action-bar--body-fixed .dfchat-chat-action-pill:active {
     background: rgba(15, 23, 42, 0.06) !important;
   }
+
+  /* `right:0` (desktop) grows the list left; when the control sits near the left of the bar/viewport, the
+     menu can clip. Grow right from the language control on small screens so options stay in view. */
+  #dfchat-chat-action-bar.dfchat-chat-action-bar--body-fixed .dfchat-chat-action-menu {
+    left: 0;
+    right: auto;
+    min-width: 0;
+    max-width: min(220px, calc(100vw - 16px));
+  }
 }
 
 /* Reliable footer action bar (icon only) */
