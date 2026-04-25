@@ -118,7 +118,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
 
     footerActionBar: {
       // when type strip is disabled
-      nudgeRightPx: -180,
+      nudgeRightPx: -170,
       nudgeUpPx: -8,
       nudgeDownPx: 40,
       // nudgeLeftPx: 100,
@@ -184,7 +184,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
         nudgeUpPx: -15,
         nudgeDownPx: -40,
         nudgeLeftPx: 0,
-        nudgeRightPx: -100,
+        nudgeRightPx: -90,
 
 
 
@@ -494,10 +494,10 @@ window.COMPANY_CHAT_UI_CONFIG = {
   desktop: {
     chatWindow: {
       widthPx: 500,
-      heightPx: 620,
+      heightPx: 640,
 
       // right + bottom (matches `common.chatLayout.side: "right"`).
-      bubblePosition: { rightPx: 20, bottomPx: 20, leftPx: null, topPx: null },
+      bubblePosition: { rightPx: 10, bottomPx: 20, leftPx: null, topPx: null },
 
       // This is the correct knob for the bubble–chat gap: Dialogflow v1 uses it in the chat-bubble
       // shadow (not window height). Set on both the outer host and the bubble; use config here or
@@ -520,7 +520,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
       text: "👋Hey, how are you?😊",
       // Word-by-word reveal; full line finishes in this many ms (0 = show full text at once).
       typingDurationMs: 1000,
-      position: { rightPx: 20, bottomPx: 96, leftPx: null, topPx: null },
+      position: { rightPx: 10, bottomPx: 96, leftPx: null, topPx: null },
       style: { fontSizePx: 13, paddingYpx: 10, paddingXpx: 14, maxWidthPx: 260 }
     },
 
@@ -531,7 +531,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
       sendLabel: "Send",
       gapAboveBubblePx: 5,
       gapBelowGreetingPx: 8,
-      position: { rightPx: 20, leftPx: null, topPx: null },
+      position: { rightPx: 10, leftPx: null, topPx: null },
       fallbackBottomPx: 54,
       style: { fontSizePx: 14, maxWidthPx: 300 }
     }
@@ -554,12 +554,12 @@ window.COMPANY_CHAT_UI_CONFIG = {
       minWidthPx: 260,
       minHeightPx: 200,
 
-      bubblePosition: { rightPx: 12, bottomPx: 10, leftPx: null, topPx: null },
+      bubblePosition: { rightPx: 2, bottomPx: 10, leftPx: null, topPx: null },
 
       // Optional: set only the bubble–window gap: `chatWindowOffsetPx: 10` (see desktop).
 
       // Add to the panel height; optional, separate from `chatWindowOffsetPx`.
-      extraHeightTowardBubblePx: 0
+      extraHeightTowardBubblePx: 20
     },
 
     autoOpenChat: {
@@ -572,7 +572,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
       enabled: true,
       text: "Hello, how are you?",
       typingDurationMs: 2000,
-      position: { rightPx: 12, bottomPx: 86, leftPx: null, topPx: null },
+      position: { rightPx: 2, bottomPx: 86, leftPx: null, topPx: null },
       style: { fontSizePx: 13, paddingYpx: 10, paddingXpx: 14, maxWidthPx: null }
     },
 
@@ -582,7 +582,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
       sendLabel: "Send",
       gapAboveBubblePx: 5,
       gapBelowGreetingPx: 8,
-      position: { rightPx: 12, leftPx: null, topPx: null },
+      position: { rightPx: 2, leftPx: null, topPx: null },
       fallbackBottomPx: 48,
       style: { fontSizePx: 14, maxWidthPx: 300 }
     }

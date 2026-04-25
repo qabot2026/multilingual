@@ -24,7 +24,7 @@
 df-messenger {
   position: fixed;
   bottom: 20px;
-  right: 20px;
+  right: 10px;
   left: auto;
   z-index: 999;
   overflow: visible;
