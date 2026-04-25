@@ -11,6 +11,11 @@
  * Load Dialogflow default CSS, then `company.css`, then this file, then `company.js`.
  * The contact form DOM is injected by `company.js`.
  * If you host files under different names or folders, update every `<link>` / `<script src>` in your HTML to match.
+ *
+ * Viewport keys (easy to spot in this file):
+ * - `common` — shared on every screen.
+ * - `desk` — wide viewports (company.js treats width ≥ 768px as “desktop” unless overridden).
+ * - `mob` — small viewports (phone / narrow; below that breakpoint). Still uses `{"name":"mobile",…}` in forms — that is the field name, not this block.
  */
 
 window.COMPANY_CHAT_UI_CONFIG = {
@@ -213,7 +218,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
 
     // Where the chat bubble + “Hi” strip sit: "right" | "left" (one switch for both).
     // Use matching edges everywhere below:
-    // - "right" → `rightPx` + `bottomPx` (set `leftPx: null` on desktop/mobile bubble + both launcherStrips)
+    // - "right" → `rightPx` + `bottomPx` (set `leftPx: null` on desk + mob bubble + both launcherStrips)
     // - "left"  → `leftPx` + `bottomPx` (set `rightPx: null`)
     chatLayout: {
       side: "right"
@@ -491,9 +496,9 @@ window.COMPANY_CHAT_UI_CONFIG = {
   },
 
   // =========================
-  // DESKTOP
+  // DESK (wide viewports)
   // =========================
-  desktop: {
+  desk: {
     chatWindow: {
       widthPx: 500,
       heightPx: 620,
@@ -540,23 +545,23 @@ window.COMPANY_CHAT_UI_CONFIG = {
   },
 
   // =========================
-  // MOBILE
+  // MOB (narrow / phone viewports; `enabled` can turn this layout off)
   // =========================
-  mobile: {
+  mob: {
     enabled: true,
 
     chatWindow: {
       horizontalInsetPx: 12,
       topInsetPx: 20,
       bottomInsetPx: 10,
-      /* Shrinks the open panel height on mobile so the titlebar stays in view (notches, browser chrome). */
+      /* Shrinks the open panel height on mob so the titlebar stays in view (notches, browser chrome). */
       safeAreaTopReservePx: 28,
       minWidthPx: 280,
       minHeightPx: 340,
 
       bubblePosition: { rightPx: 12, bottomPx: 10, leftPx: null, topPx: null },
 
-      // Optional: set only the bubble–window gap: `chatWindowOffsetPx: 10` (see desktop).
+      // Optional: set only the bubble–window gap: `chatWindowOffsetPx: 10` (see `desk` above).
 
       // Add to the panel height; optional, separate from `chatWindowOffsetPx`.
       extraHeightTowardBubblePx: 0
@@ -568,7 +573,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
     },
 
     launcherStrip: {
-      // Same edge as the bubble (bottom-right on mobile)
+      // Same edge as the bubble (bottom-right on mob)
       enabled: true,
       text: "Hello, how are you?",
       typingDurationMs: 2000,

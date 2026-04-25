@@ -643,6 +643,8 @@ let overlayStatusNode = null;
 const CHAT_ACTION_BAR_ID = "dfchat-chat-action-bar";
 /** @type {HTMLDivElement | null} */
 let poweredByStripNode = null;
+/** Stabilize Powered by `top` on mobile when rects flicker 1px between frames. */
+let poweredByStripStableTopPx = /** @type {number | null} */ (null);
 /** Shift the user input / footer row: positive = up (`translateY(-n)`), negative = down, 0 = default. */
 const USER_INPUT_NUDGE_UP_PX = -20;
 let chatActionBarSyncTimer = null;
@@ -1941,7 +1943,7 @@ function syncChatActionBarPosition() {
         document.body.appendChild(bar);
     }
 
-    const jitterEps = 6;
+    const jitterEps = isMobileViewport() ? 12 : 6;
     if (chatActionBarFixedPos) {
         const closeEnough =
             Math.abs(left - chatActionBarFixedPos.left) < jitterEps
@@ -2067,13 +2069,20 @@ function clampPoweredByStripInViewport(el) {
  * @param {number} topPx
  */
 function setPoweredByStripGeometry(el, L, fr, topPx) {
+    let t = topPx;
+    if (isMobileViewport() && Number.isFinite(poweredByStripStableTopPx)
+        && Math.abs(t - poweredByStripStableTopPx) < 10) {
+        t = poweredByStripStableTopPx;
+    } else {
+        poweredByStripStableTopPx = t;
+    }
     const lineH = L.lineHeightPx;
     const deltaLeft = L.offsetLeftPx + L.nudgeRightPx - L.nudgeLeftPx;
     const textAlign = L.textAlign || "center";
     const wMax = Math.max(120, window.innerWidth - 8);
     el.style.position = "fixed";
     el.style.zIndex = "2147483642";
-    el.style.top = `${topPx}px`;
+    el.style.top = `${t}px`;
     el.style.bottom = "auto";
     el.style.setProperty("width", "max-content", "important");
     el.style.setProperty("max-width", `${wMax}px`, "important");
@@ -2117,6 +2126,7 @@ function syncPoweredByStripPosition() {
     }
     const messenger = activeDfMessenger || document.querySelector("df-messenger");
     if (!messenger) {
+        poweredByStripStableTopPx = null;
         el.style.display = "none";
         return;
     }
@@ -2124,6 +2134,7 @@ function syncPoweredByStripPosition() {
     // omit or reshape `df-chat-open-changed`, which left `isChatWindowOpen` false and hid this strip.
     const chatShellOpen = isChatWindowOpen || isChatExpanded(messenger);
     if (!chatShellOpen) {
+        poweredByStripStableTopPx = null;
         el.style.display = "none";
         return;
     }
@@ -2159,6 +2170,7 @@ function syncPoweredByStripPosition() {
     }
     const r = findChatWindowRect(messenger);
     if (!r || r.width < 80) {
+        poweredByStripStableTopPx = null;
         el.style.display = "none";
         return;
     }
@@ -2771,11 +2783,38 @@ function initializeLauncherInputStrip(dfMessenger, bubbleNode, config) {
 }
 
 function readCompanyUiConfig() {
-    const config = window.COMPANY_CHAT_UI_CONFIG;
-    if (config && typeof config === "object") {
-        return config;
+    const raw = window.COMPANY_CHAT_UI_CONFIG;
+    if (!raw || typeof raw !== "object") {
+        return {};
     }
-    return {};
+    const pickDesk = (c) => {
+        if (c.desk && typeof c.desk === "object") {
+            return c.desk;
+        }
+        if (c.desktop && typeof c.desktop === "object") {
+            return c.desktop;
+        }
+        return undefined;
+    };
+    const pickMob = (c) => {
+        if (c.mob && typeof c.mob === "object") {
+            return c.mob;
+        }
+        if (c.mobile && typeof c.mobile === "object") {
+            return c.mobile;
+        }
+        return undefined;
+    };
+    const d = pickDesk(raw);
+    const m = pickMob(raw);
+    if (d === undefined && m === undefined) {
+        return raw;
+    }
+    return {
+        ...raw,
+        ...(d !== undefined ? { desk: d, desktop: d } : {}),
+        ...(m !== undefined ? { mob: m, mobile: m } : {})
+    };
 }
 
 function readFooterActionBarLayoutConfig() {
@@ -5449,8 +5488,9 @@ function initializeMobileChatLayout(dfMessenger, config) {
     });
 
     if (window.visualViewport) {
+        // Resize only: `scroll` on visualViewport fired constantly while the page (or bar) moved on
+        // mobile, re-running `applyLayout` and making fixed footers (Language / Restart / Powered by) jump.
         window.visualViewport.addEventListener("resize", applyLayout);
-        window.visualViewport.addEventListener("scroll", applyLayout);
     }
 
     document.addEventListener("focusin", applyLayout);
