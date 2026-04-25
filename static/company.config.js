@@ -7,6 +7,10 @@
  * - `company.js` reads `window.COMPANY_CHAT_UI_CONFIG` once at startup.
  *
  * This file must load *before* `company.js` (see `company.html` script order).
+ *
+ * Client websites (production embed): load Dialogflow default CSS, then `dfchat-widget.css`
+ * (widget + contact form styles — no `html`/`body` overrides), then this file, then `company.js`.
+ * The contact form DOM is injected by `company.js`; optional `company.css` is demo-page shell only.
  */
 
 window.COMPANY_CHAT_UI_CONFIG = {
@@ -82,7 +86,6 @@ window.COMPANY_CHAT_UI_CONFIG = {
         label: "Restart"
       }
     },
-
     // Language + Restart pill (next to Send). All values are pixels. Tune after you set `chatLayout.side`
     // (right-docked chat usually keeps Send on the right; nudges only move the pill, not the bubble).
     // nudgeUpPx is subtracted from the computed `top` — LARGER values move the bar UP. Use a small value (0–20)

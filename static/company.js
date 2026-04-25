@@ -920,7 +920,38 @@ const UI_TRANSLATIONS = {
     }
 };
 
+/**
+ * Production embeds: no contact-form markup in HTML. Inject once if missing (idempotent).
+ * Scoped styles live in `dfchat-widget.css` (not `company.css`, which adds demo html/body chrome only).
+ */
+function mountDfchatContactFormHostIfNeeded() {
+    if (document.getElementById("dfchat-contact-form")) {
+        return;
+    }
+    const section = document.createElement("section");
+    section.id = "dfchat-contact-form";
+    section.className = "dfchat-contact-form";
+    section.setAttribute("aria-hidden", "true");
+    section.innerHTML = ""
+        + "<div class=\"dfchat-contact-form__card\">"
+        + "<div class=\"dfchat-contact-form__header\">"
+        + "<div>"
+        + "<h2 class=\"dfchat-contact-form__title\" data-i18n=\"contactFormTitle\">Contact Us</h2>"
+        + "<p class=\"dfchat-contact-form__subtitle\" data-i18n=\"contactFormSubtitle\">Share your details and we will contact you.</p>"
+        + "</div>"
+        + "<button id=\"dfchat-contact-form-close\" class=\"dfchat-contact-form__icon-button\" type=\"button\" aria-label=\"Close contact form\" data-i18n-aria-label=\"closeContactFormAria\">x</button>"
+        + "</div>"
+        + "<form id=\"dfchat-contact-form-fields\" class=\"dfchat-contact-form__fields dfchat-contact-form__fields--stacked\">"
+        + "<div id=\"dfchat-contact-form-inputs\" class=\"dfchat-contact-form__inputs\" data-i18n-aria-label=\"contactFormTitle\"></div>"
+        + "<p id=\"dfchat-contact-form-status\" class=\"dfchat-contact-form__status\" aria-live=\"polite\"></p>"
+        + "<button id=\"dfchat-contact-form-submit\" class=\"dfchat-contact-form__submit\" type=\"submit\" data-i18n=\"submitButton\">Submit</button>"
+        + "</form>"
+        + "</div>";
+    document.body.appendChild(section);
+}
+
 window.addEventListener("DOMContentLoaded", () => {
+    mountDfchatContactFormHostIfNeeded();
     applyThemeConfig(COMPANY_UI_CONFIG);
     if (!IS_MULTI_LANGUAGE_ENABLED) {
         activeLanguage = DEFAULT_LANGUAGE;
