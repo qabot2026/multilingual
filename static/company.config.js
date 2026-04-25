@@ -12,6 +12,11 @@
  * The in-chat form DOM is injected by `company.js`.
  * If you host files under different names or folders, update every `<link>` / `<script src>` in your HTML to match.
  *
+ * Two ways to ship:
+ * - **Split (dev / myweb.html):** `company.css` + `company.config.js` + `company.js` (three files; bump `?v=` on each deploy).
+ * - **Single JS bundle:** run `python scripts/build_widget_bundle.py` and load `dist/company-widget.bundle.js` plus `dist/company.css`
+ *   (see `embed-bundle.html`). The bundle is generated from this file + `company.js` — edit only `static/*`, then rebuild.
+ *
  * Layout: `common` = shared. `desk` = desktop (wide viewport). `mob` = mobile (≤768px).
  * Legacy names `desktop` / `mobile` still work in company.js; prefer `desk` / `mob` for new files.
  */
