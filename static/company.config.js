@@ -31,7 +31,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
       // `false` to leave Dialogflow’s default (arrow/locale) title dismiss; default true = always ×, all languages.
       forceCloseIconX: true,
       // Optional public URL (https://…) for the **collapse** (title) icon. If unset, a built-in X SVG (data URL) is used.
-      // chatCollapseIconUrl: "https://example.com/chat-collapse-x.svg",
+      // chatCollapseIconUrl: "https://example.com/chat-collapse-x.svg"
     },
 
     // Bot line above each agent reply: small image OR emoji + time (IST-style clock via timeZone).
@@ -61,7 +61,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
       // - `code` = language code for Dialogflow (`language-code` on df-messenger); `label` = text in the menu.
       // - Changing language = same conversation language + UI labels we translate (not a new “command”).
       multiLanguage: {
-        enabled: true,
+        enabled: false,
         defaultLanguage: "en"
         // Composer hint (`placeholder-text`). Keys = same `code` values as below. Optional: add `inputPlaceholder` on each language row to override only that row.
         // inputPlaceholderByLanguage: {
@@ -78,7 +78,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
 
       // Restart button in footer.
       restartChat: {
-        enabled: true,
+        enabled: false,
         label: "Restart"
       }
     },
@@ -87,15 +87,40 @@ window.COMPANY_CHAT_UI_CONFIG = {
     // (right-docked chat usually keeps Send on the right; nudges only move the pill, not the bubble).
     // nudgeUpPx is subtracted from the computed `top` — LARGER values move the bar UP. Use a small value (0–20)
     // to keep the pill on the real footer / composer row. nudgeDownPx ADDS; use it to nudge slightly downward.
+    // Keep nudges near 0 unless you are fine-tuning a specific layout. Large values (especially negative
+    // `nudgeRightPx`) easily push Language/Restart over the typing area or off the composer row.
+   
+   
+    // footerActionBar: {
+    //   // when type strip is enabled
+    //   nudgeRightPx: 0,
+    //   nudgeUpPx: -8,
+    //   nudgeDownPx: 0,
+    //   // nudgeLeftPx: 100,
+    //   gapBeforeSendPx: 8,
+    //   lockVerticalWhenComposerRowTallerThanPx: 0
+    // },
+
+    // footerActionBar: {
+    //   // when type strip is disabled
+    //   nudgeRightPx: -180,
+    //   nudgeUpPx: -8,
+    //   nudgeDownPx: 40,
+    //   // nudgeLeftPx: 100,
+    //   gapBeforeSendPx: 8,
+    //   lockVerticalWhenComposerRowTallerThanPx: 0
+    // },
+
     footerActionBar: {
-      nudgeRightPx: -100,
-      nudgeUpPx: -50,
-      nudgeDownPx: 4,
-      nudgeLeftPx: 170,
+      // when type strip is disabled
+      nudgeRightPx: -180,
+      nudgeUpPx: -8,
+      nudgeDownPx: 40,
+      // nudgeLeftPx: 100,
       gapBeforeSendPx: 8,
-      // 0 = off. Set e.g. 72 to “lock” Y when the typing area grows to multiline (can sometimes feel stuck).
       lockVerticalWhenComposerRowTallerThanPx: 0
     },
+
 
     // -------------------------------------------------------------------------
     // Footer message row (Dialogflow `.input-box-wrapper` inside `df-messenger-user-input`).
@@ -104,9 +129,8 @@ window.COMPANY_CHAT_UI_CONFIG = {
     // - Applied after `dfMessengerTheme`, so values here win for the same variables.
     // -------------------------------------------------------------------------
     footerInputBox: {
-      // Full `--df-messenger-input-padding` shorthand: top right bottom left (inset of composer vs chat card).
-      // 10px left/right: inner “side” margin for the message row; bottom kept for send/strip area.
-      padding: "19px 10px 50px 10px",
+      // Composer inset vs chat card (top right bottom left). Omit `sendButtonWrapperPx` to use Dialogflow’s default Send.
+      padding: "8px 10px 36px 10px",
       // Or omit `padding` and set all four:
       // paddingTopPx: 19,
       // paddingRightPx: 0,
@@ -140,15 +164,24 @@ window.COMPANY_CHAT_UI_CONFIG = {
       value: "demo",
       linkUrl: "https://www.google.com",
 
-      color: "#0f766e",
+      color: "#0369a1",
       fontSizePx: 11,
       textAlign: "center",
       lineHeightPx: 16,
 
-      nudgeUpPx: 4,
-      nudgeDownPx: 4,
-      nudgeLeftPx: 170,
-      nudgeRightPx: 110,
+      // when type strip is enabled
+      // nudgeUpPx: 65,
+      // nudgeDownPx: -40,
+      // nudgeLeftPx: 20,
+      // nudgeRightPx: 150,
+
+        // when type strip is disabled
+        nudgeUpPx: -15,
+        nudgeDownPx: -40,
+        nudgeLeftPx: 0,
+        nudgeRightPx: -100,
+
+
 
       offsetTopPx: 80,
       offsetLeftPx: 0,
@@ -161,12 +194,12 @@ window.COMPANY_CHAT_UI_CONFIG = {
 
     // Page colors.
     theme: {
-      "--company-bg-1": "#e8f3f4",
+      "--company-bg-1": "#e8f4fc",
       "--company-bg-2": "#f7fbff",
       "--company-brand-900": "#0f172a",
-      "--company-brand-700": "#0f766e",
-      "--company-brand-500": "#14b8a6",
-      "--company-accent-200": "#d7f2ef",
+      "--company-brand-700": "#0369a1",
+      "--company-brand-500": "#0ea5e9",
+      "--company-accent-200": "#e0f2fe",
       "--company-surface": "#ffffff",
       "--company-text": "#0f172a",
       "--company-text-soft": "#475569",
@@ -219,8 +252,8 @@ window.COMPANY_CHAT_UI_CONFIG = {
           },
           subtitleByLanguage: {
             en: "Share your contact details.",
-            hi: "अपनी जानकारी साझा करें, हम आपसे संपर्क करेंगे।",
-            mr: "तुमची माहिती शेअर करा, आम्ही तुमच्याशी संपर्क करू."
+            hi: "अपनी जानकारी साझा करें।",
+            mr: "तुमची माहिती शेअर करा."
           },
           showSubtitle: true,
           maxCardHeightPx: 300,
@@ -275,9 +308,9 @@ window.COMPANY_CHAT_UI_CONFIG = {
             mr: "OTP सत्यापित करा"
           },
           subtitleByLanguage: {
-            en: "Enter the code we sent. Use the link below if you need a different number.",
-            hi: "भेजा गया कोड दर्ज करें। अलग नंबर के लिए नीचे दबाएं।",
-            mr: "पाठवलेला कोड टाका. दुसरा नंबर हवा असल्यास खाली दाबा."
+            en: "Enter the code we sent.",
+            hi: "भेजा गया कोड दर्ज करें।",
+            mr: "पाठवलेला कोड टाका."
           },
           // Shown on the “change mobile” step (optional i18n fallback in company.js).
           subtitleMobileByLanguage: {
@@ -332,9 +365,9 @@ window.COMPANY_CHAT_UI_CONFIG = {
             mr: "दस्तऐवज अपलोड करा"
           },
           subtitleByLanguage: {
-            en: "You can select one or more files. Video is not allowed.",
-            hi: "एक या अधिक फ़ाइल चुन सकते हैं। वीडियो अनुमति नहीं।",
-            mr: "एक किंवा अनेक फाइल निवडा. व्हिडिओ नाही."
+            en: "You can select one or more files.",
+            hi: "एक या अधिक फ़ाइल चुन सकते हैं।",
+            mr: "एक किंवा अनेक फाइल निवडा."
           },
           showSubtitle: true,
           maxCardHeightPx: 280,
@@ -383,6 +416,10 @@ window.COMPANY_CHAT_UI_CONFIG = {
     //
     // - iconSizePx: size of the picture inside the button. Leave null and we size it from buttonSizePx.
     //   Or set both yourself, e.g. button 72 and icon 60.
+    //
+    // - storyRing: optional Instagram-style rainbow ring around the bubble (conic gradient “border”).
+    //   `enabled: false` turns it off. `widthPx` = ring thickness (e.g. 2–4).
+    //   `rotateSeconds` = how long the ring spins (0 = no spin). `revolutions` = full 360° turns in that time.
     // -------------------------------------------------------------------------
     chatBubbleLauncher: {
       keepRoundShape: true,
@@ -390,36 +427,49 @@ window.COMPANY_CHAT_UI_CONFIG = {
       clipPictureToCircle: true,
       hideOverflow: true,
       buttonSizePx: null,
-      iconSizePx: null
+      iconSizePx: null,
+      // Unread count on the closed launcher when the agent replies while the chat panel is closed.
+      unreadBadge: {
+        enabled: true,
+        maxDisplay: 99,
+        background: "#e11d48",
+        color: "#ffffff",
+        fontSizePx: 12,
+        minSizePx: 20
+      },
+      storyRing: {
+        enabled: true,
+        widthPx: 3,
+        rotateSeconds: 5,
+        revolutions: 4
+      }
     },
 
     // Chat colors + other widget styling (technical names — ask a developer if unsure).
     // Tip: the floating button’s roundness is controlled above in `chatBubbleLauncher` (easier for edits).
     dfMessengerTheme: {
-      // Inner textarea: top, right, bottom, left — 10px bottom + left (room beside send on the right).
-      "--df-messenger-input-inner-padding": "0 46px 10px 10px",
-      // Input box: top / right / bottom / left; +5px top +5px bottom vs prior = +10px row height.
-      "--df-messenger-input-box-padding": "22px 10px 10px 10px",
-      "--df-messenger-input-box-focus-padding": "22px 10px 10px 10px",
-      "--df-messenger-input-border-top": "1px solid rgba(20, 184, 166, 0.28)",
+      "--df-messenger-input-inner-padding": "0 46px 8px 10px",
+      "--df-messenger-input-box-padding": "8px 16px 8px 16px",
+      "--df-messenger-input-box-focus-padding": "8px 16px 8px 16px",
+      "--df-messenger-input-border-top": "1px solid rgba(14, 165, 233, 0.28)",
       "--df-messenger-input-font-size": "16px",
       "--df-messenger-input-font-weight": "600",
-      "--df-messenger-primary-color": "#0d9488",
-      "--df-messenger-chat-background": "linear-gradient(180deg, #f6fdfc 0%, #eff7f4 50%, #e8f1ee 100%)",
-      "--df-messenger-message-bot-background": "rgba(255, 255, 255, 0.98)",
-      "--df-messenger-message-bot-font-color": "#0f172a",
-      "--df-messenger-message-user-background": "linear-gradient(140deg, #0f766e, #14b8a6)",
-      "--df-messenger-message-user-font-color": "#f0fdfa",
-      "--df-messenger-titlebar-background": "linear-gradient(120deg, #0a5c56 0%, #0f766e 35%, #14b8a6 70%, #0d9488 100%)",
-      "--df-messenger-titlebar-font-color": "#f0fdfa",
-      "--df-messenger-titlebar-subtitle-font-color": "#a7f3d0",
-      "--df-messenger-chips-background": "rgba(204, 251, 241, 0.85)",
-      "--df-messenger-chips-font-color": "#0f172a",
-      "--df-messenger-button-border": "1px solid rgba(20, 184, 166, 0.42)",
-      "--df-messenger-chat-border": "1px solid rgba(20, 184, 166, 0.4)",
-      "--df-messenger-chat-box-shadow": "0 0 0 1px rgba(20, 184, 166, 0.1), 0 4px 6px -2px rgba(15, 23, 42, 0.05), 0 16px 32px -8px rgba(15, 23, 42, 0.1), 0 28px 64px -12px rgba(15, 23, 42, 0.16), 0 0 80px -16px rgba(20, 184, 166, 0.18)",
+      "--df-messenger-primary-color": "#0284c7",
+      "--df-messenger-chat-background": "linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 42%, #f8fafc 100%)",
+      "--df-messenger-message-bot-background": "linear-gradient(165deg, #e0f2fe 0%, #bae6fd 45%, #7dd3fc 100%)",
+      "--df-messenger-message-bot-font-color": "#0c4a6e",
+      "--df-messenger-message-user-background": "linear-gradient(140deg, #0369a1, #0ea5e9)",
+      "--df-messenger-message-user-font-color": "#f0f9ff",
+      "--df-messenger-titlebar-background": "linear-gradient(120deg, #0369a1 0%, #0284c7 35%, #0ea5e9 70%, #38bdf8 100%)",
+      "--df-messenger-titlebar-font-color": "#f0f9ff",
+      "--df-messenger-titlebar-subtitle-font-color": "#bae6fd",
+      "--df-messenger-chips-background": "rgba(186, 230, 253, 0.92)",
+      "--df-messenger-chips-font-color": "#0c4a6e",
+      "--df-messenger-button-border": "1px solid rgba(14, 165, 233, 0.45)",
+      "--df-messenger-chat-border": "1px solid rgba(14, 165, 233, 0.38)",
+      "--df-messenger-chat-box-shadow": "0 0 0 1px rgba(14, 165, 233, 0.12), 0 4px 6px -2px rgba(15, 23, 42, 0.05), 0 16px 32px -8px rgba(15, 23, 42, 0.1), 0 28px 64px -12px rgba(15, 23, 42, 0.16), 0 0 80px -16px rgba(14, 165, 233, 0.2)",
       "--df-messenger-chat-border-radius": "20px",
-      "--df-messenger-chat-bubble-background": "linear-gradient(150deg, #0a5c56 0%, #0f766e 45%, #14b8a6 100%)",
+      "--df-messenger-chat-bubble-background": "linear-gradient(150deg, #0369a1 0%, #0284c7 45%, #0ea5e9 100%)",
       // Usually match `common.chatBubbleLauncher.cornerRoundness` (the launcher block wins when the page runs).
       "--df-messenger-chat-bubble-border-radius": "50%",
       "--df-messenger-chat-scroll-button-enabled-display": "none",
@@ -433,7 +483,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
   // =========================
   desktop: {
     chatWindow: {
-      widthPx: 420,
+      widthPx: 500,
       heightPx: 620,
 
       // right + bottom (matches `common.chatLayout.side: "right"`).
@@ -459,9 +509,21 @@ window.COMPANY_CHAT_UI_CONFIG = {
       enabled: true,
       text: "👋Hey, how are you?😊",
       // Word-by-word reveal; full line finishes in this many ms (0 = show full text at once).
-      typingDurationMs: 1500,
+      typingDurationMs: 1000,
       position: { rightPx: 20, bottomPx: 96, leftPx: null, topPx: null },
       style: { fontSizePx: 13, paddingYpx: 10, paddingXpx: 14, maxWidthPx: 260 }
+    },
+
+    // Quick message row: stacked above the bubble with `gapAboveBubblePx` (5px to bubble). Greeting strip sits above it.
+    launcherInputStrip: {
+      enabled: false,
+      placeholder: "What is your query?",
+      sendLabel: "Send",
+      gapAboveBubblePx: 5,
+      gapBelowGreetingPx: 8,
+      position: { rightPx: 20, leftPx: null, topPx: null },
+      fallbackBottomPx: 54,
+      style: { fontSizePx: 14, maxWidthPx: 300 }
     }
   },
 
@@ -498,6 +560,17 @@ window.COMPANY_CHAT_UI_CONFIG = {
       typingDurationMs: 2000,
       position: { rightPx: 12, bottomPx: 86, leftPx: null, topPx: null },
       style: { fontSizePx: 13, paddingYpx: 10, paddingXpx: 14, maxWidthPx: null }
+    },
+
+    launcherInputStrip: {
+      enabled: true,
+      placeholder: "What is your query?",
+      sendLabel: "Send",
+      gapAboveBubblePx: 5,
+      gapBelowGreetingPx: 8,
+      position: { rightPx: 12, leftPx: null, topPx: null },
+      fallbackBottomPx: 48,
+      style: { fontSizePx: 14, maxWidthPx: 300 }
     }
   },
 
