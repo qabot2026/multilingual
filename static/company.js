@@ -33,7 +33,7 @@ const MOBILE_CHAT_BREAKPOINT_PX = 768;
 /** Extra `nudgeRight` for Language / Restart + Powered by on small viewports only (see company.config.js mobile layout). */
 const MOBILE_FOOTER_ICONS_NUDGE_RIGHT_EXTRA_PX = 30;
 /** Shift "Powered by" right so it does not cover Language / Restart (`setPoweredByStripGeometry` deltaLeft). */
-const POWERED_BY_STRIP_NUDGE_RIGHT_PX = 60;
+const POWERED_BY_STRIP_NUDGE_RIGHT_PX = 90;
 const AUTO_START_CHAT_EVENT_NAME = "FRESH";
 const AUTO_START_CHAT_DELAY_MS = 600;
 const AUTO_START_SENDREQUEST_POLL_MS = 120;
@@ -628,7 +628,7 @@ const originalTextNodeContent = new Map();
 const originalElementAttributes = new Map();
 const googleTranslationCache = new Map();
 
-const COMPANY_JS_BUILD_TAG = "20260425-24";
+const COMPANY_JS_BUILD_TAG = "20260425-25";
 const COMPANY_DEBUG_QUERY_FLAG = "dfchatDebug";
 let debugMountAttemptSeq = 0;
 let debugBadgeLastRenderAt = 0;
@@ -2771,11 +2771,21 @@ function syncPoweredByStripPosition() {
     const fr = getPoweredByComposerAnchorRect(messenger);
     if (fr) {
         const rawTop = Math.round(fr.top - lineH - L.gapAboveComposerPx) + deltaTop;
-        const vhP = window.visualViewport && Number.isFinite(window.visualViewport.height)
-            ? window.visualViewport.height
-            : window.innerHeight;
-        // Row − lineH can be negative; keep the strip in the viewport. Above contact form in stacking order.
-        let top = Math.max(4, Math.min(rawTop, vhP - lineH - 4));
+        const vv0 = window.visualViewport;
+        const vhP = vv0 && Number.isFinite(vv0.height) ? vv0.height : window.innerHeight;
+        // Row − lineH can be negative; keep the strip in the viewport. On mobile, Y must be clamped to the
+        // *visual* viewport (keyboard) using offsetTop+height, not vhP alone, or the strip drifts.
+        let top;
+        if (isMobileViewport() && vv0 && Number.isFinite(vv0.height)) {
+            const oTop = Number.isFinite(vv0.offsetTop) ? vv0.offsetTop : 0;
+            const visBottomY = oTop + vv0.height;
+            top = Math.max(
+                oTop + 4,
+                Math.min(rawTop, visBottomY - lineH - 4)
+            );
+        } else {
+            top = Math.max(4, Math.min(rawTop, vhP - lineH - 4));
+        }
         if (isMobileViewport()) {
             const winR = findChatWindowRect(messenger);
             if (winR && winR.height > 80) {
@@ -6266,7 +6276,20 @@ function initializeMobileChatLayout(dfMessenger, config) {
     });
 
     if (window.visualViewport) {
-        window.visualViewport.addEventListener("resize", applyLayout);
+        const onVisualViewportResize = () => {
+            applyLayout();
+            if (isMobileViewport()) {
+                resetChatActionBarPositionCaches();
+                [50, 160, 420].forEach((delay) => {
+                    window.setTimeout(() => {
+                        if (activeDfMessenger === dfMessenger) {
+                            scheduleSyncChatActionBarPosition();
+                        }
+                    }, delay);
+                });
+            }
+        };
+        window.visualViewport.addEventListener("resize", onVisualViewportResize);
         // Do not re-run full `applyLayout` on vV scroll — it can fight the runtime and jiggle the panel;
         // only re-anchor fixed footer chrome to the moving composer.
         window.visualViewport.addEventListener("scroll", throttledSyncChatActionBarFromUserScroll, { passive: true });
@@ -6277,6 +6300,16 @@ function initializeMobileChatLayout(dfMessenger, config) {
             return;
         }
         applyLayout();
+        if (isMobileViewport() && isMessageComposerField(/** @type {Element} */(ev.target)) && isFocusInMessenger(dfMessenger, ev.target)) {
+            resetChatActionBarPositionCaches();
+            [0, 90, 220, 500].forEach((delay) => {
+                window.setTimeout(() => {
+                    if (activeDfMessenger === dfMessenger) {
+                        scheduleSyncChatActionBarPosition();
+                    }
+                }, delay);
+            });
+        }
     });
     document.addEventListener("focusout", () => {
         window.setTimeout(() => {
