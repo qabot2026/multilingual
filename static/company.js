@@ -33,7 +33,7 @@ const MOBILE_CHAT_BREAKPOINT_PX = 768;
 /** Extra `nudgeRight` for Language / Restart + Powered by on small viewports only (see company.config.js mobile layout). */
 const MOBILE_FOOTER_ICONS_NUDGE_RIGHT_EXTRA_PX = 30;
 /** Shift "Powered by" right so it does not cover Language / Restart (`setPoweredByStripGeometry` deltaLeft). */
-const POWERED_BY_STRIP_NUDGE_RIGHT_PX = 30;
+const POWERED_BY_STRIP_NUDGE_RIGHT_PX = 60;
 const AUTO_START_CHAT_EVENT_NAME = "FRESH";
 const AUTO_START_CHAT_DELAY_MS = 600;
 const AUTO_START_SENDREQUEST_POLL_MS = 120;
@@ -628,7 +628,7 @@ const originalTextNodeContent = new Map();
 const originalElementAttributes = new Map();
 const googleTranslationCache = new Map();
 
-const COMPANY_JS_BUILD_TAG = "20260425-23";
+const COMPANY_JS_BUILD_TAG = "20260425-24";
 const COMPANY_DEBUG_QUERY_FLAG = "dfchatDebug";
 let debugMountAttemptSeq = 0;
 let debugBadgeLastRenderAt = 0;
