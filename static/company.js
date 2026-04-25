@@ -659,7 +659,8 @@ let chatActionBarStableTopPx = null;
 /** Rsync footer chrome on mobile while chat is open (inner scrollers do not bubble to window). */
 let mobileFooterChromeRaf = 0;
 let mobileFooterChromeLastTs = 0;
-const MOBILE_FOOTER_CHROME_RESYNC_MS = 24;
+/** Lower rate avoids Language/Restart bar “blinking” from repeated layout sync (was 24ms). */
+const MOBILE_FOOTER_CHROME_RESYNC_MS = 100;
 let safeAreaTopInsetCache = /** @type {{ px: number, at: number } | null} */ (null);
 /** @type {Array<{ el: EventTarget, fn: (e: Event) => void }>} */
 let footerScrollParentBindings = [];
@@ -2147,11 +2148,16 @@ function syncChatActionBarPosition() {
     if (sendButton) {
         const s = sendButton.getBoundingClientRect();
         if (s && s.width > 0 && s.height > 0) {
-            if (bar.offsetWidth > 0) {
-                chatActionBarSendWidthCache = bar.offsetWidth;
+            const wMeas = bar.offsetWidth > 0 ? bar.offsetWidth : 0;
+            if (wMeas > 0) {
+                const prev = chatActionBarSendWidthCache || 0;
+                if (!prev || Math.abs(wMeas - prev) > 1.5) {
+                    chatActionBarSendWidthCache = wMeas;
+                }
             }
-            const estBarW = (bar.offsetWidth > 0 ? bar.offsetWidth : (chatActionBarSendWidthCache || 260));
-            left = Math.max(4, Math.round(s.left - estBarW - gapBeforeSend));
+            const estBarW = wMeas > 0 ? wMeas : (chatActionBarSendWidthCache || 260);
+            // Round anchor math so subpixel `getBoundingClientRect` does not flip `left` by 1px every frame.
+            left = Math.max(4, Math.round(s.left) - Math.round(estBarW) - gapBeforeSend);
             // Vertical: center on the full composer row when we have it (taller than Send), else center on Send.
             let vCenterY = s.top + (s.height - btnSize) / 2;
             if (targetRow && typeof targetRow.getBoundingClientRect === "function") {
@@ -2231,11 +2237,13 @@ function syncChatActionBarPosition() {
         document.body.appendChild(bar);
     }
 
-    const jitterEps = isMobileViewport() ? 12 : 6;
+    // Separate X/Y so horizontal micro-jitter (send anchor + clamp) does not retrigger position updates every frame.
+    const jitterEpsX = isMobileViewport() ? 20 : 16;
+    const jitterEpsY = isMobileViewport() ? 10 : 6;
     if (chatActionBarFixedPos) {
         const closeEnough =
-            Math.abs(left - chatActionBarFixedPos.left) < jitterEps
-            && Math.abs(top - chatActionBarFixedPos.top) < jitterEps;
+            Math.abs(left - chatActionBarFixedPos.left) < jitterEpsX
+            && Math.abs(top - chatActionBarFixedPos.top) < jitterEpsY;
         if (closeEnough) {
             left = chatActionBarFixedPos.left;
             top = chatActionBarFixedPos.top;
@@ -2273,18 +2281,13 @@ function syncChatActionBarPosition() {
     bar.style.margin = "0";
     bar.style.order = "";
     if (bar.offsetWidth > 0) {
-        chatActionBarSendWidthCache = bar.offsetWidth;
+        const w = bar.offsetWidth;
+        const prev = chatActionBarSendWidthCache || 0;
+        if (!prev || Math.abs(w - prev) > 1.5) {
+            chatActionBarSendWidthCache = w;
+        }
     }
     clampChatActionBarInViewport(bar);
-    window.requestAnimationFrame(() => {
-        if (getChatActionBar() !== bar) {
-            return;
-        }
-        if (bar.offsetWidth > 0) {
-            chatActionBarSendWidthCache = bar.offsetWidth;
-        }
-        clampChatActionBarInViewport(bar);
-    });
 }
 
 /**
@@ -2315,7 +2318,7 @@ function clampChatActionBarInViewport(bar) {
     if (br.left + dx < margin) {
         dx = margin - br.left;
     }
-    if (Math.abs(dx) < 0.25) {
+    if (Math.abs(dx) < 0.5) {
         return;
     }
     const next = Math.round(curLeft + dx);
@@ -4221,7 +4224,9 @@ function syncContactFormPosition() {
     const padL = typeof cfg.sideInsetLeftPx === "number" && Number.isFinite(cfg.sideInsetLeftPx) ? cfg.sideInsetLeftPx : cfg.sideInsetPx;
     const padR = typeof cfg.sideInsetRightPx === "number" && Number.isFinite(cfg.sideInsetRightPx) ? cfg.sideInsetRightPx : cfg.sideInsetPx;
     const pad = (padL + padR) / 2;
-    const formW = Math.min(340, Math.max(200, rect.width - padL - padR));
+    // Desktop: +20px max width (extends toward the left when docked to the right edge).
+    const formMaxOuter = isMobileViewport() ? 340 : 360;
+    const formW = Math.min(formMaxOuter, Math.max(200, rect.width - padL - padR));
     const card = el.querySelector(".dfchat-contact-form__card");
     const inputs = el.querySelector(".dfchat-contact-form__inputs");
 

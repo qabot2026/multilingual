@@ -221,6 +221,9 @@ html.dfchat-host-scroll-locked body {
   align-items: center !important;
   gap: 8px !important;
   box-sizing: border-box !important;
+  /* Stabilize compositing: reduces perceived flicker when `left`/`top` are updated every frame. */
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 #dfchat-chat-action-bar .dfchat-chat-action-menu-wrapper,
@@ -545,6 +548,13 @@ html.dfchat-host-scroll-locked body {
   /* 5px tighter on each side vs before (32px → 42px total horizontal margin) */
   width: min(340px, calc(100vw - 42px));
   display: none;
+}
+
+/* Undocked: +20px width on large screens (matches docked `syncContactFormPosition` cap). */
+@media (min-width: 769px) {
+  .dfchat-contact-form {
+    width: min(360px, calc(100vw - 42px));
+  }
 }
 
 .dfchat-contact-form.dfchat-is-open {
