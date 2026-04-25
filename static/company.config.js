@@ -8,9 +8,9 @@
  *
  * This file must load *before* `company.js` (see `company.html` script order).
  *
- * Client websites (production embed): load Dialogflow default CSS, then `dfchat-widget.css`
- * (widget + contact form styles — no `html`/`body` overrides), then this file, then `company.js`.
- * The contact form DOM is injected by `company.js`; optional `company.css` is demo-page shell only.
+ * Live client sites: load Dialogflow default CSS, then `live.css`
+ * (widget + contact form — no `html`/`body` overrides), then this file, then `company.js`.
+ * The contact form DOM is injected by `company.js`. For the bundled demo page, use `test.css`.
  */
 
 window.COMPANY_CHAT_UI_CONFIG = {
