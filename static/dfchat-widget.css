@@ -453,7 +453,8 @@ df-messenger {
 .dfchat-contact-form {
   position: fixed;
   right: 28px;
-  bottom: 106px;
+  /* Was 106px; +100px toward viewport bottom per product request */
+  bottom: 6px;
   z-index: 1000;
   width: min(340px, calc(100vw - 32px));
   display: none;
@@ -801,7 +802,8 @@ button.dfchat-contact-form-otp-back:hover {
   .dfchat-contact-form:not(.dfchat-contact-form--docked) {
     right: 10px;
     left: 10px;
-    bottom: 92px;
+    /* Was 92px; moved 100px lower → 8px inset (avoids negative offset) */
+    bottom: 8px;
     width: auto;
   }
 }

@@ -3544,17 +3544,18 @@ function applyContactFormFallbackFixedPosition(el) {
         el.style.left = "10px";
         el.style.right = "10px";
         el.style.width = "auto";
-        el.style.bottom = "92px";
+        /* Match dfchat-widget.css: 92px → 100px lower (toward bottom) */
+        el.style.bottom = "8px";
     } else if (side === "left") {
         el.style.right = "auto";
         el.style.left = "28px";
         el.style.width = "";
-        el.style.bottom = "106px";
+        el.style.bottom = "6px";
     } else {
         el.style.left = "auto";
         el.style.right = "28px";
         el.style.width = "";
-        el.style.bottom = "106px";
+        el.style.bottom = "6px";
     }
     el.style.top = "auto";
     el.style.removeProperty("max-height");
