@@ -21,6 +21,16 @@
  * Legacy names `desktop` / `mobile` still work in company.js; prefer `desk` / `mob` for new files.
  */
 
+
+window.ChatbotConfig = {
+  botName: "botone",
+  dfAgentId: "05ce7add-9025-4534-990c-fd7a25dadde1",   // Dialogflow CX agent info
+  location: "global",
+  language: "en",
+  themeColor: "#007bff"
+};
+
+
 window.COMPANY_CHAT_UI_CONFIG = {
   // =========================
   // COMMON (shared: agent, form field defs, theme, …)
