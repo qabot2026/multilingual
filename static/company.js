@@ -131,6 +131,35 @@ const PERSONA_MARKER_BOT_TIME = "dfchat-persona-bot-time";
 const PERSONA_MARKER_USER = "dfchat-persona-user";
 const PERSONA_URL_MARKER_BOT_IMG = "dfchat-bot-persona";
 
+
+(function () {
+
+  function init() {
+    const config = window.ChatbotConfig;
+
+    console.log("लोडिंग bot:", config.botName);
+
+    // Example: initialize Dialogflow CX messenger
+    const dfScript = document.createElement("script");
+    dfScript.src = "https://www.gstatic.com/dialogflow-console/fast/messenger/bootstrap.js";
+    dfScript.onload = function () {
+
+      const dfMessenger = document.createElement("df-messenger");
+
+      dfMessenger.setAttribute("agent-id", config.dfAgentId);
+      dfMessenger.setAttribute("language-code", config.language);
+
+      document.body.appendChild(dfMessenger);
+    };
+
+    document.body.appendChild(dfScript);
+  }
+
+  window.MyChatbot = { init };
+
+})();
+
+
 function readBotPersonaConfig() {
     const raw = COMMON_CONFIG.botPersona && typeof COMMON_CONFIG.botPersona === "object"
         ? COMMON_CONFIG.botPersona
