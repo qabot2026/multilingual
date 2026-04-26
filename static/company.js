@@ -494,7 +494,8 @@ function getChatInputPlaceholder(languageCode) {
     if (explicit) {
         return explicit;
     }
-    const table = UI_TRANSLATIONS[lang] || UI_TRANSLATIONS[DEFAULT_LANGUAGE];
+    const dictKey = resolveUiDictionaryKey(lang);
+    const table = UI_TRANSLATIONS[dictKey] || UI_TRANSLATIONS[DEFAULT_LANGUAGE];
     if (table && typeof table.chatInputPlaceholder === "string" && table.chatInputPlaceholder.trim()) {
         return table.chatInputPlaceholder.trim();
     }
@@ -610,13 +611,54 @@ const GOOGLE_TRANSLATE_ENDPOINT = "https://translate.googleapis.com/translate_a/
 const DOM_TRANSLATION_DEBOUNCE_MS = 180;
 let activeLanguage = getInitialLanguage();
 
+/**
+ * Endonyms for the default Indic/English set (`label` in config stays an English gloss for reference).
+ * Add `nativeLabel` on a row in `enabledLanguages` to override for custom locales.
+ * @type {Record<string, string>}
+ */
+const LANGUAGE_OPTION_AUTONYMS = {
+    en: "English",
+    hi: "हिन्दी",
+    mr: "मराठी"
+};
+
+/**
+ * Text shown in the language menu, select `<option>`, and the current-language pill.
+ * @param {Record<string, unknown> | null | undefined} optionData
+ * @returns {string}
+ */
+function getLanguageOptionDisplayLabel(optionData) {
+    if (!optionData || typeof optionData !== "object") {
+        return "—";
+    }
+    const custom = optionData.nativeLabel;
+    if (typeof custom === "string" && custom.trim()) {
+        return custom.trim();
+    }
+    const code = optionData.code;
+    const resolved = code ? resolveToSupportedLanguageCode(String(code)) : "";
+    const base = (resolved || "").split(/[-_]/)[0] || "";
+    if (base && Object.prototype.hasOwnProperty.call(LANGUAGE_OPTION_AUTONYMS, base)) {
+        return LANGUAGE_OPTION_AUTONYMS[base];
+    }
+    if (typeof optionData.label === "string" && optionData.label.trim()) {
+        return optionData.label.trim();
+    }
+    if (base.length > 0) {
+        return base.length <= 5 ? base.toUpperCase() : base;
+    }
+    return "—";
+}
+
 /** Visible name for a chat language (from `enabledLanguages`). Omit `explicitCode` to use `activeLanguage`. */
 function getActiveChatLanguageDisplayLabel(explicitCode) {
     const raw = explicitCode !== undefined ? explicitCode : activeLanguage;
     const lang = resolveToSupportedLanguageCode(raw);
-    const row = CHAT_LANGUAGE_OPTIONS.find((o) => normalizeLanguageCode(o && o.code) === lang);
-    if (row && typeof row.label === "string" && row.label.trim()) {
-        return row.label.trim();
+    const row = CHAT_LANGUAGE_OPTIONS.find(
+        (o) => resolveToSupportedLanguageCode(o && o.code) === lang
+    );
+    if (row) {
+        return getLanguageOptionDisplayLabel(row);
     }
     if (typeof lang === "string" && lang.length > 0) {
         return lang.length <= 5 ? lang.toUpperCase() : lang;
@@ -630,7 +672,7 @@ const originalTextNodeContent = new Map();
 const originalElementAttributes = new Map();
 const googleTranslationCache = new Map();
 
-const COMPANY_JS_BUILD_TAG = "20260425-26";
+const COMPANY_JS_BUILD_TAG = "20260426-03";
 const COMPANY_DEBUG_QUERY_FLAG = "dfchatDebug";
 let debugMountAttemptSeq = 0;
 let debugBadgeLastRenderAt = 0;
@@ -1488,7 +1530,7 @@ function initializeHardActionBar() {
             const option = document.createElement("button");
             option.type = "button";
             option.setAttribute("data-lang", lang.code);
-            option.textContent = lang.label;
+            option.textContent = getLanguageOptionDisplayLabel(lang);
             option.style.cssText = "width: 100%; height: auto; text-align: left; border: 0; background: transparent; color: #0f172a; border-radius: 10px; padding: 8px 10px; font: 600 12px 'Manrope', 'Segoe UI', sans-serif; cursor: pointer; transition: background 0.2s ease;";
 
             option.addEventListener("click", () => {
@@ -1831,7 +1873,7 @@ function mountFooterOverlayControls(restartConfig, restartEnabled) {
         const buildMenuItem = (optionData) => {
             const item = document.createElement("button");
             item.type = "button";
-            item.textContent = optionData.label;
+            item.textContent = getLanguageOptionDisplayLabel(optionData);
             item.style.width = "100%";
             item.style.textAlign = "left";
             item.style.border = "0";
@@ -1840,7 +1882,7 @@ function mountFooterOverlayControls(restartConfig, restartEnabled) {
             item.style.borderRadius = "10px";
             item.style.cursor = "pointer";
             item.style.font = "600 12px Manrope, Segoe UI, sans-serif";
-            item.style.color = optionData.code === activeLanguage ? "#0369a1" : "#0f172a";
+            item.style.color = normalizeLanguage(optionData.code) === activeLanguage ? "#0369a1" : "#0f172a";
             item.addEventListener("click", () => {
                 menu.style.display = "none";
                 applyLanguage(optionData.code);
@@ -2091,7 +2133,7 @@ function ensureChatActionBar() {
                 optionButton.type = "button";
                 optionButton.className = "dfchat-chat-action-menu-item";
                 optionButton.dataset.dfchatLangCode = resolveToSupportedLanguageCode(optionData.code);
-                optionButton.textContent = optionData.label;
+                optionButton.textContent = getLanguageOptionDisplayLabel(optionData);
                 optionButton.style.width = "100%";
                 optionButton.style.textAlign = "left";
                 optionButton.style.border = "0";
@@ -2237,7 +2279,10 @@ function refreshChatActionBarLanguageState(bar) {
         const isActive = fromData
             ? fromData === activeLanguage
             : (() => {
-                const match = CHAT_LANGUAGE_OPTIONS.find((option) => option.label === item.textContent);
+                const match = CHAT_LANGUAGE_OPTIONS.find((option) => {
+                    return getLanguageOptionDisplayLabel(option) === item.textContent
+                        || (typeof option.label === "string" && option.label === item.textContent);
+                });
                 return !!(match && resolveToSupportedLanguageCode(match.code) === activeLanguage);
             })();
         if (isActive) {
@@ -7093,13 +7138,49 @@ function isNodeInsideChatLanguageUiScope(node) {
     );
 }
 
+/**
+ * `document.querySelectorAll` does not match nodes inside shadow roots. `#dfchat-chat-action-bar` is
+ * often mounted under `df-messenger` (see `mountChatActionBarInline`); merge those elements with
+ * light-DOM matches so `applyLanguage` updates labels (e.g. Restart) in every layout.
+ * @param {string} selector
+ * @returns {Element[]}
+ */
+function queryChatLanguageScopedI18nElements(selector) {
+    /** @type {Element[]} */
+    const out = [];
+    const seen = new Set();
+    try {
+        for (const node of document.querySelectorAll(selector)) {
+            if (node && !seen.has(node)) {
+                seen.add(node);
+                out.push(/** @type {Element} */ (node));
+            }
+        }
+    } catch {
+        /* no-op */
+    }
+    const actionBar = getChatActionBar();
+    if (actionBar && typeof actionBar.querySelectorAll === "function") {
+        try {
+            for (const node of actionBar.querySelectorAll(selector)) {
+                if (node && !seen.has(node)) {
+                    seen.add(node);
+                    out.push(/** @type {Element} */ (node));
+                }
+            }
+        } catch {
+            /* no-op */
+        }
+    }
+    return out;
+}
+
 function applyLanguage(languageCode) {
     const nextLanguage = normalizeLanguage(languageCode);
     activeLanguage = nextLanguage;
     persistLanguage(nextLanguage);
 
-    const textNodes = document.querySelectorAll("[data-i18n]");
-    for (const node of textNodes) {
+    for (const node of queryChatLanguageScopedI18nElements("[data-i18n]")) {
         if (!isNodeInsideChatLanguageUiScope(node)) {
             continue;
         }
@@ -7110,8 +7191,7 @@ function applyLanguage(languageCode) {
         node.textContent = getTranslation(key);
     }
 
-    const placeholderNodes = document.querySelectorAll("[data-i18n-placeholder]");
-    for (const node of placeholderNodes) {
+    for (const node of queryChatLanguageScopedI18nElements("[data-i18n-placeholder]")) {
         if (!isNodeInsideChatLanguageUiScope(node)) {
             continue;
         }
@@ -7120,8 +7200,7 @@ function applyLanguage(languageCode) {
     }
     refreshContactFormPlaceholdersFromConfig();
 
-    const titleHintNodes = document.querySelectorAll("[data-i18n-title]");
-    for (const node of titleHintNodes) {
+    for (const node of queryChatLanguageScopedI18nElements("[data-i18n-title]")) {
         if (!isNodeInsideChatLanguageUiScope(node)) {
             continue;
         }
@@ -7129,8 +7208,7 @@ function applyLanguage(languageCode) {
         node.setAttribute("title", getTranslation(key));
     }
 
-    const ariaNodes = document.querySelectorAll("[data-i18n-aria-label]");
-    for (const node of ariaNodes) {
+    for (const node of queryChatLanguageScopedI18nElements("[data-i18n-aria-label]")) {
         if (!isNodeInsideChatLanguageUiScope(node)) {
             continue;
         }
@@ -7273,7 +7351,7 @@ function mountChatLanguageDropdown(dfMessenger) {
     for (const optionData of CHAT_LANGUAGE_OPTIONS) {
         const option = document.createElement("option");
         option.value = optionData.code;
-        option.textContent = optionData.label;
+        option.textContent = getLanguageOptionDisplayLabel(optionData);
         select.appendChild(option);
     }
 
@@ -7806,8 +7884,32 @@ function syncChatLanguageDropdownValue(languageCode) {
     }
 }
 
+/**
+ * `UI_TRANSLATIONS` only ships `en` / `hi` / `mr`. `enabledLanguages` may use BCP-47 tags (`mr-IN`, `hi-IN`)
+ * so that Dialogflow and labels match; map those to the same table as `mr` / `hi`.
+ * @param {string} [languageCode] If omitted, uses `activeLanguage`.
+ * @returns {string}
+ */
+function resolveUiDictionaryKey(languageCode) {
+    const raw = languageCode !== undefined && languageCode !== null
+        ? String(languageCode).trim().toLowerCase()
+        : String(activeLanguage || "").trim().toLowerCase();
+    if (!raw) {
+        return DEFAULT_LANGUAGE;
+    }
+    if (UI_TRANSLATIONS[raw]) {
+        return raw;
+    }
+    const base = raw.split(/[-_]/)[0] || raw;
+    if (UI_TRANSLATIONS[base]) {
+        return base;
+    }
+    return DEFAULT_LANGUAGE;
+}
+
 function getTranslation(key) {
-    const translationTable = UI_TRANSLATIONS[activeLanguage] || UI_TRANSLATIONS[DEFAULT_LANGUAGE];
+    const dictKey = resolveUiDictionaryKey(activeLanguage);
+    const translationTable = UI_TRANSLATIONS[dictKey] || UI_TRANSLATIONS[DEFAULT_LANGUAGE];
     return translationTable[key] || UI_TRANSLATIONS[DEFAULT_LANGUAGE][key] || key;
 }
 
@@ -7852,7 +7954,7 @@ async function applyDomTranslation(languageCode) {
     const uniqueTexts = [...new Set(targets.map((target) => target.text))];
     const translatedLookup = new Map();
 
-    await Promise.all(uniqueTexts.map(async (sourceText) => {
+        await Promise.all(uniqueTexts.map(async (sourceText) => {
         const translatedText = await translateTextUsingGoogle(sourceText, normalizedLanguage);
         translatedLookup.set(sourceText, translatedText || sourceText);
     }));
@@ -7918,6 +8020,13 @@ function collectTranslationTargets() {
 
             for (const element of attributeElements) {
                 if (shouldSkipTranslationElement(element)) {
+                    continue;
+                }
+                if (element.hasAttribute
+                    && (element.hasAttribute("data-i18n")
+                        || element.hasAttribute("data-i18n-placeholder")
+                        || element.hasAttribute("data-i18n-aria-label")
+                        || element.hasAttribute("data-i18n-title"))) {
                     continue;
                 }
 
@@ -7989,6 +8098,10 @@ function getTranslationRoots() {
 
 function isTranslatableTextNode(textNode, parentElement) {
     if (!textNode || !parentElement) {
+        return false;
+    }
+
+    if (typeof parentElement.closest === "function" && parentElement.closest("[data-i18n]")) {
         return false;
     }
 
@@ -8079,8 +8192,25 @@ function restoreOriginalDomContent() {
     }
 }
 
+/**
+ * gtx/translate is most reliable with short codes; `mr-IN` / `hi-IN` map to `mr` / `hi`.
+ * @param {string} [code]
+ * @returns {string}
+ */
+function googleTranslateTargetLanguageCode(code) {
+    const s = typeof code === "string" ? code.trim() : "";
+    if (!s) {
+        return "en";
+    }
+    if (s.includes("-") || s.includes("_")) {
+        return s.split(/[-_]/)[0] || s;
+    }
+    return s;
+}
+
 async function translateTextUsingGoogle(sourceText, targetLanguage) {
-    const cacheKey = `${targetLanguage}::${sourceText}`;
+    const tl = googleTranslateTargetLanguageCode(targetLanguage);
+    const cacheKey = `${tl}::${sourceText}`;
     if (googleTranslationCache.has(cacheKey)) {
         return googleTranslationCache.get(cacheKey);
     }
@@ -8089,7 +8219,7 @@ async function translateTextUsingGoogle(sourceText, targetLanguage) {
         const queryParams = new URLSearchParams({
             client: "gtx",
             sl: "auto",
-            tl: targetLanguage,
+            tl,
             dt: "t",
             q: sourceText
         });
@@ -8150,9 +8280,11 @@ function getInitialLanguage() {
 
 function getChatLanguageCode(languageCode) {
     const normalizedLanguage = normalizeLanguage(languageCode);
-    return normalizedLanguage === "hi" || normalizedLanguage === "mr"
-        ? normalizedLanguage
-        : "en";
+    const base = (normalizedLanguage || "").split(/[-_]/)[0] || "";
+    if (base === "hi" || base === "mr") {
+        return base;
+    }
+    return "en";
 }
 
 function persistLanguage(languageCode) {

@@ -70,7 +70,8 @@ window.COMPANY_CHAT_UI_CONFIG = {
       // --- Languages (simple mental model) ---
       // - ON  → user can switch language in the chat (picker / buttons next to Send).
       // - OFF → no picker; the agent uses `defaultLanguage` only.
-      // - `code` = language code for Dialogflow (`language-code` on df-messenger); `label` = text in the menu.
+      // - `code` = language code for Dialogflow (`language-code` on df-messenger); `label` = fallback gloss (English).
+      // - Optional `nativeLabel` = exact menu/pill text (overrides built-in endonyms for en/hi/mr).
       // - Changing language = same conversation language + chat UI (not the host page), unless
       //   you set `autoTranslateHostPage: true` to also Google-translate the rest of the page.
       multiLanguage: {
