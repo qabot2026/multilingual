@@ -97,6 +97,8 @@ const CHAT_BUBBLE_UNREAD_BADGE_ID = "dfchat-bubble-unread-badge";
 const TITLEBAR_ROUND_CORNERS_STYLE_ID = "dfchat-titlebar-round-corners";
 /** Same top radii, scoped from `df-messenger-chat` shadow (header may be styled in that tree). */
 const TITLEBAR_TOP_RADIUS_IN_CHAT_HOST_STYLE_ID = "dfchat-titlebar-top-in-chat-host";
+/** Open chat UI lives in `df-messenger-chat-bubble` → `.chat-wrapper` — this is the reliable hook. */
+const TITLEBAR_IN_BUBBLE_WRAPPER_STYLE_ID = "dfchat-titlebar-bubble-chat-wrapper";
 const FOOTER_INPUT_BOX_ALIGN_ALLOWED = new Set(["flex-end", "flex-start", "center", "stretch", "baseline", "start", "end"]);
 const FOOTER_INPUT_BOX_OVERFLOW_Y_ALLOWED = new Set(["auto", "hidden", "visible", "scroll", "clip"]);
 const FEATURES_CONFIG = COMMON_CONFIG.features && typeof COMMON_CONFIG.features === "object"
@@ -5451,6 +5453,7 @@ function applyChatBubbleLauncherCircleStyle(dfMessenger) {
         tag.textContent = css;
     }
     syncBubbleUnreadBadge(dfMessenger);
+    applyTitlebarRoundCornersToMessenger(dfMessenger);
 }
 
 function scheduleChatBubbleLauncherCircleStyle(dfMessenger) {
@@ -5535,6 +5538,30 @@ function buildTitlebarTopRadiusInChatHostShadowCss(radius) {
 }
 
 /**
+ * Header row for the *open* panel is rendered under `df-messenger-chat-bubble` → `.chat-wrapper` (not in page CSS).
+ * @param {string} radius
+ * @returns {string}
+ */
+function buildTitlebarInBubbleHostShadowCss(radius) {
+    const r = (radius && String(radius).trim()) || "28px";
+    return (
+        "/* company: curved top of header row (under .chat-wrapper in chat-bubble) */\n"
+        + ".chat-wrapper > *:first-child,\n"
+        + ".chat-wrapper > header,\n"
+        + ".chat-wrapper header,\n"
+        + ".chat-wrapper df-messenger-header,\n"
+        + ".chat-wrapper > df-messenger-header,\n"
+        + "df-messenger-header {\n"
+        + "  border-top-left-radius: " + r + " !important;\n"
+        + "  border-top-right-radius: " + r + " !important;\n"
+        + "  border-bottom-left-radius: 0 !important;\n"
+        + "  border-bottom-right-radius: 0 !important;\n"
+        + "  overflow: hidden !important;\n"
+        + "}\n"
+    );
+}
+
+/**
  * @param {HTMLElement | null} dfMessenger
  * @returns {void}
  */
@@ -5545,6 +5572,19 @@ function applyTitlebarRoundCornersToMessenger(dfMessenger) {
     const radius = getMessengerChatBorderRadiusValueForTitlebar(dfMessenger);
     const css = buildTitlebarRoundCornersShadowCss(radius);
     const cssChatHost = buildTitlebarTopRadiusInChatHostShadowCss(radius);
+    const cssBubblePanel = buildTitlebarInBubbleHostShadowCss(radius);
+    const bubblePanel = dfMessenger.querySelector("df-messenger-chat-bubble") || activeBubbleNode;
+    if (bubblePanel && bubblePanel.shadowRoot) {
+        let stb = bubblePanel.shadowRoot.getElementById(TITLEBAR_IN_BUBBLE_WRAPPER_STYLE_ID);
+        if (!stb) {
+            stb = document.createElement("style");
+            stb.id = TITLEBAR_IN_BUBBLE_WRAPPER_STYLE_ID;
+            bubblePanel.shadowRoot.appendChild(stb);
+        }
+        if (stb.textContent !== cssBubblePanel) {
+            stb.textContent = cssBubblePanel;
+        }
+    }
     const roots = collectSearchRoots(dfMessenger);
     for (const root of roots) {
         if (!root || !root.querySelectorAll) {
@@ -5609,7 +5649,7 @@ function scheduleTitlebarRoundCornersToMessenger(dfMessenger) {
         applyTitlebarRoundCornersToMessenger(dfMessenger);
     };
     run();
-    [80, 200, 500, 1200, 2800].forEach((ms) => {
+    [80, 200, 500, 1200, 2800, 4000, 6500].forEach((ms) => {
         window.setTimeout(run, ms);
     });
 }
