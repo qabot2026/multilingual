@@ -67,6 +67,8 @@ df-messenger {
     0 28px 64px -12px rgba(15, 23, 42, 0.16),
     0 0 80px -16px rgba(14, 165, 233, 0.2);
   --df-messenger-chat-border-radius: 28px !important;
+  /* Top of title bar only (matches card top); set in theme as --df-messenger-titlebar-top-border-radius */
+  --df-messenger-titlebar-top-border-radius: 28px;
   /* Chat window size is controlled from `static/company.config.js` */
 
   --df-messenger-titlebar-background: linear-gradient(120deg, #0369a1 0%, #0284c7 35%, #0ea5e9 70%, #38bdf8 100%);
@@ -92,8 +94,10 @@ df-messenger {
  */
 df-messenger df-messenger-header {
   position: relative;
-  border-top-left-radius: var(--df-messenger-chat-border-radius, 28px);
-  border-top-right-radius: var(--df-messenger-chat-border-radius, 28px);
+  border-top-left-radius: var(--df-messenger-titlebar-top-border-radius, var(--df-messenger-chat-border-radius, 28px));
+  border-top-right-radius: var(--df-messenger-titlebar-top-border-radius, var(--df-messenger-chat-border-radius, 28px));
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
   /* visible: do not clip header-controls dropdowns */
   overflow: visible;
 }

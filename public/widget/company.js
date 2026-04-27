@@ -95,6 +95,8 @@ const CHAT_BUBBLE_LAUNCHER_STYLE_ID = "dfchat-chat-bubble-launcher-circle";
 const CHAT_BUBBLE_UNREAD_BADGE_ID = "dfchat-bubble-unread-badge";
 /** Title bar gradient is painted inside `df-messenger-header`’s shadow; page CSS does not apply there. */
 const TITLEBAR_ROUND_CORNERS_STYLE_ID = "dfchat-titlebar-round-corners";
+/** Same top radii, scoped from `df-messenger-chat` shadow (header may be styled in that tree). */
+const TITLEBAR_TOP_RADIUS_IN_CHAT_HOST_STYLE_ID = "dfchat-titlebar-top-in-chat-host";
 const FOOTER_INPUT_BOX_ALIGN_ALLOWED = new Set(["flex-end", "flex-start", "center", "stretch", "baseline", "start", "end"]);
 const FOOTER_INPUT_BOX_OVERFLOW_Y_ALLOWED = new Set(["auto", "hidden", "visible", "scroll", "clip"]);
 const FEATURES_CONFIG = COMMON_CONFIG.features && typeof COMMON_CONFIG.features === "object"
@@ -5465,42 +5467,70 @@ function scheduleChatBubbleLauncherCircleStyle(dfMessenger) {
 }
 
 /**
+ * Top-of-titlebar only; prefers optional `--df-messenger-titlebar-top-border-radius`, else chat card radius.
  * @param {HTMLElement} dfMessenger
  * @returns {string}
  */
 function getMessengerChatBorderRadiusValueForTitlebar(dfMessenger) {
-    if (dfMessenger && dfMessenger.style) {
-        const inline = (dfMessenger.style.getPropertyValue("--df-messenger-chat-border-radius") || "").trim();
-        if (inline) {
-            return inline;
-        }
-    }
-    try {
-        if (dfMessenger) {
-            const cv = (window.getComputedStyle(dfMessenger).getPropertyValue("--df-messenger-chat-border-radius") || "")
-                .trim();
-            if (cv) {
-                return cv;
+    const tryKeys = ["--df-messenger-titlebar-top-border-radius", "--df-messenger-chat-border-radius"];
+    for (const key of tryKeys) {
+        if (dfMessenger && dfMessenger.style) {
+            const inline = (dfMessenger.style.getPropertyValue(key) || "").trim();
+            if (inline) {
+                return inline;
             }
         }
-    } catch (e) {
-        /* no-op */
+        try {
+            if (dfMessenger) {
+                const cv = (window.getComputedStyle(dfMessenger).getPropertyValue(key) || "").trim();
+                if (cv) {
+                    return cv;
+                }
+            }
+        } catch (e) {
+            /* no-op */
+        }
     }
     return "28px";
 }
 
 /**
- * Rounds the top of the open chat title bar to match the panel radius (header content lives in shadow DOM).
+ * Rounds only the **top** of the titlebar (bottom corners stay square where it meets the thread).
  * @param {string} radius
  * @returns {string}
  */
 function buildTitlebarRoundCornersShadowCss(radius) {
     const r = (radius && String(radius).trim()) || "28px";
+    const topOnly = (sel) => (
+        sel + " {\n"
+        + "  border-top-left-radius: " + r + " !important;\n"
+        + "  border-top-right-radius: " + r + " !important;\n"
+        + "  border-bottom-left-radius: 0 !important;\n"
+        + "  border-bottom-right-radius: 0 !important;\n"
+        + "}\n"
+    );
     return (
-        "/* company: titlebar top corners = chat border-radius */\n"
-        + ":host {\n  border-top-left-radius: " + r + " !important;\n  border-top-right-radius: " + r + " !important;\n}\n"
-        + ":host > *:first-child {\n  border-top-left-radius: " + r + " !important;\n  border-top-right-radius: " + r
-        + " !important;\n}\n"
+        "/* company: titlebar top corners only */\n"
+        + topOnly(":host")
+        + topOnly(":host > *:first-child")
+        + topOnly(":host > div:first-of-type")
+    );
+}
+
+/**
+ * @param {string} radius
+ * @returns {string}
+ */
+function buildTitlebarTopRadiusInChatHostShadowCss(radius) {
+    const r = (radius && String(radius).trim()) || "28px";
+    return (
+        "/* company: titlebar top radius from df-messenger-chat shadow */\n"
+        + "df-messenger-header {\n"
+        + "  border-top-left-radius: " + r + " !important;\n"
+        + "  border-top-right-radius: " + r + " !important;\n"
+        + "  border-bottom-left-radius: 0 !important;\n"
+        + "  border-bottom-right-radius: 0 !important;\n"
+        + "}\n"
     );
 }
 
@@ -5514,10 +5544,30 @@ function applyTitlebarRoundCornersToMessenger(dfMessenger) {
     }
     const radius = getMessengerChatBorderRadiusValueForTitlebar(dfMessenger);
     const css = buildTitlebarRoundCornersShadowCss(radius);
+    const cssChatHost = buildTitlebarTopRadiusInChatHostShadowCss(radius);
     const roots = collectSearchRoots(dfMessenger);
     for (const root of roots) {
         if (!root || !root.querySelectorAll) {
             continue;
+        }
+        let chatList;
+        try {
+            chatList = root.querySelectorAll("df-messenger-chat");
+        } catch (e) {
+            chatList = [];
+        }
+        for (const chatHost of chatList) {
+            if (chatHost && chatHost.shadowRoot) {
+                let st = chatHost.shadowRoot.getElementById(TITLEBAR_TOP_RADIUS_IN_CHAT_HOST_STYLE_ID);
+                if (!st) {
+                    st = document.createElement("style");
+                    st.id = TITLEBAR_TOP_RADIUS_IN_CHAT_HOST_STYLE_ID;
+                    chatHost.shadowRoot.appendChild(st);
+                }
+                if (st.textContent !== cssChatHost) {
+                    st.textContent = cssChatHost;
+                }
+            }
         }
         let list;
         try {
@@ -5529,6 +5579,8 @@ function applyTitlebarRoundCornersToMessenger(dfMessenger) {
             if (header && header.style) {
                 header.style.setProperty("border-top-left-radius", radius, "important");
                 header.style.setProperty("border-top-right-radius", radius, "important");
+                header.style.setProperty("border-bottom-left-radius", "0", "important");
+                header.style.setProperty("border-bottom-right-radius", "0", "important");
             }
             if (header && header.shadowRoot) {
                 let tag = header.shadowRoot.getElementById(TITLEBAR_ROUND_CORNERS_STYLE_ID);

@@ -478,6 +478,7 @@ window.COMPANY_CHAT_UI_CONFIG = {
       "--df-messenger-chat-border": "1px solid rgba(14, 165, 233, 0.38)",
       "--df-messenger-chat-box-shadow": "0 0 0 1px rgba(14, 165, 233, 0.12), 0 4px 6px -2px rgba(15, 23, 42, 0.05), 0 16px 32px -8px rgba(15, 23, 42, 0.1), 0 28px 64px -12px rgba(15, 23, 42, 0.16), 0 0 80px -16px rgba(14, 165, 233, 0.2)",
       "--df-messenger-chat-border-radius": "28px",
+      "--df-messenger-titlebar-top-border-radius": "28px",
       "--df-messenger-chat-bubble-background": "linear-gradient(150deg, #0369a1 0%, #0284c7 45%, #0ea5e9 100%)",
       // Usually match `common.chatBubbleLauncher.cornerRoundness` (the launcher block wins when the page runs).
       "--df-messenger-chat-bubble-border-radius": "50%",
