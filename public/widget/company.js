@@ -5546,6 +5546,8 @@ function buildTitlebarInBubbleHostShadowCss(radius) {
     const r = (radius && String(radius).trim()) || "28px";
     return (
         "/* company: curved top of header row (under .chat-wrapper in chat-bubble) */\n"
+        + ".min-chat-wrapper > *:first-child,\n"
+        + ".min-chat-wrapper df-messenger-header,\n"
         + ".chat-wrapper > *:first-child,\n"
         + ".chat-wrapper > header,\n"
         + ".chat-wrapper header,\n"
@@ -5559,6 +5561,122 @@ function buildTitlebarInBubbleHostShadowCss(radius) {
         + "  overflow: hidden !important;\n"
         + "}\n"
     );
+}
+
+/**
+ * Inline top radii on real nodes (Dialogflow may ignore style-tag ordering).
+ * @param {HTMLElement | null} el
+ * @param {string} r
+ * @returns {void}
+ */
+function applyTitlebarTopRadiusInline(el, r) {
+    if (!el || !el.style) {
+        return;
+    }
+    try {
+        el.style.setProperty("border-top-left-radius", r, "important");
+        el.style.setProperty("border-top-right-radius", r, "important");
+        el.style.setProperty("border-bottom-left-radius", "0", "important");
+        el.style.setProperty("border-bottom-right-radius", "0", "important");
+    } catch (e) {
+        /* no-op */
+    }
+}
+
+/**
+ * @param {HTMLElement} headerHost
+ * @param {string} r
+ * @returns {void}
+ */
+function applyTitlebarTopRadiusToHeaderNode(headerHost, r) {
+    applyTitlebarTopRadiusInline(headerHost, r);
+    if (headerHost && headerHost.shadowRoot) {
+        const inner = headerHost.shadowRoot.querySelector("div, header, [role='banner'], section, article");
+        if (inner) {
+            applyTitlebarTopRadiusInline(inner, r);
+        }
+    }
+}
+
+/**
+ * @param {HTMLElement | null} dfMessenger
+ * @param {string} r
+ * @returns {void}
+ */
+function applyTitlebarTopRadiusInlineEverywhere(dfMessenger, r) {
+    if (!dfMessenger || !r) {
+        return;
+    }
+    for (const root of collectSearchRoots(dfMessenger)) {
+        if (!root || !root.querySelectorAll) {
+            continue;
+        }
+        let headers;
+        try {
+            headers = root.querySelectorAll("df-messenger-header");
+        } catch (e) {
+            continue;
+        }
+        for (const h of headers) {
+            applyTitlebarTopRadiusToHeaderNode(/** @type {HTMLElement} */(h), r);
+        }
+    }
+    const bubble = (typeof dfMessenger.querySelector === "function" && dfMessenger.querySelector("df-messenger-chat-bubble"))
+        || activeBubbleNode;
+    if (bubble && bubble.shadowRoot) {
+        const sr = bubble.shadowRoot;
+        for (const wrapSel of [".chat-wrapper", ".min-chat-wrapper", "div.chat-wrapper", "div.min-chat-wrapper"]) {
+            let wrap;
+            try {
+                wrap = sr.querySelector(wrapSel);
+            } catch (e) {
+                wrap = null;
+            }
+            if (wrap && wrap.firstElementChild) {
+                applyTitlebarTopRadiusInline(/** @type {HTMLElement} */(wrap.firstElementChild), r);
+            }
+        }
+        let list;
+        try {
+            list = sr.querySelectorAll("df-messenger-header");
+        } catch (e) {
+            list = [];
+        }
+        for (const h of list) {
+            applyTitlebarTopRadiusToHeaderNode(/** @type {HTMLElement} */(h), r);
+        }
+    }
+}
+
+/**
+ * @param {HTMLElement | null} dfMessenger
+ * @param {string} r
+ * @returns {void}
+ */
+function ensureTitlebarTopRadiusObserver(dfMessenger, r) {
+    if (!dfMessenger || dfMessenger._dfchatTitlebarInlineMo) {
+        return;
+    }
+    const bubble = typeof dfMessenger.querySelector === "function" ? dfMessenger.querySelector("df-messenger-chat-bubble") : null;
+    if (!bubble || !bubble.shadowRoot) {
+        return;
+    }
+    let t = 0;
+    const run = () => {
+        applyTitlebarTopRadiusInlineEverywhere(dfMessenger, r);
+    };
+    const mo = new MutationObserver(() => {
+        window.clearTimeout(t);
+        t = window.setTimeout(() => {
+            run();
+        }, 40);
+    });
+    try {
+        mo.observe(bubble.shadowRoot, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style"] });
+        dfMessenger._dfchatTitlebarInlineMo = mo;
+    } catch (e) {
+        /* no-op */
+    }
 }
 
 /**
@@ -5635,6 +5753,8 @@ function applyTitlebarRoundCornersToMessenger(dfMessenger) {
             }
         }
     }
+    applyTitlebarTopRadiusInlineEverywhere(dfMessenger, radius);
+    ensureTitlebarTopRadiusObserver(dfMessenger, radius);
 }
 
 /**
