@@ -85,7 +85,11 @@ df-messenger {
   --df-messenger-input-border-top: 1px solid rgba(14, 165, 233, 0.28);
 }
 
-/* Titlebar: match card top corner radius; centered grab-style notch (bottom-sheet handle). */
+/*
+ * Titlebar curve: the visible gradient is inside `df-messenger-header` shadow — `company.js`
+ * `applyTitlebarRoundCornersToMessenger` injects the real top radii there. Rules here only help
+ * if the host is in light DOM; keep for ::before handle + layout nudges.
+ */
 df-messenger df-messenger-header {
   position: relative;
   border-top-left-radius: var(--df-messenger-chat-border-radius, 28px);
